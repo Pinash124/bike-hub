@@ -1,11 +1,38 @@
-import { Search, Plus, User } from 'lucide-react'
+import { Search, Plus, User, LogOut } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import '../styles/Header.css'
 
 export default function Header() {
+  const navigate = useNavigate()
+  const [user, setUser] = useState<{ email: string; name: string } | null>(null)
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('user')
+    if (userStr) {
+      setUser(JSON.parse(userStr))
+    }
+  }, [])
+
+  const handleLogout = () => {
+    localStorage.removeItem('user')
+    setUser(null)
+    navigate('/')
+  }
+
+  const handleAccountClick = () => {
+    if (user) {
+      // Could navigate to profile page
+      console.log('Go to profile')
+    } else {
+      navigate('/login')
+    }
+  }
+
   return (
     <header className="header">
       <div className="header-container">
-        <div className="logo">
+        <div className="logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
           <h1>🚴 BikeHub</h1>
           <p>Mua - Bán Xe Đạp Cũ Uy Tín</p>
         </div>
@@ -20,10 +47,26 @@ export default function Header() {
             <Plus size={20} />
             Đăng Bán
           </button>
-          <button className="btn-account">
-            <User size={20} />
-            Tài Khoản
-          </button>
+          {user ? (
+            <div className="user-menu">
+              <button className="btn-account" onClick={handleAccountClick}>
+                <User size={20} />
+                {user.name}
+              </button>
+              <button className="btn-logout" onClick={handleLogout} title="Đăng xuất">
+                <LogOut size={20} />
+              </button>
+            </div>
+          ) : (
+            <div className="auth-buttons">
+              <button className="btn-login" onClick={() => navigate('/login')}>
+                Đăng Nhập
+              </button>
+              <button className="btn-register" onClick={() => navigate('/register')}>
+                Đăng Ký
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
