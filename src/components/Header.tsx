@@ -22,8 +22,8 @@ export default function Header() {
 
   const handleAccountClick = () => {
     if (user) {
-      // Could navigate to profile page
-      console.log('Go to profile')
+      // Navigate to buyer dashboard by default
+      navigate('/buyer/dashboard')
     } else {
       navigate('/login')
     }
