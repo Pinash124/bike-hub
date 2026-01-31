@@ -1,30 +1,38 @@
-import { Search, Plus, User } from 'lucide-react'
-import '../styles/Header.css'
+import { Search, Plus, User, LogOut } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import '../styles/Header.css'
 
 export default function Header() {
   const navigate = useNavigate()
-  const [userName, setUserName] = useState<string | null>(null)
+  const [user, setUser] = useState<{ email: string; name: string } | null>(null)
 
   useEffect(() => {
-    const userInfo = localStorage.getItem('userInfo')
-    if (userInfo) {
-      try {
-        const user = JSON.parse(userInfo)
-        setUserName(user.name)
-      } catch (err) {
-        // Ignore
-      }
+    const userStr = localStorage.getItem('user')
+    if (userStr) {
+      setUser(JSON.parse(userStr))
     }
   }, [])
 
-  const token = localStorage.getItem('token')
-  const isLoggedIn = !!token
+  const handleLogout = () => {
+    localStorage.removeItem('user')
+    setUser(null)
+    navigate('/')
+  }
+
+  const handleAccountClick = () => {
+    if (user) {
+      // Navigate to buyer dashboard by default
+      navigate('/buyer/dashboard')
+    } else {
+      navigate('/login')
+    }
+  }
+
   return (
     <header className="header">
       <div className="header-container">
-        <div className="logo">
+        <div className="logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
           <h1>🚴 BikeHub</h1>
           <p>Mua - Bán Xe Đạp Cũ Uy Tín</p>
         </div>
@@ -39,16 +47,25 @@ export default function Header() {
             <Plus size={20} />
             Đăng Bán
           </button>
-          {isLoggedIn ? (
-            <button className="btn-account" onClick={() => navigate('/user-info')}>
-              <User size={20} />
-              {userName || 'Tài Khoản'}
-            </button>
+          {user ? (
+            <div className="user-menu">
+              <button className="btn-account" onClick={handleAccountClick}>
+                <User size={20} />
+                {user.name}
+              </button>
+              <button className="btn-logout" onClick={handleLogout} title="Đăng xuất">
+                <LogOut size={20} />
+              </button>
+            </div>
           ) : (
-            <button className="btn-account" onClick={() => navigate('/login')}>
-              <User size={20} />
-              Tài Khoản
-            </button>
+            <div className="auth-buttons">
+              <button className="btn-login" onClick={() => navigate('/login')}>
+                Đăng Nhập
+              </button>
+              <button className="btn-register" onClick={() => navigate('/register')}>
+                Đăng Ký
+              </button>
+            </div>
           )}
         </div>
       </div>
