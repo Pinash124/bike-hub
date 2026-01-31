@@ -1,23 +1,18 @@
-import Header from './components/Header'
-import Banner from './components/Banner'
-import FilterSection from './components/FilterSection'
-import FeaturedBikes from './components/FeaturedBikes'
-import Categories from './components/Categories'
-import Features from './components/Features'
-import Footer from './components/Footer'
+
 import './App.css'
+import { Routes, Route } from 'react-router-dom'
+import Login from './components/auth/Login'
+import SignUp from './components/auth/SignUp'
+import HomePage from './pages/HomePage'
+
 
 function App() {
   return (
-    <>
-      <Header />
-      <Banner />
-      <FilterSection />
-      <FeaturedBikes />
-      <Categories />
-      <Features />
-      <Footer />
-    </>
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<SignUp />} />
+    </Routes>
   )
 }
 

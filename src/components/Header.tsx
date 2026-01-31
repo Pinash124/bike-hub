@@ -1,7 +1,9 @@
 import { Search, Plus, User } from 'lucide-react'
 import '../styles/Header.css'
+import { useNavigate } from 'react-router-dom'
 
 export default function Header() {
+  const navigate = useNavigate()
   return (
     <header className="header">
       <div className="header-container">
@@ -20,7 +22,7 @@ export default function Header() {
             <Plus size={20} />
             Đăng Bán
           </button>
-          <button className="btn-account">
+          <button className="btn-account" onClick={() => navigate('/login')}>
             <User size={20} />
             Tài Khoản
           </button>
