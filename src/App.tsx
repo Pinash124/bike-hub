@@ -1,54 +1,50 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
+import HomePage from './pages/HomePage'
+import UserInfo from './pages/UserInfo'
+import Login from './components/auth/Login'
+import SignUp from './components/auth/SignUp'
 import Header from './components/Header'
-import Banner from './components/Banner'
-import FilterSection from './components/FilterSection'
-import FeaturedBikes from './components/FeaturedBikes'
-import Categories from './components/Categories'
-import Features from './components/Features'
 import Footer from './components/Footer'
-import Login from './components/Login'
-import Register from './components/Register'
-import SellerDashboard from './components/SellerDashboard'
-import BuyerDashboard from './components/BuyerDashboard'
-import AdminDashboard from './components/AdminDashboard'
-import InspectorDashboard from './components/InspectorDashboard'
 import './App.css'
 
-function Home() {
-  return (
-    <>
-      <Header />
-      <Banner />
-      <FilterSection />
-      <FeaturedBikes />
-      <Categories />
-      <Features />
-      <Footer />
-    </>
-  )
-}
+// Placeholder components for dashboards not yet fully implemented in the file tree
+const SellerDashboard = () => <div className="p-8">Seller Dashboard Component</div>
+const BuyerDashboard = () => <div className="p-8">Buyer Dashboard Component</div>
+const AdminDashboard = () => <div className="p-8">Admin Dashboard Component</div>
+const InspectorDashboard = () => <div className="p-8">Inspector Dashboard Component</div>
 
 function App() {
   return (
-    <Router>
+    <>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<><Header /><Login /><Footer /></>} />
-        <Route path="/register" element={<><Header /><Register /><Footer /></>} />
-        
-        {/* Seller Routes */}
-        <Route path="/seller/dashboard" element={<><Header /><SellerDashboard /><Footer /></>} />
-        
-        {/* Buyer Routes */}
-        <Route path="/buyer/dashboard" element={<><Header /><BuyerDashboard /><Footer /></>} />
-        
-        {/* Admin Routes */}
-        <Route path="/admin/dashboard" element={<><Header /><AdminDashboard /><Footer /></>} />
-        
-        {/* Inspector Routes */}
-        <Route path="/inspector/dashboard" element={<><Header /><InspectorDashboard /><Footer /></>} />
+        {/* Main Routes */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/user-info" element={<UserInfo />} />
+
+        {/* Role-Based Dashboard Routes */}
+        <Route 
+          path="/seller/dashboard" 
+          element={<><Header /><SellerDashboard /><Footer /></>} 
+        />
+        <Route 
+          path="/buyer/dashboard" 
+          element={<><Header /><BuyerDashboard /><Footer /></>} 
+        />
+        <Route 
+          path="/admin/dashboard" 
+          element={<><Header /><AdminDashboard /><Footer /></>} 
+        />
+        <Route 
+          path="/inspector/dashboard" 
+          element={<><Header /><InspectorDashboard /><Footer /></>} 
+        />
+
+        {/* Fallback for Register path if needed */}
+        <Route path="/register" element={<SignUp />} />
       </Routes>
-    </Router>
+    </>
   )
 }
 
