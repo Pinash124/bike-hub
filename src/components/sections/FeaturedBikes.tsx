@@ -1,5 +1,5 @@
 import BikeCard from './BikeCard'
-import '../styles/FeaturedBikes.css'
+import '../../styles/sections/FeaturedBikes.css'
 
 const featuredBikes = [
   {
@@ -7,9 +7,12 @@ const featuredBikes = [
     image: '🚴',
     title: 'Trek X-Caliber 8 2023',
     price: 25000000,
+    originalPrice: 28000000,
     year: 2023,
     location: 'Hà Nội',
     mileage: 500,
+    size: 'L',
+    condition: 'New',
     isFeatured: true,
   },
   {
@@ -17,9 +20,12 @@ const featuredBikes = [
     image: '🚴',
     title: 'Giant Escape 3 2022',
     price: 8000000,
+    originalPrice: 9500000,
     year: 2022,
     location: 'TP.HCM',
     mileage: 2500,
+    size: 'M',
+    condition: 'Almost new',
     isFeatured: true,
   },
   {
@@ -27,9 +33,12 @@ const featuredBikes = [
     image: '🚴',
     title: 'Specialized Rockhopper 2023',
     price: 18000000,
+    originalPrice: 20000000,
     year: 2023,
     location: 'Đà Nẵng',
     mileage: 800,
+    size: 'M',
+    condition: 'New',
     isFeatured: true,
   },
   {
@@ -37,9 +46,12 @@ const featuredBikes = [
     image: '🚴',
     title: 'Merida Big Nine XT 2021',
     price: 15000000,
+    originalPrice: 17500000,
     year: 2021,
     location: 'Hải Phòng',
     mileage: 5000,
+    size: 'L',
+    condition: 'Used',
     isFeatured: false,
   },
   {
@@ -47,9 +59,12 @@ const featuredBikes = [
     image: '🚴',
     title: 'Xe Đạp Cơ Bản Tốt 2020',
     price: 3000000,
+    originalPrice: 4500000,
     year: 2020,
     location: 'Hà Nội',
     mileage: 8000,
+    size: 'M',
+    condition: 'Refurbished',
     isFeatured: false,
   },
   {
@@ -57,9 +72,12 @@ const featuredBikes = [
     image: '🚴',
     title: 'Cannondale Quick 4 2022',
     price: 12000000,
+    originalPrice: 14000000,
     year: 2022,
     location: 'TP.HCM',
     mileage: 3500,
+    size: 'L',
+    condition: 'Almost new',
     isFeatured: false,
   },
 ]
@@ -67,19 +85,16 @@ const featuredBikes = [
 export default function FeaturedBikes() {
   return (
     <section className="featured-bikes">
-      <div className="section-header">
-        <h2>Xe Đạp Nổi Bật Hôm Nay</h2>
-        <p>Những chiếc xe đạp được yêu thích nhất trên BikeHub</p>
-      </div>
-
-      <div className="bikes-grid">
-        {featuredBikes.map((bike) => (
-          <BikeCard key={bike.id} {...bike} />
-        ))}
-      </div>
-
-      <div className="view-all">
-        <button className="btn-secondary">Xem Tất Cả Xe →</button>
+      <div className="featured-bikes-container">
+        <h2>Selected for you</h2>
+        <div className="bikes-grid">
+          {featuredBikes.map((bike) => (
+            <BikeCard key={bike.id} {...bike} />
+          ))}
+        </div>
+        <div className="see-all">
+          <a href="#/bikes">See all bikes →</a>
+        </div>
       </div>
     </section>
   )

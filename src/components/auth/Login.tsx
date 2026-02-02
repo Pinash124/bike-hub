@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import '../styles/Auth.css'
+import '../../styles/auth/Auth.css'
 
 interface LoginErrors {
   [key: string]: string | undefined

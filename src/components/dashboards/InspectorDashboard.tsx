@@ -1,6 +1,6 @@
 import { CheckCircle, XCircle, Clock, AlertCircle, Camera } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import '../styles/Dashboard.css'
+import '../../styles/dashboards/Dashboard.css'
 
 interface BikeForInspection {
   id: number

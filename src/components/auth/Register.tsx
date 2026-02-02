@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, Phone } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import '../styles/Auth.css'
+import '../../styles/auth/Auth.css'
 
 interface FormData {
   name: string
@@ -101,7 +101,8 @@ export default function Register() {
         name: formData.name,
         phone: formData.phone
       }))
-      navigate('/')
+      // Navigate to KYC instead of home
+      navigate('/kyc')
     }, 1000)
   }
 
