@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { ShoppingCart, Package, MapPin, Star, LogOut } from 'lucide-react';
+import { ShoppingCart, Package, MapPin, LogOut } from 'lucide-react';
 import '../../styles/BuyerDashboardPage.css';
 
 interface Tab {

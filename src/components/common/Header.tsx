@@ -1,10 +1,12 @@
-import { Search, User, LogOut } from 'lucide-react'
+import { Search, User, LogOut, ShoppingCart } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { useCart } from '../../contexts/CartContext'
 import '../../styles/common/Header.css'
 
 export default function Header() {
   const navigate = useNavigate()
+  const { items } = useCart()
   const [user, setUser] = useState<{ email: string; name: string } | null>(null)
 
   useEffect(() => {
@@ -47,6 +49,17 @@ export default function Header() {
             Sell
           </button>
           {user ? (
+              <>
+                <button 
+                  className="btn-cart" 
+                  onClick={() => navigate('/buyer/dashboard?tab=cart')}
+                  title="Shopping Cart"
+                >
+                  <ShoppingCart size={18} />
+                  {items.length > 0 && (
+                    <span className="cart-badge">{items.length}</span>
+                  )}
+                </button>
             <div className="user-menu">
               <button className="btn-account" onClick={handleAccountClick}>
                 <User size={18} />
@@ -56,6 +69,7 @@ export default function Header() {
                 <LogOut size={18} />
               </button>
             </div>
+              </>
           ) : (
             <div className="auth-buttons">
               <button className="btn-login" onClick={() => navigate('/login')}>

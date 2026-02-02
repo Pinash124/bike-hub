@@ -14,8 +14,13 @@ import BuyerDashboardPage from './components/buyer/BuyerDashboard'
 import AdminDashboard from './components/dashboards/AdminDashboard'
 import InspectorDashboard from './components/dashboards/InspectorDashboard'
 import { AuthProvider } from './contexts/AuthContext'
-import { ProtectedRoute, GuestRoute } from './components/ProtectedRoute'
+import { CartProvider } from './contexts/CartContext'
+import { ProtectedRoute } from './components/ProtectedRoute'
 import GuestMarketplace from './components/guest/GuestMarketplace'
+import SearchPage from './pages/SearchPage'
+import ProductDetailPage from './pages/ProductDetailPage'
+import CheckoutPage from './pages/CheckoutPage'
+import OrderTrackingPage from './pages/OrderTrackingPage'
 import './App.css'
 
 function Home() {
@@ -35,56 +40,80 @@ function Home() {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Home />} />
-          <Route path="/marketplace" element={<><Header /><GuestMarketplace /><Footer /></>} />
-          <Route path="/login" element={<><Header /><Login /><Footer /></>} />
-          <Route path="/register" element={<><Header /><Register /><Footer /></>} />
-          <Route path="/kyc" element={<KYC />} />
-          
-          {/* Protected Routes - Seller */}
-          <Route 
-            path="/seller/dashboard" 
-            element={
-              <ProtectedRoute requiredRole="seller">
-                <><Header /><SellerDashboard /><Footer /></>
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Protected Routes - Buyer */}
-          <Route 
-            path="/buyer/dashboard" 
-            element={
-              <ProtectedRoute requiredRole="buyer">
-                <><Header /><BuyerDashboardPage /><Footer /></>
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Protected Routes - Admin */}
-          <Route 
-            path="/admin/dashboard" 
-            element={
-              <ProtectedRoute requiredRole="admin">
-                <><Header /><AdminDashboard /><Footer /></>
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Protected Routes - Inspector */}
-          <Route 
-            path="/inspector/dashboard" 
-            element={
-              <ProtectedRoute requiredRole="inspector">
-                <><Header /><InspectorDashboard /><Footer /></>
-              </ProtectedRoute>
-            } 
-          />
-        </Routes>
-      </Router>
+      <CartProvider>
+        <Router>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Home />} />
+            <Route path="/marketplace" element={<><Header /><GuestMarketplace /><Footer /></>} />
+            <Route path="/login" element={<><Header /><Login /><Footer /></>} />
+            <Route path="/register" element={<><Header /><Register /><Footer /></>} />
+            <Route path="/kyc" element={<KYC />} />
+            
+            {/* Protected Routes - Seller */}
+            <Route 
+              path="/seller/dashboard" 
+              element={
+                <ProtectedRoute requiredRole="seller">
+                  <><Header /><SellerDashboard /><Footer /></>
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Buyer Routes - Product Discovery */}
+            <Route path="/search" element={<><Header /><SearchPage /><Footer /></>} />
+            <Route path="/product/:id" element={<><Header /><ProductDetailPage /><Footer /></>} />
+            
+            {/* Protected Routes - Buyer */}
+            <Route 
+              path="/buyer/dashboard" 
+              element={
+                <ProtectedRoute requiredRole="buyer">
+                  <><Header /><BuyerDashboardPage /><Footer /></>
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/buyer/checkout" 
+              element={
+                <ProtectedRoute requiredRole="buyer">
+                  <><Header /><CheckoutPage /><Footer /></>
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/buyer/orders" 
+              element={
+                <ProtectedRoute requiredRole="buyer">
+                  <><Header /><OrderTrackingPage /><Footer /></>
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Protected Routes - Admin */}
+            <Route 
+              path="/admin/dashboard" 
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <><Header /><AdminDashboard /><Footer /></>
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Protected Routes - Inspector */}
+            <Route 
+              path="/inspector/dashboard" 
+              element={
+                <ProtectedRoute requiredRole="inspector">
+                  <><Header /><InspectorDashboard /><Footer /></>
+                </ProtectedRoute>
+              } 
+            />
+          </Routes>
+        </Router>
+      </CartProvider>
     </AuthProvider>
   )
 }

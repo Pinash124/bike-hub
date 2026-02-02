@@ -52,12 +52,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, _password: string) => {
     try {
       setIsLoading(true);
       
       // Simulate API call - replace with actual backend call
-      const mockUser: UserProfile = {
+      const _newUser: UserProfile = {
         id: 'user_' + Date.now(),
         email,
         name: email.split('@')[0],
@@ -67,9 +67,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isKYCVerified: false,
       };
 
-      setUser(mockUser);
+      setUser(_newUser);
       setRole('buyer');
-      localStorage.setItem('user', JSON.stringify(mockUser));
+      localStorage.setItem('user', JSON.stringify(_newUser));
       localStorage.setItem('role', 'buyer');
     } catch (error) {
       console.error('Login failed:', error);
@@ -84,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(true);
       
       // Simulate API call - replace with actual backend call
-      const newUser: UserProfile = {
+      const _newUser: UserProfile = {
         id: 'user_' + Date.now(),
         email: data.email,
         name: data.name,
@@ -97,7 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Store registration data but don't auto-login
       // User must go to login page with their credentials
       localStorage.setItem('registeredUser', JSON.stringify({
-        email: data.email,
+        email: _newUser.email,
         // Note: Never store passwords in localStorage in production
         // This is for demo only
       }));

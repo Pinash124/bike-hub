@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, Grid } from 'lucide-react';
+import { Search, Filter } from 'lucide-react';
 import '../../styles/GuestMarketplace.css';
 
 interface Product {

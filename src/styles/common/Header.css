@@ -32,12 +32,46 @@ header {
 }
 
 .logo-text {
-  font-size: 1.2rem;
-  font-weight: 600;
+  .logo-text {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #1db854;
+  }
+  background: none;
+  .btn-cart {
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
   color: #1db854;
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.search-bar {
+.btn-cart:hover {
+  color: #0da845;
+}
+
+.cart-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #ff6b6b;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+  font-size: 1.2rem;
+  font-weight: 600;
   flex: 1;
   max-width: 400px;
   display: flex;
