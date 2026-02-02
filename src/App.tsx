@@ -10,9 +10,12 @@ import Login from './components/auth/Login'
 import Register from './components/auth/Register'
 import KYC from './components/auth/KYC'
 import SellerDashboard from './components/dashboards/SellerDashboard'
-import BuyerDashboard from './components/dashboards/BuyerDashboard'
+import BuyerDashboardPage from './components/buyer/BuyerDashboard'
 import AdminDashboard from './components/dashboards/AdminDashboard'
 import InspectorDashboard from './components/dashboards/InspectorDashboard'
+import { AuthProvider } from './contexts/AuthContext'
+import { ProtectedRoute, GuestRoute } from './components/ProtectedRoute'
+import GuestMarketplace from './components/guest/GuestMarketplace'
 import './App.css'
 
 function Home() {
@@ -31,26 +34,58 @@ function Home() {
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<><Header /><Login /><Footer /></>} />
-        <Route path="/register" element={<><Header /><Register /><Footer /></>} />
-        <Route path="/kyc" element={<KYC />} />
-        
-        {/* Seller Routes */}
-        <Route path="/seller/dashboard" element={<><Header /><SellerDashboard /><Footer /></>} />
-        
-        {/* Buyer Routes */}
-        <Route path="/buyer/dashboard" element={<><Header /><BuyerDashboard /><Footer /></>} />
-        
-        {/* Admin Routes */}
-        <Route path="/admin/dashboard" element={<><Header /><AdminDashboard /><Footer /></>} />
-        
-        {/* Inspector Routes */}
-        <Route path="/inspector/dashboard" element={<><Header /><InspectorDashboard /><Footer /></>} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="/marketplace" element={<><Header /><GuestMarketplace /><Footer /></>} />
+          <Route path="/login" element={<><Header /><Login /><Footer /></>} />
+          <Route path="/register" element={<><Header /><Register /><Footer /></>} />
+          <Route path="/kyc" element={<KYC />} />
+          
+          {/* Protected Routes - Seller */}
+          <Route 
+            path="/seller/dashboard" 
+            element={
+              <ProtectedRoute requiredRole="seller">
+                <><Header /><SellerDashboard /><Footer /></>
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Protected Routes - Buyer */}
+          <Route 
+            path="/buyer/dashboard" 
+            element={
+              <ProtectedRoute requiredRole="buyer">
+                <><Header /><BuyerDashboardPage /><Footer /></>
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Protected Routes - Admin */}
+          <Route 
+            path="/admin/dashboard" 
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <><Header /><AdminDashboard /><Footer /></>
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Protected Routes - Inspector */}
+          <Route 
+            path="/inspector/dashboard" 
+            element={
+              <ProtectedRoute requiredRole="inspector">
+                <><Header /><InspectorDashboard /><Footer /></>
+              </ProtectedRoute>
+            } 
+          />
+        </Routes>
+      </Router>
+    </AuthProvider>
   )
 }
 
