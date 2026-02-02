@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import '../../styles/auth/Auth.css'
 
 interface LoginErrors {
   [key: string]: string | undefined
@@ -58,28 +57,29 @@ export default function Login() {
   }
 
   return (
-    <div className="auth-container">
-      <div className="auth-wrapper">
+    <div className="min-h-[calc(100vh-80px)] flex items-center justify-center py-12 bg-gray-50">
+      <div className="w-full max-w-md px-6 relative">
         <button 
-          className="btn-back"
+          className="absolute top-4 left-0 p-2 text-gray-600 hover:text-gray-800"
           onClick={() => navigate('/')}
           title="Quay lại trang chủ"
         >
           <ArrowLeft size={20} />
         </button>
 
-        <div className="auth-card">
-          <div className="auth-header">
-            <h2>Đăng Nhập</h2>
-            <p>Đăng nhập để quản lý tài khoản và các giao dịch của bạn</p>
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="mb-4">
+            <h2 className="text-2xl font-bold">Đăng Nhập</h2>
+            <p className="text-sm text-gray-600">Đăng nhập để quản lý tài khoản và các giao dịch của bạn</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="auth-form">
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <div className={`input-wrapper ${errors.email ? 'error' : ''}`}>
+          <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+              <div className={`mt-2 flex items-center gap-2 border rounded px-3 py-2 ${errors.email ? 'border-red-500' : 'border-gray-200'}`}>
                 <Mail size={18} />
                 <input
+                  className="flex-1 outline-none text-sm"
                   type="email"
                   id="email"
                   placeholder="Nhập email của bạn"
@@ -90,14 +90,15 @@ export default function Login() {
                   }}
                 />
               </div>
-              {errors.email && <span className="error-message">{errors.email}</span>}
+              {errors.email && <span className="text-red-500 text-sm">{errors.email}</span>}
             </div>
 
-            <div className="form-group">
-              <label htmlFor="password">Mật Khẩu</label>
-              <div className={`input-wrapper ${errors.password ? 'error' : ''}`}>
+            <div className="mb-4">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">Mật Khẩu</label>
+              <div className={`mt-2 flex items-center gap-2 border rounded px-3 py-2 ${errors.password ? 'border-red-500' : 'border-gray-200'}`}>
                 <Lock size={18} />
                 <input
+                  className="flex-1 outline-none text-sm"
                   type={showPassword ? 'text' : 'password'}
                   id="password"
                   placeholder="Nhập mật khẩu"
@@ -109,47 +110,43 @@ export default function Login() {
                 />
                 <button
                   type="button"
-                  className="btn-toggle-password"
+                  className="text-gray-600"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-              {errors.password && <span className="error-message">{errors.password}</span>}
+              {errors.password && <span className="text-red-500 text-sm">{errors.password}</span>}
             </div>
 
-            <div className="form-footer">
-              <label className="checkbox">
-                <input type="checkbox" />
+            <div className="flex items-center justify-between mb-4 text-sm">
+              <label className="flex items-center gap-2">
+                <input type="checkbox" className="h-4 w-4" />
                 <span>Ghi nhớ tôi</span>
               </label>
-              <a href="#" className="forgot-password">Quên mật khẩu?</a>
+              <a href="#" className="text-sm text-green-600">Quên mật khẩu?</a>
             </div>
 
             <button 
               type="submit" 
-              className="btn-submit"
+              className="w-full bg-green-600 text-white py-2 rounded font-semibold"
               disabled={isLoading}
             >
               {isLoading ? 'Đang đăng nhập...' : 'Đăng Nhập'}
             </button>
           </form>
 
-          <div className="auth-divider">
+          <div className="flex items-center justify-center gap-4 my-4 text-sm text-gray-500">
             <span>Hoặc</span>
           </div>
 
-          <div className="social-login">
-            <button className="btn-social" type="button">
-              <span>🔵</span> Facebook
-            </button>
-            <button className="btn-social" type="button">
-              <span>📧</span> Google
-            </button>
+          <div className="flex gap-2">
+            <button className="flex-1 py-2 rounded border text-sm">🔵 Facebook</button>
+            <button className="flex-1 py-2 rounded border text-sm">📧 Google</button>
           </div>
 
-          <div className="auth-footer">
-            <p>Chưa có tài khoản? <a href="/register">Đăng ký ngay</a></p>
+          <div className="text-center mt-4 text-sm text-gray-600">
+            <p>Chưa có tài khoản? <a href="/register" className="text-green-600">Đăng ký ngay</a></p>
           </div>
         </div>
       </div>

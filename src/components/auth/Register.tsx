@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, Phone } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import '../../styles/auth/Auth.css'
 
 interface FormData {
   name: string
@@ -107,161 +106,91 @@ export default function Register() {
   }
 
   return (
-    <div className="auth-container">
-      <div className="auth-wrapper">
+    <div className="min-h-[calc(100vh-80px)] flex items-center justify-center py-12 bg-gray-50">
+      <div className="w-full max-w-md px-6 relative">
         <button 
-          className="btn-back"
+          className="absolute top-4 left-0 p-2 text-gray-600 hover:text-gray-800"
           onClick={() => navigate('/')}
           title="Quay lại trang chủ"
         >
           <ArrowLeft size={20} />
         </button>
 
-        <div className="auth-card">
-          <div className="auth-header">
-            <h2>Đăng Ký Tài Khoản</h2>
-            <p>Tạo tài khoản để bắt đầu mua bán xe đạp</p>
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="mb-4">
+            <h2 className="text-2xl font-bold">Đăng Ký Tài Khoản</h2>
+            <p className="text-sm text-gray-600">Tạo tài khoản để bắt đầu mua bán xe đạp</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="auth-form">
-            <div className="form-group">
-              <label htmlFor="name">Họ và Tên</label>
-              <div className={`input-wrapper ${errors.name ? 'error' : ''}`}>
+          <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700">Họ và Tên</label>
+              <div className={`mt-2 flex items-center gap-2 border rounded px-3 py-2 ${errors.name ? 'border-red-500' : 'border-gray-200'}`}>
                 <User size={18} />
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  placeholder="Nhập họ và tên"
-                  value={formData.name}
-                  onChange={handleChange}
-                />
+                <input className="flex-1 outline-none text-sm" type="text" id="name" name="name" placeholder="Nhập họ và tên" value={formData.name} onChange={handleChange} />
               </div>
-              {errors.name && <span className="error-message">{errors.name}</span>}
+              {errors.name && <span className="text-red-500 text-sm">{errors.name}</span>}
             </div>
 
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <div className={`input-wrapper ${errors.email ? 'error' : ''}`}>
+            <div className="mb-4">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+              <div className={`mt-2 flex items-center gap-2 border rounded px-3 py-2 ${errors.email ? 'border-red-500' : 'border-gray-200'}`}>
                 <Mail size={18} />
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  placeholder="Nhập email của bạn"
-                  value={formData.email}
-                  onChange={handleChange}
-                />
+                <input className="flex-1 outline-none text-sm" type="email" id="email" name="email" placeholder="Nhập email của bạn" value={formData.email} onChange={handleChange} />
               </div>
-              {errors.email && <span className="error-message">{errors.email}</span>}
+              {errors.email && <span className="text-red-500 text-sm">{errors.email}</span>}
             </div>
 
-            <div className="form-group">
-              <label htmlFor="phone">Số Điện Thoại</label>
-              <div className={`input-wrapper ${errors.phone ? 'error' : ''}`}>
+            <div className="mb-4">
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Số Điện Thoại</label>
+              <div className={`mt-2 flex items-center gap-2 border rounded px-3 py-2 ${errors.phone ? 'border-red-500' : 'border-gray-200'}`}>
                 <Phone size={18} />
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  placeholder="Nhập số điện thoại"
-                  value={formData.phone}
-                  onChange={handleChange}
-                />
+                <input className="flex-1 outline-none text-sm" type="tel" id="phone" name="phone" placeholder="Nhập số điện thoại" value={formData.phone} onChange={handleChange} />
               </div>
-              {errors.phone && <span className="error-message">{errors.phone}</span>}
+              {errors.phone && <span className="text-red-500 text-sm">{errors.phone}</span>}
             </div>
 
-            <div className="form-group">
-              <label htmlFor="password">Mật Khẩu</label>
-              <div className={`input-wrapper ${errors.password ? 'error' : ''}`}>
+            <div className="mb-4">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">Mật Khẩu</label>
+              <div className={`mt-2 flex items-center gap-2 border rounded px-3 py-2 ${errors.password ? 'border-red-500' : 'border-gray-200'}`}>
                 <Lock size={18} />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  name="password"
-                  placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
-                  value={formData.password}
-                  onChange={handleChange}
-                />
-                <button
-                  type="button"
-                  className="btn-toggle-password"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+                <input className="flex-1 outline-none text-sm" type={showPassword ? 'text' : 'password'} id="password" name="password" placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)" value={formData.password} onChange={handleChange} />
+                <button type="button" className="text-gray-600" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
               </div>
-              {errors.password && <span className="error-message">{errors.password}</span>}
+              {errors.password && <span className="text-red-500 text-sm">{errors.password}</span>}
             </div>
 
-            <div className="form-group">
-              <label htmlFor="confirmPassword">Xác Nhận Mật Khẩu</label>
-              <div className={`input-wrapper ${errors.confirmPassword ? 'error' : ''}`}>
+            <div className="mb-4">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">Xác Nhận Mật Khẩu</label>
+              <div className={`mt-2 flex items-center gap-2 border rounded px-3 py-2 ${errors.confirmPassword ? 'border-red-500' : 'border-gray-200'}`}>
                 <Lock size={18} />
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  placeholder="Xác nhận mật khẩu"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                />
-                <button
-                  type="button"
-                  className="btn-toggle-password"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                >
-                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+                <input className="flex-1 outline-none text-sm" type={showConfirmPassword ? 'text' : 'password'} id="confirmPassword" name="confirmPassword" placeholder="Xác nhận mật khẩu" value={formData.confirmPassword} onChange={handleChange} />
+                <button type="button" className="text-gray-600" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>{showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
               </div>
-              {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
+              {errors.confirmPassword && <span className="text-red-500 text-sm">{errors.confirmPassword}</span>}
             </div>
 
-            <div className="form-checkbox">
-              <label className="checkbox">
-                <input 
-                  type="checkbox" 
-                  checked={agreeTerms}
-                  onChange={(e) => {
-                    setAgreeTerms(e.target.checked)
-                    if (errors.terms) {
-                      const newErrors = { ...errors }
-                      delete newErrors.terms
-                      setErrors(newErrors)
-                    }
-                  }}
-                />
-                <span>Tôi đồng ý với <a href="#">Điều khoản sử dụng</a> và <a href="#">Chính sách bảo mật</a></span>
+            <div className="mb-4">
+              <label className="flex items-center gap-2 text-sm">
+                <input className="h-4 w-4" type="checkbox" checked={agreeTerms} onChange={(e) => { setAgreeTerms(e.target.checked); if (errors.terms) { const newErrors = { ...errors }; delete newErrors.terms; setErrors(newErrors); } }} />
+                <span>Tôi đồng ý với <a href="#" className="text-green-600">Điều khoản sử dụng</a> và <a href="#" className="text-green-600">Chính sách bảo mật</a></span>
               </label>
-              {errors.terms && <span className="error-message">{errors.terms}</span>}
+              {errors.terms && <span className="text-red-500 text-sm">{errors.terms}</span>}
             </div>
 
-            <button 
-              type="submit" 
-              className="btn-submit"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Đang tạo tài khoản...' : 'Đăng Ký'}
-            </button>
+            <button type="submit" className="w-full bg-green-600 text-white py-2 rounded font-semibold" disabled={isLoading}>{isLoading ? 'Đang tạo tài khoản...' : 'Đăng Ký'}</button>
           </form>
 
-          <div className="auth-divider">
+          <div className="flex items-center justify-center gap-4 my-4 text-sm text-gray-500">
             <span>Hoặc</span>
           </div>
 
-          <div className="social-login">
-            <button className="btn-social" type="button">
-              <span>🔵</span> Facebook
-            </button>
-            <button className="btn-social" type="button">
-              <span>📧</span> Google
-            </button>
+          <div className="flex gap-2">
+            <button className="flex-1 py-2 rounded border text-sm">🔵 Facebook</button>
+            <button className="flex-1 py-2 rounded border text-sm">📧 Google</button>
           </div>
 
-          <div className="auth-footer">
-            <p>Đã có tài khoản? <a href="/login">Đăng nhập ngay</a></p>
-          </div>
+          <div className="text-center mt-4 text-sm text-gray-600">Đã có tài khoản? <a href="/login" className="text-green-600">Đăng nhập ngay</a></div>
         </div>
       </div>
     </div>

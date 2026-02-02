@@ -1,6 +1,5 @@
 import { CheckCircle, XCircle, Clock, AlertCircle, Camera } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import '../../styles/dashboards/Dashboard.css'
 
 interface BikeForInspection {
   id: number
@@ -88,110 +87,122 @@ export default function InspectorDashboard() {
   }
 
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-header">
-        <div>
-          <h1>Bảng Điều Khiển Kiểm Duyệt Viên</h1>
-          <p>Kiểm duyệt thông tin xe đạp trên nền tảng</p>
-        </div>
-      </div>
-
-      <div className="stats-grid">
-        {stats.map((stat) => {
-          const Icon = stat.icon
-          return (
-            <div key={stat.label} className="stat-card">
-              <div className="stat-icon">
-                <Icon size={24} />
-              </div>
-              <div className="stat-content">
-                <p className="stat-label">{stat.label}</p>
-                <p className="stat-value">{stat.value}</p>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      <div className="content-section">
-        <div className="section-header">
-          <h2>Xe Cần Kiểm Duyệt</h2>
-          <a href="#" className="link-view-all">Xem tất cả</a>
+    <div className="bg-white min-h-[calc(100vh-80px)]">
+      <div className="max-w-[1400px] mx-auto px-6 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Bảng Điều Khiển Kiểm Duyệt Viên</h1>
+          <p className="text-gray-600">Kiểm duyệt thông tin xe đạp trên nền tảng</p>
         </div>
 
-        <div className="inspection-list">
-          {bikesForInspection.map(bike => (
-            <div key={bike.id} className="inspection-item">
-              <div className="inspection-image">
-                <span className="image-emoji">{bike.image}</span>
-              </div>
-              <div className="inspection-info">
-                <h3>{bike.title}</h3>
-                <p className="bike-price">{bike.price.toLocaleString('vi-VN')} ₫</p>
-                <div className="bike-meta-info">
-                  <span>Bán bởi: {bike.seller}</span>
-                  <span>Gửi lúc: {bike.submittedAt}</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {stats.map((stat) => {
+            const Icon = stat.icon
+            return (
+              <div key={stat.label} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-green-50 rounded-lg">
+                    <Icon size={24} className="text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-gray-600 text-sm">{stat.label}</p>
+                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  </div>
                 </div>
               </div>
-              <div className="inspection-status">
-                <span className={`status-badge status-${bike.status}`}>
-                  {getStatusColor(bike.status)}
-                </span>
+            )
+          })}
+        </div>
+
+        <div className="bg-white rounded-lg border border-gray-200 mb-8">
+          <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900">Xe Cần Kiểm Duyệt</h2>
+            <a href="#" className="text-green-600 hover:text-green-700 text-sm font-medium">Xem tất cả</a>
+          </div>
+
+          <div className="divide-y divide-gray-200">
+            {bikesForInspection.map(bike => (
+              <div key={bike.id} className="p-6 flex items-center justify-between hover:bg-gray-50 transition">
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-2xl">
+                    {bike.image}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900">{bike.title}</h3>
+                    <p className="text-green-600 font-medium">{bike.price.toLocaleString('vi-VN')} ₫</p>
+                    <div className="text-sm text-gray-600 space-y-1 mt-1">
+                      <p>Bán bởi: {bike.seller}</p>
+                      <p>Gửi lúc: {bike.submittedAt}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    bike.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    bike.status === 'inspecting' ? 'bg-blue-100 text-blue-800' :
+                    bike.status === 'approved' ? 'bg-green-100 text-green-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {getStatusColor(bike.status)}
+                  </span>
+                  {bike.status === 'pending' && (
+                    <button 
+                      onClick={() => navigate(`/inspector/inspect/${bike.id}`)}
+                      className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+                    >
+                      <Camera size={18} />
+                      Kiểm Duyệt
+                    </button>
+                  )}
+                  {bike.status === 'inspecting' && (
+                    <button className="bg-blue-600 text-white px-4 py-2 rounded-lg cursor-default">
+                      Đang kiểm duyệt
+                    </button>
+                  )}
+                </div>
               </div>
-              {bike.status === 'pending' && (
-                <div className="inspection-actions">
-                  <button className="btn-primary" onClick={() => navigate(`/inspector/inspect/${bike.id}`)}>
-                    <Camera size={18} />
-                    Kiểm Duyệt
-                  </button>
-                </div>
-              )}
-              {bike.status === 'inspecting' && (
-                <div className="inspection-actions">
-                  <button className="btn-secondary">
-                    Đang kiểm duyệt
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="content-section">
-        <div className="section-header">
-          <h2>Lịch Sử Kiểm Duyệt</h2>
+            ))}
+          </div>
         </div>
 
-        <div className="admin-table-wrapper">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Sản Phẩm</th>
-                <th>Ngày Kiểm Duyệt</th>
-                <th>Kết Quả</th>
-                <th>Ghi Chú</th>
-                <th>Hành Động</th>
-              </tr>
-            </thead>
-            <tbody>
-              {inspectionHistory.map(history => (
-                <tr key={history.id}>
-                  <td className="font-semibold">{history.title}</td>
-                  <td>{history.inspectedDate}</td>
-                  <td>
-                    <span className={`status-badge status-${history.result}`}>
-                      {history.result === 'approved' ? '✓ Phê Duyệt' : '✕ Từ Chối'}
-                    </span>
-                  </td>
-                  <td>{history.notes}</td>
-                  <td>
-                    <button className="btn-text">Chi tiết</button>
-                  </td>
+        <div className="bg-white rounded-lg border border-gray-200">
+          <div className="border-b border-gray-200 px-6 py-4">
+            <h2 className="text-xl font-semibold text-gray-900">Lịch Sử Kiểm Duyệt</h2>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Sản Phẩm</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Ngày Kiểm Duyệt</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Kết Quả</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Ghi Chú</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Hành Động</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {inspectionHistory.map(history => (
+                  <tr key={history.id} className="hover:bg-gray-50 transition">
+                    <td className="px-6 py-4 font-semibold text-gray-900">{history.title}</td>
+                    <td className="px-6 py-4 text-gray-600">{history.inspectedDate}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        history.result === 'approved' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {history.result === 'approved' ? '✓ Phê Duyệt' : '✕ Từ Chối'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-gray-600">{history.notes}</td>
+                    <td className="px-6 py-4">
+                      <button className="text-green-600 hover:text-green-700 font-medium text-sm">Chi tiết</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

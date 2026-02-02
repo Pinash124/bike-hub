@@ -1,5 +1,5 @@
 import BikeCard from './BikeCard'
-import '../../styles/sections/FeaturedBikes.css'
+import styled from 'styled-components'
 
 const featuredBikes = [
   {
@@ -84,18 +84,52 @@ const featuredBikes = [
 
 export default function FeaturedBikes() {
   return (
-    <section className="featured-bikes">
-      <div className="featured-bikes-container">
-        <h2>Selected for you</h2>
-        <div className="bikes-grid">
+    <Section>
+      <Container>
+        <Title>Selected for you</Title>
+        <Grid>
           {featuredBikes.map((bike) => (
             <BikeCard key={bike.id} {...bike} />
           ))}
-        </div>
-        <div className="see-all">
+        </Grid>
+        <SeeAll>
           <a href="#/bikes">See all bikes →</a>
-        </div>
-      </div>
-    </section>
+        </SeeAll>
+      </Container>
+    </Section>
   )
 }
+
+const Section = styled.section`
+  background: white;
+  padding: 2rem 0;
+  border-bottom: 1px solid #f0f0f0;
+`
+
+const Container = styled.div`
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+`
+
+const Title = styled.h2`
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1db854;
+  margin: 0 0 1.5rem 0;
+`
+
+const Grid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+`
+
+const SeeAll = styled.div`
+  text-align: center;
+  padding: 1rem 0;
+
+  a { color: #1a1a1a; text-decoration: none; font-size: 0.95rem; font-weight: 500; }
+  a:hover { color: #666; }
+`

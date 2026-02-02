@@ -11,7 +11,6 @@ import {
   CheckCircle
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import '../../styles/auth/KYC.css'
 
 interface KYCFormData {
   fullName: string
@@ -198,29 +197,29 @@ export default function KYC({ onKYCComplete }: KYCProps) {
 
   if (isCompleted) {
     return (
-      <div className="kyc-container">
-        <div className="kyc-wrapper">
-          <div className="kyc-card kyc-success">
-            <div className="success-icon">
-              <CheckCircle size={64} />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+            <div className="flex justify-center mb-6">
+              <CheckCircle size={64} className="text-green-500" />
             </div>
-            <h2>Xác minh thành công!</h2>
-            <p>Thông tin KYC của bạn đã được ghi nhận. Chúng tôi sẽ xem xét trong 24-48 giờ.</p>
-            <div className="success-details">
-              <div className="detail-item">
-                <span>Họ và tên:</span>
-                <strong>{formData.fullName}</strong>
+            <h2 className="text-2xl font-bold mb-3 text-gray-900">Xác minh thành công!</h2>
+            <p className="text-gray-600 mb-6">Thông tin KYC của bạn đã được ghi nhận. Chúng tôi sẽ xem xét trong 24-48 giờ.</p>
+            <div className="bg-gray-50 rounded p-4 space-y-3 mb-6">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Họ và tên:</span>
+                <strong className="text-gray-900">{formData.fullName}</strong>
               </div>
-              <div className="detail-item">
-                <span>Số {formData.idType === 'passport' ? 'Hộ chiếu' : 'CMND'}:</span>
-                <strong>{formData.idNumber}</strong>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Số {formData.idType === 'passport' ? 'Hộ chiếu' : 'CMND'}:</span>
+                <strong className="text-gray-900">{formData.idNumber}</strong>
               </div>
-              <div className="detail-item">
-                <span>Địa chỉ:</span>
-                <strong>{formData.address}, {formData.city}, {formData.country}</strong>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Địa chỉ:</span>
+                <strong className="text-gray-900">{formData.address}, {formData.city}, {formData.country}</strong>
               </div>
             </div>
-            <p className="redirect-text">Chuyển hướng trong 2 giây...</p>
+            <p className="text-sm text-gray-500 animate-pulse">Chuyển hướng trong 2 giây...</p>
           </div>
         </div>
       </div>
@@ -228,47 +227,59 @@ export default function KYC({ onKYCComplete }: KYCProps) {
   }
 
   return (
-    <div className="kyc-container">
-      <div className="kyc-wrapper">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8 px-4">
+      <div className="w-full max-w-2xl">
         <button 
-          className="btn-back"
           onClick={() => navigate('/')}
           title="Quay lại trang chủ"
+          className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition"
         >
           <ArrowLeft size={20} />
+          <span>Quay lại</span>
         </button>
 
-        <div className="kyc-card">
-          <div className="kyc-header">
-            <h2>Xác Minh Danh Tính (KYC)</h2>
-            <p>Để sử dụng toàn bộ tính năng, vui lòng hoàn thành xác minh danh tính</p>
+        <div className="bg-white rounded-lg shadow-lg p-8">
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">Xác Minh Danh Tính (KYC)</h2>
+            <p className="text-gray-600">Để sử dụng toàn bộ tính năng, vui lòng hoàn thành xác minh danh tính</p>
           </div>
 
           {/* Progress Steps */}
-          <div className="kyc-progress">
+          <div className="mb-8 flex justify-between">
             {[1, 2, 3, 4].map((step) => (
-              <div key={step} className={`progress-step ${step <= currentStep ? 'active' : ''} ${step < currentStep ? 'completed' : ''}`}>
-                <div className="step-circle">{step < currentStep ? '✓' : step}</div>
-                <div className="step-label">
+              <div key={step} className="flex flex-col items-center flex-1">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold mb-2 transition ${
+                  step <= currentStep 
+                    ? 'bg-green-500 text-white' 
+                    : 'bg-gray-200 text-gray-600'
+                }`}>
+                  {step < currentStep ? '✓' : step}
+                </div>
+                <div className="text-xs text-center text-gray-600 max-w-[80px]">
                   {step === 1 && 'Thông tin cá nhân'}
                   {step === 2 && 'Giấy tờ tùy thân'}
                   {step === 3 && 'Địa chỉ'}
                   {step === 4 && 'Hoàn tất'}
                 </div>
+                {step < 4 && <div className={`flex-1 h-1 mx-2 mt-3 ${step < currentStep ? 'bg-green-500' : 'bg-gray-200'}`} />}
               </div>
             ))}
           </div>
 
-          <form onSubmit={handleSubmit} className="kyc-form">
+          <form onSubmit={handleSubmit}>
             {/* Step 1: Personal Information */}
             {currentStep === 1 && (
-              <div className="kyc-step">
-                <h3>Thông tin cá nhân</h3>
+              <div className="space-y-6">
+                <h3 className="text-xl font-semibold text-gray-900">Thông tin cá nhân</h3>
 
-                <div className="form-group">
-                  <label htmlFor="fullName">Họ và Tên</label>
-                  <div className={`input-wrapper ${errors.fullName ? 'error' : ''}`}>
-                    <User size={18} />
+                <div>
+                  <label htmlFor="fullName" className="block text-sm font-medium text-gray-900 mb-2">Họ và Tên</label>
+                  <div className={`flex items-center gap-3 px-4 py-3 border rounded-lg transition ${
+                    errors.fullName 
+                      ? 'border-red-500 bg-red-50' 
+                      : 'border-gray-300 bg-white focus-within:border-green-500'
+                  }`}>
+                    <User size={18} className="text-gray-500" />
                     <input
                       type="text"
                       id="fullName"
@@ -276,15 +287,20 @@ export default function KYC({ onKYCComplete }: KYCProps) {
                       placeholder="Nhập họ và tên đầy đủ"
                       value={formData.fullName}
                       onChange={handleInputChange}
+                      className="flex-1 outline-none bg-transparent text-gray-900"
                     />
                   </div>
-                  {errors.fullName && <span className="error-message">{errors.fullName}</span>}
+                  {errors.fullName && <span className="text-red-500 text-sm mt-2 block">{errors.fullName}</span>}
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="phone">Số Điện Thoại</label>
-                  <div className={`input-wrapper ${errors.phone ? 'error' : ''}`}>
-                    <Phone size={18} />
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-900 mb-2">Số Điện Thoại</label>
+                  <div className={`flex items-center gap-3 px-4 py-3 border rounded-lg transition ${
+                    errors.phone 
+                      ? 'border-red-500 bg-red-50' 
+                      : 'border-gray-300 bg-white focus-within:border-green-500'
+                  }`}>
+                    <Phone size={18} className="text-gray-500" />
                     <input
                       type="tel"
                       id="phone"
@@ -292,27 +308,33 @@ export default function KYC({ onKYCComplete }: KYCProps) {
                       placeholder="Nhập số điện thoại"
                       value={formData.phone}
                       onChange={handleInputChange}
+                      className="flex-1 outline-none bg-transparent text-gray-900"
                     />
                   </div>
-                  {errors.phone && <span className="error-message">{errors.phone}</span>}
+                  {errors.phone && <span className="text-red-500 text-sm mt-2 block">{errors.phone}</span>}
                 </div>
               </div>
             )}
 
             {/* Step 2: ID Information */}
             {currentStep === 2 && (
-              <div className="kyc-step">
-                <h3>Giấy tờ tùy thân</h3>
+              <div className="space-y-6">
+                <h3 className="text-xl font-semibold text-gray-900">Giấy tờ tùy thân</h3>
 
-                <div className="form-group">
-                  <label htmlFor="idType">Loại Giấy Tờ</label>
-                  <div className={`input-wrapper ${errors.idType ? 'error' : ''}`}>
-                    <Hash size={18} />
+                <div>
+                  <label htmlFor="idType" className="block text-sm font-medium text-gray-900 mb-2">Loại Giấy Tờ</label>
+                  <div className={`flex items-center gap-3 px-4 py-3 border rounded-lg transition ${
+                    errors.idType 
+                      ? 'border-red-500 bg-red-50' 
+                      : 'border-gray-300 bg-white focus-within:border-green-500'
+                  }`}>
+                    <Hash size={18} className="text-gray-500" />
                     <select
                       id="idType"
                       name="idType"
                       value={formData.idType}
                       onChange={handleInputChange}
+                      className="flex-1 outline-none bg-transparent text-gray-900"
                     >
                       <option value="passport">Hộ Chiếu</option>
                       <option value="national_id">CMND/Thẻ Căn Cước</option>
@@ -321,10 +343,14 @@ export default function KYC({ onKYCComplete }: KYCProps) {
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="idNumber">Số Giấy Tờ</label>
-                  <div className={`input-wrapper ${errors.idNumber ? 'error' : ''}`}>
-                    <FileText size={18} />
+                <div>
+                  <label htmlFor="idNumber" className="block text-sm font-medium text-gray-900 mb-2">Số Giấy Tờ</label>
+                  <div className={`flex items-center gap-3 px-4 py-3 border rounded-lg transition ${
+                    errors.idNumber 
+                      ? 'border-red-500 bg-red-50' 
+                      : 'border-gray-300 bg-white focus-within:border-green-500'
+                  }`}>
+                    <FileText size={18} className="text-gray-500" />
                     <input
                       type="text"
                       id="idNumber"
@@ -332,37 +358,47 @@ export default function KYC({ onKYCComplete }: KYCProps) {
                       placeholder="Nhập số giấy tờ"
                       value={formData.idNumber}
                       onChange={handleInputChange}
+                      className="flex-1 outline-none bg-transparent text-gray-900"
                     />
                   </div>
-                  {errors.idNumber && <span className="error-message">{errors.idNumber}</span>}
+                  {errors.idNumber && <span className="text-red-500 text-sm mt-2 block">{errors.idNumber}</span>}
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="dateOfBirth">Ngày Sinh</label>
-                  <div className={`input-wrapper ${errors.dateOfBirth ? 'error' : ''}`}>
-                    <Calendar size={18} />
+                <div>
+                  <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-900 mb-2">Ngày Sinh</label>
+                  <div className={`flex items-center gap-3 px-4 py-3 border rounded-lg transition ${
+                    errors.dateOfBirth 
+                      ? 'border-red-500 bg-red-50' 
+                      : 'border-gray-300 bg-white focus-within:border-green-500'
+                  }`}>
+                    <Calendar size={18} className="text-gray-500" />
                     <input
                       type="date"
                       id="dateOfBirth"
                       name="dateOfBirth"
                       value={formData.dateOfBirth}
                       onChange={handleInputChange}
+                      className="flex-1 outline-none bg-transparent text-gray-900"
                     />
                   </div>
-                  {errors.dateOfBirth && <span className="error-message">{errors.dateOfBirth}</span>}
+                  {errors.dateOfBirth && <span className="text-red-500 text-sm mt-2 block">{errors.dateOfBirth}</span>}
                 </div>
               </div>
             )}
 
             {/* Step 3: Address & Document */}
             {currentStep === 3 && (
-              <div className="kyc-step">
-                <h3>Địa chỉ và Giấy Tờ</h3>
+              <div className="space-y-6">
+                <h3 className="text-xl font-semibold text-gray-900">Địa chỉ và Giấy Tờ</h3>
 
-                <div className="form-group">
-                  <label htmlFor="address">Địa Chỉ</label>
-                  <div className={`input-wrapper ${errors.address ? 'error' : ''}`}>
-                    <MapPin size={18} />
+                <div>
+                  <label htmlFor="address" className="block text-sm font-medium text-gray-900 mb-2">Địa Chỉ</label>
+                  <div className={`flex items-center gap-3 px-4 py-3 border rounded-lg transition ${
+                    errors.address 
+                      ? 'border-red-500 bg-red-50' 
+                      : 'border-gray-300 bg-white focus-within:border-green-500'
+                  }`}>
+                    <MapPin size={18} className="text-gray-500" />
                     <input
                       type="text"
                       id="address"
@@ -370,16 +406,21 @@ export default function KYC({ onKYCComplete }: KYCProps) {
                       placeholder="Nhập địa chỉ chi tiết"
                       value={formData.address}
                       onChange={handleInputChange}
+                      className="flex-1 outline-none bg-transparent text-gray-900"
                     />
                   </div>
-                  {errors.address && <span className="error-message">{errors.address}</span>}
+                  {errors.address && <span className="text-red-500 text-sm mt-2 block">{errors.address}</span>}
                 </div>
 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="city">Thành Phố/Tỉnh</label>
-                    <div className={`input-wrapper ${errors.city ? 'error' : ''}`}>
-                      <MapPin size={18} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="city" className="block text-sm font-medium text-gray-900 mb-2">Thành Phố/Tỉnh</label>
+                    <div className={`flex items-center gap-3 px-4 py-3 border rounded-lg transition ${
+                      errors.city 
+                        ? 'border-red-500 bg-red-50' 
+                        : 'border-gray-300 bg-white focus-within:border-green-500'
+                    }`}>
+                      <MapPin size={18} className="text-gray-500" />
                       <input
                         type="text"
                         id="city"
@@ -387,15 +428,20 @@ export default function KYC({ onKYCComplete }: KYCProps) {
                         placeholder="Thành phố"
                         value={formData.city}
                         onChange={handleInputChange}
+                        className="flex-1 outline-none bg-transparent text-gray-900"
                       />
                     </div>
-                    {errors.city && <span className="error-message">{errors.city}</span>}
+                    {errors.city && <span className="text-red-500 text-sm mt-2 block">{errors.city}</span>}
                   </div>
 
-                  <div className="form-group">
-                    <label htmlFor="country">Quốc Gia</label>
-                    <div className={`input-wrapper ${errors.country ? 'error' : ''}`}>
-                      <MapPin size={18} />
+                  <div>
+                    <label htmlFor="country" className="block text-sm font-medium text-gray-900 mb-2">Quốc Gia</label>
+                    <div className={`flex items-center gap-3 px-4 py-3 border rounded-lg transition ${
+                      errors.country 
+                        ? 'border-red-500 bg-red-50' 
+                        : 'border-gray-300 bg-white focus-within:border-green-500'
+                    }`}>
+                      <MapPin size={18} className="text-gray-500" />
                       <input
                         type="text"
                         id="country"
@@ -403,98 +449,110 @@ export default function KYC({ onKYCComplete }: KYCProps) {
                         placeholder="Quốc gia"
                         value={formData.country}
                         onChange={handleInputChange}
+                        className="flex-1 outline-none bg-transparent text-gray-900"
                       />
                     </div>
-                    {errors.country && <span className="error-message">{errors.country}</span>}
+                    {errors.country && <span className="text-red-500 text-sm mt-2 block">{errors.country}</span>}
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="documentFile">Tải Lên Giấy Tờ Tùy Thân</label>
-                  <div className={`file-upload ${errors.documentFile ? 'error' : ''}`}>
+                <div>
+                  <label htmlFor="documentFile" className="block text-sm font-medium text-gray-900 mb-2">Tải Lên Giấy Tờ Tùy Thân</label>
+                  <div className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition ${
+                    errors.documentFile 
+                      ? 'border-red-500 bg-red-50' 
+                      : 'border-gray-300 hover:border-green-500 bg-gray-50'
+                  }`}>
                     <input
                       type="file"
                       id="documentFile"
                       onChange={handleFileChange}
                       accept=".pdf,.jpg,.jpeg,.png"
+                      className="hidden"
                     />
-                    <div className="file-upload-content">
-                      <Upload size={32} />
-                      <p>
+                    <label htmlFor="documentFile" className="cursor-pointer">
+                      <Upload size={32} className="mx-auto mb-2 text-gray-500" />
+                      <p className="text-gray-900 font-medium">
                         {formData.documentFile 
                           ? formData.documentFile.name 
                           : 'Kéo và thả tệp hoặc nhấp để chọn'}
                       </p>
-                      <small>PDF, JPG, PNG - Tối đa 5MB</small>
-                    </div>
+                      <small className="text-gray-500">PDF, JPG, PNG - Tối đa 5MB</small>
+                    </label>
                   </div>
-                  {errors.documentFile && <span className="error-message">{errors.documentFile}</span>}
+                  {errors.documentFile && <span className="text-red-500 text-sm mt-2 block">{errors.documentFile}</span>}
                 </div>
               </div>
             )}
 
             {/* Step 4: Review */}
             {currentStep === 4 && (
-              <div className="kyc-step">
-                <h3>Kiểm Tra Thông Tin</h3>
-                <div className="review-section">
-                  <div className="review-group">
-                    <h4>Thông Tin Cá Nhân</h4>
-                    <div className="review-item">
-                      <span>Họ và tên:</span>
-                      <strong>{formData.fullName}</strong>
-                    </div>
-                    <div className="review-item">
-                      <span>Số điện thoại:</span>
-                      <strong>{formData.phone}</strong>
-                    </div>
-                  </div>
-
-                  <div className="review-group">
-                    <h4>Giấy Tờ Tùy Thân</h4>
-                    <div className="review-item">
-                      <span>Loại giấy tờ:</span>
-                      <strong>
-                        {formData.idType === 'passport' ? 'Hộ Chiếu' : 
-                         formData.idType === 'national_id' ? 'CMND/Thẻ Căn Cước' : 
-                         'Giấy Phép Lái Xe'}
-                      </strong>
-                    </div>
-                    <div className="review-item">
-                      <span>Số giấy tờ:</span>
-                      <strong>{formData.idNumber}</strong>
-                    </div>
-                    <div className="review-item">
-                      <span>Ngày sinh:</span>
-                      <strong>{new Date(formData.dateOfBirth).toLocaleDateString('vi-VN')}</strong>
+              <div className="space-y-6">
+                <h3 className="text-xl font-semibold text-gray-900">Kiểm Tra Thông Tin</h3>
+                <div className="space-y-6">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-900 mb-3">Thông Tin Cá Nhân</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Họ và tên:</span>
+                        <strong className="text-gray-900">{formData.fullName}</strong>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Số điện thoại:</span>
+                        <strong className="text-gray-900">{formData.phone}</strong>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="review-group">
-                    <h4>Địa Chỉ</h4>
-                    <div className="review-item">
-                      <span>Địa chỉ:</span>
-                      <strong>{formData.address}</strong>
-                    </div>
-                    <div className="review-item">
-                      <span>Thành phố:</span>
-                      <strong>{formData.city}</strong>
-                    </div>
-                    <div className="review-item">
-                      <span>Quốc gia:</span>
-                      <strong>{formData.country}</strong>
-                    </div>
-                  </div>
-
-                  <div className="review-group">
-                    <h4>Tài Liệu</h4>
-                    <div className="review-item">
-                      <span>File:</span>
-                      <strong>{formData.documentFile?.name || 'Chưa tải lên'}</strong>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-900 mb-3">Giấy Tờ Tùy Thân</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Loại giấy tờ:</span>
+                        <strong className="text-gray-900">
+                          {formData.idType === 'passport' ? 'Hộ Chiếu' : 
+                           formData.idType === 'national_id' ? 'CMND/Thẻ Căn Cước' : 
+                           'Giấy Phép Lái Xe'}
+                        </strong>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Số giấy tờ:</span>
+                        <strong className="text-gray-900">{formData.idNumber}</strong>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Ngày sinh:</span>
+                        <strong className="text-gray-900">{new Date(formData.dateOfBirth).toLocaleDateString('vi-VN')}</strong>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="kyc-note">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-900 mb-3">Địa Chỉ</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Địa chỉ:</span>
+                        <strong className="text-gray-900">{formData.address}</strong>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Thành phố:</span>
+                        <strong className="text-gray-900">{formData.city}</strong>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Quốc gia:</span>
+                        <strong className="text-gray-900">{formData.country}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-900 mb-3">Tài Liệu</h4>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">File:</span>
+                      <strong className="text-gray-900">{formData.documentFile?.name || 'Chưa tải lên'}</strong>
+                    </div>
+                  </div>
+
+                  <div className="bg-green-50 border border-green-200 p-4 rounded-lg space-y-2 text-sm text-green-700">
                     <p>✓ Vui lòng kiểm tra thông tin của bạn trước khi gửi</p>
                     <p>✓ Quá trình xác minh sẽ mất 24-48 giờ</p>
                   </div>
@@ -503,12 +561,12 @@ export default function KYC({ onKYCComplete }: KYCProps) {
             )}
 
             {/* Navigation Buttons */}
-            <div className="form-actions">
+            <div className="flex gap-3 mt-8">
               {currentStep > 1 && (
                 <button 
                   type="button" 
-                  className="btn-secondary"
                   onClick={handleBack}
+                  className="px-6 py-3 border border-gray-300 text-gray-900 rounded-lg font-medium hover:bg-gray-50 transition"
                 >
                   Quay Lại
                 </button>
@@ -517,8 +575,8 @@ export default function KYC({ onKYCComplete }: KYCProps) {
               {currentStep < 4 && (
                 <button 
                   type="button" 
-                  className="btn-primary"
                   onClick={handleNext}
+                  className="flex-1 px-6 py-3 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition"
                 >
                   Tiếp Tục
                 </button>
@@ -527,8 +585,8 @@ export default function KYC({ onKYCComplete }: KYCProps) {
               {currentStep === 4 && (
                 <button 
                   type="submit" 
-                  className="btn-primary"
                   disabled={isLoading}
+                  className="flex-1 px-6 py-3 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 disabled:bg-gray-400 transition"
                 >
                   {isLoading ? 'Đang xử lý...' : 'Hoàn Thành'}
                 </button>

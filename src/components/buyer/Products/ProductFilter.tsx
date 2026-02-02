@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Filter, X } from 'lucide-react';
-import '../../../styles/ProductFilter.css';
 
 export interface FilterCriteria {
   priceRange: [number, number];
@@ -77,115 +76,140 @@ export const ProductFilter: React.FC<ProductFilterProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="product-filter">
-      <div className="filter-header">
-        <h3>
+    <div className="bg-white border-2 border-gray-200 rounded-lg p-6 w-full max-w-xs h-fit lg:max-w-xs md:mb-8 md:p-4">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="m-0 text-green-500 flex items-center gap-2 text-lg font-semibold">
           <Filter size={20} /> Filters
         </h3>
-        <button className="btn-close" onClick={onClose}>
+        <button
+          onClick={onClose}
+          className="bg-transparent border-none text-gray-600 cursor-pointer p-0 flex items-center transition-colors duration-200 hover:text-green-500"
+        >
           <X size={20} />
         </button>
       </div>
 
-      {/* Price Range */}
-      <div className="filter-section">
-        <h4>Price Range</h4>
-        <div className="price-range-inputs">
+      {/* Price Range Section */}
+      <div className="mb-8 pb-6 border-b border-gray-200 last:border-b-0 last:mb-0 last:pb-0">
+        <h4 className="m-0 mb-4 text-green-500 text-sm font-semibold uppercase">Price Range</h4>
+        <div className="flex gap-2 items-center mb-3">
           <input
             type="number"
             placeholder="Min"
             value={filters.priceRange[0]}
             onChange={handlePriceChange}
             data-index="0"
-            min="0"
-            max="10000000"
+            min={0}
+            max={10000000}
+            className="flex-1 px-2 py-2 border-2 border-gray-200 rounded focus:outline-none focus:border-green-500"
           />
-          <span>-</span>
+          <span className="text-gray-600 font-semibold">-</span>
           <input
             type="number"
             placeholder="Max"
             value={filters.priceRange[1]}
             onChange={handlePriceChange}
             data-index="1"
-            min="0"
-            max="10000000"
+            min={0}
+            max={10000000}
+            className="flex-1 px-2 py-2 border-2 border-gray-200 rounded focus:outline-none focus:border-green-500"
           />
         </div>
-        <p className="price-display">
+        <p className="text-gray-600 text-sm">
           {(filters.priceRange[0] / 1000000).toFixed(1)}M - {(filters.priceRange[1] / 1000000).toFixed(1)}M VND
         </p>
       </div>
 
-      {/* Brands */}
-      <div className="filter-section">
-        <h4>Brand</h4>
-        <div className="filter-options">
+      {/* Brand Section */}
+      <div className="mb-8 pb-6 border-b border-gray-200 last:border-b-0 last:mb-0 last:pb-0">
+        <h4 className="m-0 mb-4 text-green-500 text-sm font-semibold uppercase">Brand</h4>
+        <div className="flex flex-col gap-3">
           {BRANDS.map((brand) => (
-            <label key={brand} className="filter-option">
+            <label
+              key={brand}
+              className="flex items-center gap-3 cursor-pointer select-none hover:text-green-500"
+            >
               <input
                 type="checkbox"
                 checked={filters.brands.includes(brand)}
                 onChange={() => handleCheckboxChange('brands', brand)}
+                className="w-4.5 h-4.5 cursor-pointer accent-green-500 flex-shrink-0"
               />
-              <span>{brand}</span>
+              <span className="text-gray-900 text-sm">{brand}</span>
             </label>
           ))}
         </div>
       </div>
 
-      {/* Condition */}
-      <div className="filter-section">
-        <h4>Condition</h4>
-        <div className="filter-options">
+      {/* Condition Section */}
+      <div className="mb-8 pb-6 border-b border-gray-200 last:border-b-0 last:mb-0 last:pb-0">
+        <h4 className="m-0 mb-4 text-green-500 text-sm font-semibold uppercase">Condition</h4>
+        <div className="flex flex-col gap-3">
           {CONDITIONS.map((condition) => (
-            <label key={condition} className="filter-option">
+            <label
+              key={condition}
+              className="flex items-center gap-3 cursor-pointer select-none hover:text-green-500"
+            >
               <input
                 type="checkbox"
                 checked={filters.conditions.includes(condition)}
                 onChange={() => handleCheckboxChange('conditions', condition)}
+                className="w-4.5 h-4.5 cursor-pointer accent-green-500 flex-shrink-0"
               />
-              <span>{condition}</span>
+              <span className="text-gray-900 text-sm">{condition}</span>
             </label>
           ))}
         </div>
       </div>
 
-      {/* Material */}
-      <div className="filter-section">
-        <h4>Frame Material</h4>
-        <div className="filter-options">
+      {/* Frame Material Section */}
+      <div className="mb-8 pb-6 border-b border-gray-200 last:border-b-0 last:mb-0 last:pb-0">
+        <h4 className="m-0 mb-4 text-green-500 text-sm font-semibold uppercase">Frame Material</h4>
+        <div className="flex flex-col gap-3">
           {MATERIALS.map((material) => (
-            <label key={material} className="filter-option">
+            <label
+              key={material}
+              className="flex items-center gap-3 cursor-pointer select-none hover:text-green-500"
+            >
               <input
                 type="checkbox"
                 checked={filters.materials.includes(material)}
                 onChange={() => handleCheckboxChange('materials', material)}
+                className="w-4.5 h-4.5 cursor-pointer accent-green-500 flex-shrink-0"
               />
-              <span>{material}</span>
+              <span className="text-gray-900 text-sm">{material}</span>
             </label>
           ))}
         </div>
       </div>
 
-      {/* Size */}
-      <div className="filter-section">
-        <h4>Frame Size</h4>
-        <div className="filter-options">
+      {/* Frame Size Section */}
+      <div className="mb-8 pb-6 border-b border-gray-200 last:border-b-0 last:mb-0 last:pb-0">
+        <h4 className="m-0 mb-4 text-green-500 text-sm font-semibold uppercase">Frame Size</h4>
+        <div className="flex flex-col gap-3">
           {SIZES.map((size) => (
-            <label key={size} className="filter-option">
+            <label
+              key={size}
+              className="flex items-center gap-3 cursor-pointer select-none hover:text-green-500"
+            >
               <input
                 type="checkbox"
                 checked={filters.sizes.includes(size)}
                 onChange={() => handleCheckboxChange('sizes', size)}
+                className="w-4.5 h-4.5 cursor-pointer accent-green-500 flex-shrink-0"
               />
-              <span>{size}</span>
+              <span className="text-gray-900 text-sm">{size}</span>
             </label>
           ))}
         </div>
       </div>
 
       {/* Reset Button */}
-      <button className="btn-reset" onClick={handleReset}>
+      <button
+        onClick={handleReset}
+        className="w-full bg-green-50 text-green-500 border-2 border-green-500 px-3 py-3 rounded font-semibold mt-4 cursor-pointer transition-all hover:bg-green-500 hover:text-white"
+      >
         Reset Filters
       </button>
     </div>

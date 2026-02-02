@@ -17,7 +17,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { isAuthenticated, role, isLoading } = useAuth();
 
   if (isLoading) {
-    return <div className="loading-spinner">Loading...</div>;
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
   if (!isAuthenticated) {
@@ -38,7 +38,7 @@ export const GuestRoute: React.FC<{ children: React.ReactNode }> = ({ children }
   const { isLoading } = useAuth();
 
   if (isLoading) {
-    return <div className="loading-spinner">Loading...</div>;
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
   // Guest routes can be accessed by anyone

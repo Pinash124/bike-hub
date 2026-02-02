@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { useState } from 'react'
 import Header from './components/common/Header'
 import Banner from './components/sections/Banner'
 import FilterSection from './components/sections/FilterSection'
@@ -16,21 +17,22 @@ import InspectorDashboard from './components/dashboards/InspectorDashboard'
 import { AuthProvider } from './contexts/AuthContext'
 import { CartProvider } from './contexts/CartContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
-import GuestMarketplace from './components/guest/GuestMarketplace'
+import { GuestMarketplace } from './components/guest/GuestMarketplace'
 import SearchPage from './pages/SearchPage'
 import ProductDetailPage from './pages/ProductDetailPage'
 import CheckoutPage from './pages/CheckoutPage'
 import OrderTrackingPage from './pages/OrderTrackingPage'
-import './App.css'
 
 function Home() {
+  const [selectedCategory, setSelectedCategory] = useState('Tất cả')
+
   return (
     <>
       <Header />
       <Banner />
       <FilterSection />
       <FeaturedBikes />
-      <Categories />
+      <Categories onSelectCategory={setSelectedCategory} selectedCategory={selectedCategory} />
       <Features />
       <Footer />
     </>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ShoppingCart, Package, MapPin, LogOut } from 'lucide-react';
-import '../../styles/BuyerDashboardPage.css';
+
 
 interface Tab {
   id: string;
@@ -27,35 +27,28 @@ export const BuyerDashboard: React.FC = () => {
   };
 
   return (
-    <div className="buyer-dashboard">
+    <div className="max-w-[1200px] mx-auto p-6">
       {/* Header */}
-      <div className="dashboard-header">
-        <div className="header-content">
-          <h1>Welcome, {user?.name}!</h1>
-          <p className="email">{user?.email}</p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-semibold">Welcome, {user?.name}!</h1>
+          <p className="text-sm text-gray-600">{user?.email}</p>
         </div>
-        <button className="btn-logout" onClick={handleLogout}>
-          <LogOut size={20} />
-          Logout
-        </button>
+        <button className="bg-red-500 text-white px-3 py-2 rounded flex items-center gap-2" onClick={handleLogout}><LogOut size={18} /> Logout</button>
       </div>
 
       {/* Navigation Tabs */}
-      <div className="dashboard-nav">
+      <div className="flex gap-2 mb-6">
         {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            className={`nav-tab ${activeTab === tab.id ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
-          >
+          <button key={tab.id} className={`flex items-center gap-2 px-3 py-2 rounded ${activeTab === tab.id ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700'}`} onClick={() => setActiveTab(tab.id)}>
             {tab.icon}
-            <span>{tab.label}</span>
+            <span className="text-sm">{tab.label}</span>
           </button>
         ))}
       </div>
 
       {/* Content Area */}
-      <div className="dashboard-content">
+      <div>
         {activeTab === 'home' && <HomeTab />}
         {activeTab === 'cart' && <CartTab />}
         {activeTab === 'orders' && <OrdersTab />}
@@ -69,46 +62,38 @@ export const BuyerDashboard: React.FC = () => {
 // Home Tab Component
 const HomeTab: React.FC = () => {
   return (
-    <div className="tab-content">
-      <h2>Dashboard Overview</h2>
-      <div className="overview-grid">
-        <div className="overview-card">
-          <div className="card-icon">🛒</div>
-          <h3>Items in Cart</h3>
-          <p className="card-value">0</p>
+    <div>
+      <h2 className="text-lg font-semibold mb-4">Dashboard Overview</h2>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="p-4 bg-white rounded shadow text-center">
+          <div className="text-3xl">🛒</div>
+          <h3 className="mt-2 font-medium">Items in Cart</h3>
+          <p className="text-xl font-bold">0</p>
         </div>
-        <div className="overview-card">
-          <div className="card-icon">📦</div>
-          <h3>Active Orders</h3>
-          <p className="card-value">0</p>
+        <div className="p-4 bg-white rounded shadow text-center">
+          <div className="text-3xl">📦</div>
+          <h3 className="mt-2 font-medium">Active Orders</h3>
+          <p className="text-xl font-bold">0</p>
         </div>
-        <div className="overview-card">
-          <div className="card-icon">✅</div>
-          <h3>Completed Orders</h3>
-          <p className="card-value">0</p>
+        <div className="p-4 bg-white rounded shadow text-center">
+          <div className="text-3xl">✅</div>
+          <h3 className="mt-2 font-medium">Completed Orders</h3>
+          <p className="text-xl font-bold">0</p>
         </div>
-        <div className="overview-card">
-          <div className="card-icon">⭐</div>
-          <h3>Reviews Left</h3>
-          <p className="card-value">0</p>
+        <div className="p-4 bg-white rounded shadow text-center">
+          <div className="text-3xl">⭐</div>
+          <h3 className="mt-2 font-medium">Reviews Left</h3>
+          <p className="text-xl font-bold">0</p>
         </div>
       </div>
 
-      <div className="recent-activity">
-        <h3>Quick Links</h3>
-        <div className="links-grid">
-          <a href="/marketplace" className="quick-link">
-            🔍 Browse Bikes
-          </a>
-          <a href="#" className="quick-link">
-            🛒 View Cart
-          </a>
-          <a href="#" className="quick-link">
-            📦 Track Orders
-          </a>
-          <a href="#" className="quick-link">
-            📍 Manage Addresses
-          </a>
+      <div className="mt-6">
+        <h3 className="text-lg font-semibold mb-3">Quick Links</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <a href="/marketplace" className="p-3 bg-gray-100 rounded text-center">🔍 Browse Bikes</a>
+          <a href="#" className="p-3 bg-gray-100 rounded text-center">🛒 View Cart</a>
+          <a href="#" className="p-3 bg-gray-100 rounded text-center">📦 Track Orders</a>
+          <a href="#" className="p-3 bg-gray-100 rounded text-center">📍 Manage Addresses</a>
         </div>
       </div>
     </div>
@@ -118,14 +103,12 @@ const HomeTab: React.FC = () => {
 // Cart Tab Component
 const CartTab: React.FC = () => {
   return (
-    <div className="tab-content">
-      <h2>Shopping Cart</h2>
-      <div className="empty-state">
-        <div className="empty-icon">🛒</div>
-        <p>Your cart is empty</p>
-        <a href="/marketplace" className="btn-primary">
-          Continue Shopping
-        </a>
+    <div>
+      <h2 className="text-lg font-semibold mb-4">Shopping Cart</h2>
+      <div className="flex flex-col items-center justify-center py-6 text-gray-600">
+        <div className="text-4xl">🛒</div>
+        <p className="mt-2">Your cart is empty</p>
+        <a href="/marketplace" className="mt-3 bg-green-600 text-white px-4 py-2 rounded">Continue Shopping</a>
       </div>
     </div>
   );
@@ -134,14 +117,12 @@ const CartTab: React.FC = () => {
 // Orders Tab Component
 const OrdersTab: React.FC = () => {
   return (
-    <div className="tab-content">
-      <h2>Your Orders</h2>
-      <div className="empty-state">
-        <div className="empty-icon">📦</div>
-        <p>No orders yet</p>
-        <a href="/marketplace" className="btn-primary">
-          Start Shopping
-        </a>
+    <div>
+      <h2 className="text-lg font-semibold mb-4">Your Orders</h2>
+      <div className="flex flex-col items-center justify-center py-6 text-gray-600">
+        <div className="text-4xl">📦</div>
+        <p className="mt-2">No orders yet</p>
+        <a href="/marketplace" className="mt-3 bg-green-600 text-white px-4 py-2 rounded">Start Shopping</a>
       </div>
     </div>
   );
@@ -152,66 +133,49 @@ const AddressesTab: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
 
   return (
-    <div className="tab-content">
-      <div className="tab-header">
-        <h2>Saved Addresses</h2>
-        <button className="btn-primary" onClick={() => setShowForm(!showForm)}>
-          {showForm ? '✕ Cancel' : '+ Add Address'}
-        </button>
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold">Saved Addresses</h2>
+        <button className="bg-green-600 text-white px-3 py-2 rounded" onClick={() => setShowForm(!showForm)}>{showForm ? '✕ Cancel' : '+ Add Address'}</button>
       </div>
 
       {showForm && (
-        <div className="address-form">
-          <div className="form-group">
-            <label>Full Name</label>
-            <input type="text" placeholder="Enter your full name" />
-          </div>
-          <div className="form-group">
-            <label>Phone Number</label>
-            <input type="tel" placeholder="Enter phone number" />
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label>Province/City</label>
-              <select>
-                <option>Select province</option>
-              </select>
+        <div className="bg-white p-4 rounded shadow mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium">Full Name</label>
+              <input className="mt-1 w-full border rounded p-2" type="text" placeholder="Enter your full name" />
             </div>
-            <div className="form-group">
-              <label>District</label>
-              <select>
-                <option>Select district</option>
-              </select>
+            <div>
+              <label className="block text-sm font-medium">Phone Number</label>
+              <input className="mt-1 w-full border rounded p-2" type="tel" placeholder="Enter phone number" />
             </div>
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label>Ward</label>
-              <select>
-                <option>Select ward</option>
-              </select>
+            <div>
+              <label className="block text-sm font-medium">Province/City</label>
+              <select className="mt-1 w-full border rounded p-2"><option>Select province</option></select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium">District</label>
+              <select className="mt-1 w-full border rounded p-2"><option>Select district</option></select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Ward</label>
+              <select className="mt-1 w-full border rounded p-2"><option>Select ward</option></select>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium">Detailed Address</label>
+              <textarea className="mt-1 w-full border rounded p-2" placeholder="Street address, building number, etc." rows={2}></textarea>
             </div>
           </div>
-          <div className="form-group">
-            <label>Detailed Address</label>
-            <textarea
-              placeholder="Street address, building number, etc."
-              rows={2}
-            ></textarea>
-          </div>
-          <div className="form-actions">
-            <button className="btn-primary">Save Address</button>
-            <button
-              className="btn-secondary"
-              onClick={() => setShowForm(false)}
-            >
-              Cancel
-            </button>
+
+          <div className="mt-4 flex gap-2">
+            <button className="bg-green-600 text-white px-4 py-2 rounded">Save Address</button>
+            <button className="border px-4 py-2 rounded" onClick={() => setShowForm(false)}>Cancel</button>
           </div>
         </div>
       )}
 
-      <div className="empty-state">
+      <div className="text-gray-600">
         <p>No addresses saved yet</p>
       </div>
     </div>
@@ -225,33 +189,31 @@ interface ProfileTabProps {
 
 const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
   return (
-    <div className="tab-content">
-      <h2>Profile Information</h2>
-      <div className="profile-card">
-        <div className="profile-section">
-          <label>Full Name</label>
-          <p>{user?.name || 'Not set'}</p>
+    <div>
+      <h2 className="text-lg font-semibold mb-4">Profile Information</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="bg-white p-4 rounded shadow">
+          <label className="block text-sm text-gray-500">Full Name</label>
+          <p className="font-medium">{user?.name || 'Not set'}</p>
         </div>
-        <div className="profile-section">
-          <label>Email</label>
-          <p>{user?.email}</p>
+        <div className="bg-white p-4 rounded shadow">
+          <label className="block text-sm text-gray-500">Email</label>
+          <p className="font-medium">{user?.email}</p>
         </div>
-        <div className="profile-section">
-          <label>Phone</label>
-          <p>{user?.phone || 'Not set'}</p>
+        <div className="bg-white p-4 rounded shadow">
+          <label className="block text-sm text-gray-500">Phone</label>
+          <p className="font-medium">{user?.phone || 'Not set'}</p>
         </div>
-        <div className="profile-section">
-          <label>Member Since</label>
-          <p>{new Date(user?.createdAt).toLocaleDateString()}</p>
+        <div className="bg-white p-4 rounded shadow">
+          <label className="block text-sm text-gray-500">Member Since</label>
+          <p className="font-medium">{new Date(user?.createdAt).toLocaleDateString()}</p>
         </div>
-        <div className="profile-section">
-          <label>KYC Status</label>
-          <p className={user?.isKYCVerified ? 'verified' : 'unverified'}>
-            {user?.isKYCVerified ? '✓ Verified' : '⚠ Not Verified'}
-          </p>
+        <div className="bg-white p-4 rounded shadow md:col-span-2">
+          <label className="block text-sm text-gray-500">KYC Status</label>
+          <p className={`mt-2 ${user?.isKYCVerified ? 'text-green-600' : 'text-yellow-600'}`}>{user?.isKYCVerified ? '✓ Verified' : '⚠ Not Verified'}</p>
         </div>
       </div>
-      <button className="btn-danger">Change Password</button>
+      <button className="bg-red-500 text-white px-4 py-2 rounded">Change Password</button>
     </div>
   );
 };

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Banner from '../sections/Banner';
 import Categories from '../sections/Categories';
 import BikeCard from '../sections/BikeCard';
-import '../../styles/GuestMarketplace.css';
+ 
 
 // Mock data có thêm trường brand
 const mockBikes = [
@@ -20,25 +20,25 @@ export const GuestMarketplace: React.FC = () => {
     : mockBikes.filter(bike => bike.brand === selectedBrand);
 
   return (
-    <div className="homepage-container">
-      {/* Card 1: Banner */}
-      <Banner />
+    <div className="min-h-[calc(100vh-80px)] bg-white py-8">
+      <div className="max-w-[1400px] mx-auto px-6">
+        <Banner />
 
-      {/* Card 2: Categories */}
-      <Categories 
-        selectedCategory={selectedBrand} 
-        onSelectCategory={(brand) => setSelectedBrand(brand === selectedBrand ? 'Tất cả' : brand)} 
-      />
+        <Categories 
+          selectedCategory={selectedBrand} 
+          onSelectCategory={(brand) => setSelectedBrand(brand === selectedBrand ? 'Tất cả' : brand)} 
+        />
 
-      {/* Danh sách sản phẩm dựa trên lọc */}
-      <div className="products-section">
-        <div className="section-header">
-          <h3>{selectedBrand === 'Tất cả' ? 'Sản phẩm mới nhất' : `Xe dòng ${selectedBrand}`}</h3>
-        </div>
-        <div className="bike-grid">
-          {filteredBikes.map(bike => (
-            <BikeCard key={bike.id} {...bike} />
-          ))}
+        <div className="mt-8">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold">{selectedBrand === 'Tất cả' ? 'Sản phẩm mới nhất' : `Xe dòng ${selectedBrand}`}</h3>
+          </div>
+
+          <div className="grid gap-6 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {filteredBikes.map(bike => (
+              <BikeCard key={bike.id} {...bike} />
+            ))}
+          </div>
         </div>
       </div>
     </div>

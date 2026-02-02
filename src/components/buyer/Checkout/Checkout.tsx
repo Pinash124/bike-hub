@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { MapPin, CreditCard, Package, AlertCircle, Check } from 'lucide-react';
 import { useCart } from '../../../contexts/CartContext';
-import '../../../styles/Checkout.css';
+
 
 export interface Address {
   id: string;
@@ -77,43 +77,39 @@ export const Checkout: React.FC<CheckoutProps> = ({ addresses, onPayment }) => {
   };
 
   return (
-    <div className="checkout-container">
-      <h1>Order Checkout</h1>
+    <div className="max-w-[1200px] mx-auto p-6">
+      <h1 className="text-2xl font-semibold">Order Checkout</h1>
 
-      <div className="checkout-content">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
         {/* Left Column - Checkout Form */}
-        <div className="checkout-form">
+        <div className="lg:col-span-2 space-y-6">
           {/* Step 1: Delivery Address */}
-          <div className="checkout-section">
-            <h2 className="section-title">
-              <MapPin size={24} /> Delivery Address
-            </h2>
+          <div className="bg-white p-4 rounded shadow">
+            <h2 className="flex items-center gap-2 text-lg font-semibold"><MapPin size={20} /> Delivery Address</h2>
 
             {addresses.length === 0 ? (
-              <div className="empty-addresses">
+              <div className="flex flex-col items-center justify-center gap-3 py-6">
                 <AlertCircle size={48} />
-                <p>No addresses saved. Please add an address first.</p>
-                <button className="btn-primary">Add Address</button>
+                <p className="text-gray-600">No addresses saved. Please add an address first.</p>
+                <button className="mt-2 bg-green-600 text-white px-4 py-2 rounded">Add Address</button>
               </div>
             ) : (
-              <div className="addresses-radio">
+              <div className="mt-4 space-y-3">
                 {addresses.map((address) => (
-                  <label key={address.id} className="address-option">
+                  <label key={address.id} className="flex items-start gap-3 p-3 border rounded">
                     <input
                       type="radio"
                       name="address"
                       value={address.id}
                       checked={selectedAddressId === address.id}
                       onChange={(e) => setSelectedAddressId(e.target.value)}
+                      className="mt-1 h-4 w-4"
                     />
-                    <div className="address-content">
-                      <h4>{address.fullName}</h4>
-                      <p className="phone">{address.phone}</p>
-                      <p className="location">
-                        {address.detailedAddress}, {address.ward}, {address.district},
-                        {address.province}
-                      </p>
-                      {address.isDefault && <span className="default-badge">Default</span>}
+                    <div>
+                      <h4 className="font-semibold">{address.fullName}</h4>
+                      <p className="text-sm text-gray-500">{address.phone}</p>
+                      <p className="text-sm text-gray-500">{address.detailedAddress}, {address.ward}, {address.district}, {address.province}</p>
+                      {address.isDefault && <span className="inline-block mt-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Default</span>}
                     </div>
                   </label>
                 ))}
@@ -122,122 +118,93 @@ export const Checkout: React.FC<CheckoutProps> = ({ addresses, onPayment }) => {
           </div>
 
           {/* Step 2: Shipping Method */}
-          <div className="checkout-section">
-            <h2 className="section-title">
-              <Package size={24} /> Shipping Method
-            </h2>
-            <div className="shipping-options">
-              <label className="shipping-option">
-                <input
-                  type="radio"
-                  name="shipping"
-                  value="standard"
-                  checked={shippingMethod === 'standard'}
-                  onChange={(e) => setShippingMethod(e.target.value as 'standard' | 'express')}
-                />
-                <div className="shipping-info">
-                  <span className="shipping-name">Standard Delivery</span>
-                  <span className="shipping-time">3-5 business days</span>
+          <div className="bg-white p-4 rounded shadow">
+            <h2 className="flex items-center gap-2 text-lg font-semibold"><Package size={20} /> Shipping Method</h2>
+            <div className="mt-4 space-y-3">
+              <label className="flex items-center justify-between p-3 border rounded">
+                <div className="flex items-center gap-3">
+                  <input type="radio" name="shipping" value="standard" checked={shippingMethod === 'standard'} onChange={(e) => setShippingMethod(e.target.value as 'standard' | 'express')} className="h-4 w-4" />
+                  <div>
+                    <div className="font-semibold">Standard Delivery</div>
+                    <div className="text-sm text-gray-500">3-5 business days</div>
+                  </div>
                 </div>
-                <span className="shipping-price">30,000 VND</span>
+                <div className="text-sm">30,000 VND</div>
               </label>
 
-              <label className="shipping-option">
-                <input
-                  type="radio"
-                  name="shipping"
-                  value="express"
-                  checked={shippingMethod === 'express'}
-                  onChange={(e) => setShippingMethod(e.target.value as 'standard' | 'express')}
-                />
-                <div className="shipping-info">
-                  <span className="shipping-name">Express Delivery</span>
-                  <span className="shipping-time">1-2 business days</span>
+              <label className="flex items-center justify-between p-3 border rounded">
+                <div className="flex items-center gap-3">
+                  <input type="radio" name="shipping" value="express" checked={shippingMethod === 'express'} onChange={(e) => setShippingMethod(e.target.value as 'standard' | 'express')} className="h-4 w-4" />
+                  <div>
+                    <div className="font-semibold">Express Delivery</div>
+                    <div className="text-sm text-gray-500">1-2 business days</div>
+                  </div>
                 </div>
-                <span className="shipping-price">100,000 VND</span>
+                <div className="text-sm">100,000 VND</div>
               </label>
             </div>
           </div>
 
           {/* Step 3: Order Notes */}
-          <div className="checkout-section">
-            <h2 className="section-title">Order Notes (Optional)</h2>
-            <textarea
-              placeholder="Add any special instructions for the seller..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              className="notes-textarea"
-            ></textarea>
+          <div className="bg-white p-4 rounded shadow">
+            <h2 className="text-lg font-semibold">Order Notes (Optional)</h2>
+            <textarea placeholder="Add any special instructions for the seller..." value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="w-full mt-2 p-2 border rounded" />
           </div>
         </div>
 
         {/* Right Column - Order Summary */}
-        <div className="order-summary">
-          <h2>Order Summary</h2>
+        <div className="bg-white p-4 rounded shadow">
+          <h2 className="text-lg font-semibold mb-3">Order Summary</h2>
 
           {/* Items */}
-          <div className="summary-items">
+          <div className="space-y-2">
             {selectedItems.length === 0 ? (
-              <p className="no-items">No items selected</p>
+              <p className="text-gray-500">No items selected</p>
             ) : (
               selectedItems.map((item) => (
-                <div key={item.productId} className="summary-item">
-                  <div className="item-details">
-                    <span className="item-name">{item.productName}</span>
-                    <span className="item-qty">x{item.quantity}</span>
+                <div key={item.productId} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded">{item.image}</div>
+                    <div>
+                      <div className="text-sm">{item.productName}</div>
+                      <div className="text-xs text-gray-500">x{item.quantity}</div>
+                    </div>
                   </div>
-                  <span className="item-price">
-                    {((item.price * item.quantity) / 1000000).toFixed(1)}M
-                  </span>
+                  <span className="font-semibold">{((item.price * item.quantity) / 1000000).toFixed(1)}M</span>
                 </div>
               ))
             )}
           </div>
 
-          <div className="summary-divider"></div>
+          <div className="border-t my-3" />
 
           {/* Subtotal */}
-          <div className="summary-row">
+          <div className="flex justify-between py-2">
             <span>Subtotal ({selectedItems.length} items)</span>
             <span>{(totalPrice / 1000000).toFixed(1)}M VND</span>
           </div>
 
           {/* Shipping Cost */}
-          <div className="summary-row">
+          <div className="flex justify-between py-2">
             <span>Shipping ({shippingMethod})</span>
             <span>{(shippingCost / 1000).toFixed(0)}K VND</span>
           </div>
 
-          <div className="summary-divider"></div>
+          <div className="border-t my-3" />
 
           {/* Total */}
-          <div className="summary-row total">
+          <div className="flex justify-between py-2 font-semibold text-lg">
             <span>Total Payment</span>
             <span>{((totalPrice + shippingCost) / 1000000).toFixed(1)}M VND</span>
           </div>
 
           {/* VNPAY Button */}
-          <button
-            className="btn-vnpay"
-            onClick={handleVNPAYPayment}
-            disabled={isProcessing || selectedItems.length === 0}
-          >
-            {isProcessing ? (
-              <>Processing...</>
-            ) : (
-              <>
-                <CreditCard size={20} />
-                Pay with VNPAY
-              </>
-            )}
+          <button className="w-full mt-4 bg-green-600 text-white py-2 rounded flex items-center justify-center gap-2" onClick={handleVNPAYPayment} disabled={isProcessing || selectedItems.length === 0}>
+            {isProcessing ? <>Processing...</> : <><CreditCard size={20} /> Pay with VNPAY</>}
           </button>
 
           {/* Security Badge */}
-          <div className="security-badge">
-            <Check size={16} />
-            <span>Secure payment with VNPAY</span>
-          </div>
+          <div className="flex items-center gap-2 mt-4 text-sm text-gray-600"><Check size={16} /> <span>Secure payment with VNPAY</span></div>
         </div>
       </div>
     </div>
