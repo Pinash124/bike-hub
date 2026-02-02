@@ -13,6 +13,7 @@ interface BikeCardProps {
   size?: string
   condition?: string
   isFeatured?: boolean
+  brand?: string // Thêm brand để đồng bộ với bộ lọc
 }
 
 export default function BikeCard({
@@ -24,45 +25,52 @@ export default function BikeCard({
   location,
   mileage,
   size = 'M',
-  condition = 'Used',
+  condition = '99%',
   isFeatured = false,
 }: BikeCardProps) {
+  // Tính toán % giảm giá
   const discount = originalPrice ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0
 
   return (
     <div className={`bike-card ${isFeatured ? 'featured' : ''}`}>
       <div className="bike-image">
+        {/* Sau này thay <img> vào đây */}
         <div className="placeholder">{image}</div>
+        
         <button className="btn-favorite" title="Yêu thích">
-          <Heart size={20} />
+          <Heart size={18} />
         </button>
-        <div className="condition-badge">{condition}</div>
-        {discount > 0 && <div className="discount-badge">-{discount}%</div>}
+
+        {/* Badges */}
+        <div className="badge-container">
+          <div className="condition-badge">{condition}</div>
+          {discount > 0 && <div className="discount-badge">-{discount}%</div>}
+        </div>
       </div>
 
       <div className="bike-info">
-        <h3 className="bike-title">{title}</h3>
+        <h3 className="bike-title" title={title}>{title}</h3>
         
         <div className="bike-meta">
-          <span>Size {size}</span>
-          <span>•</span>
-          <span>{condition}</span>
+          <span className="meta-item">Size {size}</span>
+          <span className="meta-divider">•</span>
+          <span className="meta-item">Đời {year}</span>
         </div>
 
-        <div className="bike-price-section">
-          <div className="price">
+        <div className="bike-price-row">
+          <span className="current-price">
             {price.toLocaleString('vi-VN')}₫
-          </div>
+          </span>
           {originalPrice && (
-            <div className="original-price">
+            <span className="original-price">
               {originalPrice.toLocaleString('vi-VN')}₫
-            </div>
+            </span>
           )}
         </div>
 
-        <div className="bike-details">
-          <span className="detail">{year} • {mileage.toLocaleString('vi-VN')} km</span>
-          <span className="detail-location">{location}</span>
+        <div className="bike-footer">
+          <span className="mileage">{mileage.toLocaleString('vi-VN')} km</span>
+          <span className="location">{location}</span>
         </div>
       </div>
     </div>
