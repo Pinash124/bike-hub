@@ -1,6 +1,5 @@
 import { Plus, Edit, Trash2, Eye, TrendingUp, Package } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import '../../styles/dashboards/Dashboard.css'
 
 interface SellerBike {
   id: number

@@ -1,73 +1,29 @@
-import 'antd/dist/reset.css'
-import { Button } from 'antd'
-import styled from 'styled-components'
-
-const BannerCard = styled.section`
-  margin: 15px;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-`
-
-const ImageContainer = styled.div`
-  position: relative;
-  height: 350px;
-  width: 100%;
-`
-
-const Img = styled.img`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-`
-
-const Overlay = styled.div`
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  color: white;
-  text-align: center;
-  padding: 20px;
-
-  h2 {
-    font-size: 2.5rem;
-    margin-bottom: 10px;
-  }
-`
-
-const ExploreButton = styled(Button)`
-  margin-top: 20px;
-  padding: 12px 30px;
-  border-radius: 25px;
-  background: #1db854;
-  color: white;
-  font-weight: bold;
-  border: none;
-
-  &:hover, &:focus {
-    background: #17a64a;
-    color: white;
-  }
-`
+import { useNavigate } from 'react-router-dom'
 
 export default function Banner() {
+  const navigate = useNavigate()
+  
   return (
-    <BannerCard>
-      <ImageContainer>
-        <Img
-          src="https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=2000"
-          alt="Bicycle Banner"
-        />
-        <Overlay>
-          <h2>Tìm Kiếm Chiếc Xe Hoàn Hảo</h2>
-          <p>Hàng ngàn xe đạp chất lượng từ những người bán uy tín</p>
-          <ExploreButton type="primary">Khám phá ngay</ExploreButton>
-        </Overlay>
-      </ImageContainer>
-    </BannerCard>
+    <section className="m-4 rounded-3xl overflow-hidden shadow-2xl relative h-[450px] group">
+      <img
+        src="https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=2000"
+        alt="Bicycle Banner"
+        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+      />
+      <div className="absolute inset-0 bg-black/40 flex flex-col justify-center items-center text-center p-6">
+        <h2 className="text-4xl md:text-6xl font-black text-white mb-4 drop-shadow-lg">
+          Tìm Kiếm Chiếc Xe Hoàn Hảo
+        </h2>
+        <p className="text-lg text-white/90 mb-8 max-w-2xl">
+          Hàng ngàn xe đạp chất lượng từ những người bán uy tín trên toàn quốc
+        </p>
+        <button 
+          onClick={() => navigate('/search')}
+          className="bg-green-500 hover:bg-green-600 text-white px-10 py-4 rounded-full font-bold text-lg shadow-xl transition-all hover:-translate-y-1 active:scale-95"
+        >
+          Khám phá ngay
+        </button>
+      </div>
+    </section>
   )
 }

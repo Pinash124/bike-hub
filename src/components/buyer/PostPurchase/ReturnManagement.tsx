@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Upload, Send, X, FileText } from 'lucide-react';
-import styled from 'styled-components';
 
 export type ReturnReason = 'damaged' | 'wrong_item' | 'quality_issue' | 'not_received' | 'other';
 
@@ -68,7 +67,6 @@ export const ReturnManagement: React.FC<ReturnManagementProps> = ({
         description: description.trim(),
         evidence
       });
-      // Reset form
       setDescription('');
       setEvidence([]);
       setSelectedReason('damaged');
@@ -78,105 +76,127 @@ export const ReturnManagement: React.FC<ReturnManagementProps> = ({
   };
 
   if (existingReturn) {
+    const statusColors = {
+      pending: 'bg-yellow-100 text-yellow-800',
+      approved: 'bg-green-100 text-green-800',
+      rejected: 'bg-red-100 text-red-800',
+      refunded: 'bg-blue-100 text-blue-800'
+    };
+
     return (
-      <StatusCard>
-        <Header>
-          <h3>Trạng thái yêu cầu trả hàng</h3>
-          <Badge status={existingReturn.status}>{existingReturn.status === 'pending' ? 'Đang xử lý' : existingReturn.status === 'approved' ? 'Được phê duyệt' : existingReturn.status === 'rejected' ? 'Bị từ chối' : 'Đã hoàn tiền'}</Badge>
-        </Header>
-        <DetailsBox>
-          <p><strong>Lý do:</strong> {RETURN_REASONS[existingReturn.reason]}</p>
-          <p><strong>Mô tả:</strong> {existingReturn.description}</p>
-          <p><strong>Ngày yêu cầu:</strong> {new Date(existingReturn.createdAt).toLocaleDateString('vi-VN')}</p>
-          {existingReturn.adminNotes && (<p><strong>Ghi chú:</strong> {existingReturn.adminNotes}</p>)}
-        </DetailsBox>
-      </StatusCard>
+      <div className="bg-white border border-green-200 rounded-lg p-6 my-6 shadow-sm">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="m-0 text-green-600 font-bold text-lg">Trạng thái yêu cầu trả hàng</h3>
+          <span className={`px-4 py-2 rounded-full font-semibold text-xs ${statusColors[existingReturn.status]}`}>
+            {existingReturn.status === 'pending' ? 'Đang xử lý' : 
+             existingReturn.status === 'approved' ? 'Được phê duyệt' : 
+             existingReturn.status === 'rejected' ? 'Bị từ chối' : 'Đã hoàn tiền'}
+          </span>
+        </div>
+        <div className="bg-gray-50 p-4 rounded-md space-y-2">
+          <p className="m-0 text-gray-600 text-sm"><strong className="text-gray-900">Lý do:</strong> {RETURN_REASONS[existingReturn.reason]}</p>
+          <p className="m-0 text-gray-600 text-sm"><strong className="text-gray-900">Mô tả:</strong> {existingReturn.description}</p>
+          <p className="m-0 text-gray-600 text-sm"><strong className="text-gray-900">Ngày yêu cầu:</strong> {new Date(existingReturn.createdAt).toLocaleDateString('vi-VN')}</p>
+          {existingReturn.adminNotes && (
+            <p className="m-0 text-gray-600 text-sm"><strong className="text-gray-900">Ghi chú:</strong> {existingReturn.adminNotes}</p>
+          )}
+        </div>
+      </div>
     );
   }
 
   return (
-    <Container>
-      <Form>
-        <h3>Yêu cầu trả hàng & Hoàn tiền</h3>
-        <Section>
-          <label>Lý do trả hàng *</label>
-          <Options>
+    <div className="max-w-[600px] mx-auto my-8 px-4">
+      <div className="bg-white border border-green-200 rounded-lg p-8 shadow-md">
+        <h3 className="text-green-600 mb-6 text-xl font-bold">Yêu cầu trả hàng & Hoàn tiền</h3>
+        
+        <div className="mb-6">
+          <label className="block mb-3 font-bold text-gray-900 text-sm">Lý do trả hàng *</label>
+          <div className="flex flex-col gap-2">
             {Object.entries(RETURN_REASONS).map(([key, label]) => (
-              <Reason key={key}>
-                <input type="radio" value={key} checked={selectedReason === key} onChange={(e) => setSelectedReason(e.target.value as ReturnReason)} />
-                <span>{label}</span>
-              </Reason>
+              <label key={key} className="flex items-center p-3 border border-gray-200 rounded-md cursor-pointer transition-all hover:border-green-600 hover:bg-green-50">
+                <input 
+                  type="radio" 
+                  className="mr-3 accent-green-600"
+                  value={key} 
+                  checked={selectedReason === key} 
+                  onChange={(e) => setSelectedReason(e.target.value as ReturnReason)} 
+                />
+                <span className="text-sm text-gray-700">{label}</span>
+              </label>
             ))}
-          </Options>
-        </Section>
+          </div>
+        </div>
 
-        <Section>
-          <label>Mô tả chi tiết *</label>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Vui lòng mô tả chi tiết vấn đề, ví dụ: Sản phẩm bị lỗi ở phần nào, tình trạng hư hỏng..." maxLength={500} rows={5} />
-          <p className="char-count">{description.length}/500</p>
-        </Section>
+        <div className="mb-6">
+          <label className="block mb-3 font-bold text-gray-900 text-sm">Mô tả chi tiết *</label>
+          <textarea 
+            className="w-full p-3 border border-gray-200 rounded-md text-sm outline-none focus:border-green-600 transition-all"
+            value={description} 
+            onChange={(e) => setDescription(e.target.value)} 
+            placeholder="Vui lòng mô tả chi tiết vấn đề, ví dụ: Sản phẩm bị lỗi ở phần nào, tình trạng hư hỏng..." 
+            maxLength={500} 
+            rows={5} 
+          />
+          <p className="text-right text-xs text-gray-400 mt-1">{description.length}/500</p>
+        </div>
 
-        <Section>
-          <label>Tải lên chứng minh (Tối đa 5 ảnh) *</label>
-          <UploadBox>
-            <input type="file" accept="image/*" multiple onChange={handleFileSelect} disabled={evidence.length >= 5} />
-            <Hint>
-              <Upload size={20} />
-              <p>Nhấp để tải lên hoặc kéo thả ảnh</p>
-              <small>JPG, PNG - Tối đa 5MB mỗi file</small>
-            </Hint>
-          </UploadBox>
+        <div className="mb-6">
+          <label className="block mb-3 font-bold text-gray-900 text-sm">Tải lên chứng minh (Tối đa 5 ảnh) *</label>
+          <div className="relative border-2 border-dashed border-green-200 rounded-lg p-8 text-center bg-green-50 hover:bg-green-100 transition-colors cursor-pointer">
+            <input 
+              type="file" 
+              className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed" 
+              accept="image/*" 
+              multiple 
+              onChange={handleFileSelect} 
+              disabled={evidence.length >= 5} 
+            />
+            <div className="flex flex-col items-center gap-2 text-gray-600">
+              <Upload size={24} className="text-green-600" />
+              <p className="m-0 font-semibold text-sm">Nhấp để tải lên hoặc kéo thả ảnh</p>
+              <small className="text-gray-400 text-xs text-center">JPG, PNG - Tối đa 5MB mỗi file</small>
+            </div>
+          </div>
 
           {evidence.length > 0 && (
-            <Preview>
-              <p className="preview-title">Ảnh đã tải lên ({evidence.length}/5):</p>
-              <Grid>
+            <div className="mt-4">
+              <p className="text-sm font-bold text-gray-900 mb-3">Ảnh đã tải lên ({evidence.length}/5):</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {evidence.map((file, index) => (
-                  <Evidence key={index}>
-                    <FileText size={32} />
-                    <p className="file-name">{file.name}</p>
-                    <button type="button" className="remove-btn" onClick={() => removeFile(index)}>
-                      <X size={16} />
+                  <div key={index} className="relative p-3 bg-white border border-gray-200 rounded-md flex flex-col items-center gap-2">
+                    <FileText size={32} className="text-green-600" />
+                    <p className="text-[10px] text-gray-500 text-center truncate w-full">{file.name}</p>
+                    <button 
+                      type="button" 
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors shadow-sm"
+                      onClick={() => removeFile(index)}
+                    >
+                      <X size={14} />
                     </button>
-                  </Evidence>
+                  </div>
                 ))}
-              </Grid>
-            </Preview>
+              </div>
+            </div>
           )}
-        </Section>
+        </div>
 
-        <Refund>
-          <h4>Thông tin hoàn tiền</h4>
-          <p>Số tiền sẽ được hoàn lại:</p>
-          <p className="refund-amount">{orderAmount.toLocaleString('vi-VN')} đ</p>
-          <p className="info-note">Hoàn tiền sẽ được xử lý vào tài khoản ngân hàng của bạn trong 5-7 ngày làm việc sau khi được phê duyệt.</p>
-        </Refund>
+        <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-6">
+          <h4 className="m-0 mb-3 text-green-600 font-bold text-base">Thông tin hoàn tiền</h4>
+          <p className="m-0 text-gray-600 text-sm">Số tiền sẽ được hoàn lại:</p>
+          <p className="text-2xl font-black text-green-600 my-2">{orderAmount.toLocaleString('vi-VN')} đ</p>
+          <p className="text-gray-400 text-[11px] leading-relaxed italic">Hoàn tiền sẽ được xử lý vào tài khoản của bạn trong 5-7 ngày làm việc sau khi được phê duyệt.</p>
+        </div>
 
-        <Submit disabled={isSubmitting} onClick={handleSubmit}><Send size={18} />{isSubmitting ? 'Đang gửi...' : 'Gửi yêu cầu'}</Submit>
-      </Form>
-    </Container>
+        <button 
+          disabled={isSubmitting} 
+          onClick={handleSubmit}
+          className="w-full py-3 bg-green-600 text-white border-none rounded-md font-bold flex items-center justify-center gap-2 transition-all hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+        >
+          <Send size={18} />
+          {isSubmitting ? 'Đang gửi...' : 'Gửi yêu cầu'}
+        </button>
+      </div>
+    </div>
   );
 };
-
-const Container = styled.div`max-width:600px;margin:2rem auto;padding:0 1rem;`
-const Form = styled.div`background:white;border:1px solid #bbf7d0;border-radius:8px;padding:2rem;box-shadow:0 2px 8px rgba(29,184,84,0.1); h3{color:#1db854;margin-bottom:1.5rem;font-size:1.3rem}`
-const Section = styled.div`margin-bottom:1.5rem; label{display:block;margin-bottom:0.75rem;font-weight:600;color:#1a1a1a;font-size:0.95rem}`
-const Options = styled.div`display:flex;flex-direction:column;gap:0.5rem`
-const Reason = styled.label`display:flex;align-items:center;padding:0.75rem;border:1px solid #e0e0e0;border-radius:6px;cursor:pointer;transition:all 0.3s; input{margin-right:0.75rem} &:hover{border-color:#1db854;background:#f0fdf4}`
-const UploadBox = styled.div`position:relative;border:2px dashed #bbf7d0;border-radius:8px;padding:2rem;text-align:center;cursor:pointer;background:#f0fdf4; input{position:absolute;inset:0;opacity:0;cursor:pointer}`
-const Hint = styled.div`pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:0.5rem;color:#666; p{margin:0;font-weight:500} small{color:#999;font-size:0.85rem}`
-const Preview = styled.div`margin-top:1rem; .preview-title{font-size:0.9rem;font-weight:600;color:#1a1a1a;margin-bottom:0.75rem}`
-const Grid = styled.div`display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:0.75rem`
-const Evidence = styled.div`position:relative;padding:0.75rem;background:white;border:1px solid #e0e0e0;border-radius:6px;display:flex;flex-direction:column;align-items:center;gap:0.5rem; svg{color:#1db854} .file-name{font-size:0.75rem;color:#666;text-align:center;margin:0} .remove-btn{position:absolute;top:-8px;right:-8px;width:24px;height:24px;padding:0;border:none;background:#ff6b6b;color:white;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center} .remove-btn:hover{background:#ff5252}`
-const Refund = styled.div`background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:1rem;margin-bottom:1.5rem; h4{margin:0 0 0.75rem 0;color:#1db854;font-size:1rem} p{margin:0.5rem 0;color:#666;font-size:0.9rem} .refund-amount{font-size:1.5rem;font-weight:700;color:#1db854;margin:0.75rem 0} .info-note{color:#999;font-size:0.85rem}`
-const Submit = styled.button`width:100%;padding:0.75rem;background:#1db854;color:white;border:none;border-radius:6px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:0.5rem;cursor:pointer; &:disabled{background:#ccc;cursor:not-allowed} &:hover:not(:disabled){background:#0da845}`
-
-const StatusCard = styled.div`background:white;border:1px solid #bbf7d0;border-radius:8px;padding:1.5rem;margin:1.5rem 0`
-const Header = styled.div`display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem; h3{margin:0;color:#1db854}`
-const Badge = styled.span<{status?: string}>`
-  padding:0.5rem 1rem;border-radius:20px;font-weight:600;font-size:0.85rem;
-  background:${props => props.status==='pending'?'#fff3cd':props.status==='approved'?'#d4edda':props.status==='rejected'?'#f8d7da':'#d1ecf1'};
-  color:${props => props.status==='pending'?'#856404':props.status==='approved'?'#155724':props.status==='rejected'?'#721c24':'#0c5460'};
-`
-const DetailsBox = styled.div`background:#f9f9f9;padding:1rem;border-radius:6px; p{margin:0.5rem 0;color:#666;font-size:0.95rem} strong{color:#1a1a1a}`
-

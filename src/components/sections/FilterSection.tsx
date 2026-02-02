@@ -1,121 +1,42 @@
 import { Filter, X } from 'lucide-react'
 import { useState } from 'react'
-import styled from 'styled-components'
-
-const Section = styled.section`
-  background: white;
-  padding: 1rem 2rem;
-  border-bottom: 1px solid #e8e8e8;
-`
-
-const Container = styled.div`
-  max-width: 1400px;
-  margin: 0 auto;
-`
-
-const Toggle = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: none;
-  border: 1px solid #bbf7d0;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  color: #1db854;
-  transition: all 0.2s ease;
-
-  &:hover { background: #f0fdf4; border-color: #1db854; }
-`
-
-const FiltersGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
-  padding: 1rem 0;
-  border-top: 1px solid #e8e8e8;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
-`
-
-const Group = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-
-  label { font-weight: 500; font-size: 0.9rem; color: #1a1a1a; }
-
-  select, input[type="range"] {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    color: #1a1a1a;
-    background: white;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  select:hover, select:focus { border-color: #999; outline: none; }
-`
 
 export default function FilterSection() {
   const [showFilters, setShowFilters] = useState(false)
 
   return (
-    <Section>
-      <Container>
-        <Toggle onClick={() => setShowFilters(!showFilters)}>
+    <section className="bg-white py-4 border-b border-gray-100">
+      <div className="max-w-[1440px] mx-auto px-6">
+        <button 
+          onClick={() => setShowFilters(!showFilters)}
+          className="flex items-center gap-2 border border-green-200 px-4 py-2 rounded-xl text-green-600 font-bold hover:bg-green-50 transition-all active:scale-95"
+        >
           <Filter size={18} />
           <span>Filters</span>
-          {showFilters && <X size={18} />}
-        </Toggle>
+          {showFilters && <X size={16} />}
+        </button>
 
         {showFilters && (
-          <FiltersGrid>
-            <Group>
-              <label>Discipline</label>
-              <select>
-                <option>All</option>
-                <option>MTB</option>
-                <option>Road</option>
-                <option>E-Bike</option>
-                <option>City</option>
-              </select>
-            </Group>
-
-            <Group>
-              <label>Brand</label>
-              <select>
-                <option>All Brands</option>
-                <option>Trek</option>
-                <option>Giant</option>
-                <option>Specialized</option>
-                <option>Merida</option>
-              </select>
-            </Group>
-
-            <Group>
-              <label>Condition</label>
-              <select>
-                <option>All</option>
-                <option>New</option>
-                <option>Refurbished</option>
-                <option>Used</option>
-              </select>
-            </Group>
-
-            <Group>
-              <label>Price Range</label>
-              <input type="range" min="0" max="10000" />
-            </Group>
-          </FiltersGrid>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6 p-6 bg-gray-50 rounded-2xl animate-in fade-in slide-in-from-top-4 duration-300">
+            {[
+              { label: 'Discipline', options: ['All', 'MTB', 'Road', 'E-Bike'] },
+              { label: 'Brand', options: ['All Brands', 'Trek', 'Giant', 'Specialized'] },
+              { label: 'Condition', options: ['All', 'New', 'Refurbished', 'Used'] }
+            ].map((group) => (
+              <div key={group.label} className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">{group.label}</label>
+                <select className="bg-white border border-gray-200 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-green-500/20 transition-all">
+                  {group.options.map(opt => <option key={opt}>{opt}</option>)}
+                </select>
+              </div>
+            ))}
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Price Range</label>
+              <input type="range" className="accent-green-600 h-10" />
+            </div>
+          </div>
         )}
-      </Container>
-    </Section>
+      </div>
+    </section>
   )
 }

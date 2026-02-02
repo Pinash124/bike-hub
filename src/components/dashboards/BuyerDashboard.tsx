@@ -1,6 +1,5 @@
 import { Heart, ShoppingBag, Clock, User, MessageSquare } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import '../../styles/dashboards/Dashboard.css'
 
 interface FavoriteBike {
   id: number

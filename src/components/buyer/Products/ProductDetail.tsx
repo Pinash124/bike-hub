@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { ShoppingCart, MessageSquare, Heart, Share2, ChevronLeft } from 'lucide-react';
+import { ShoppingCart, MessageSquare, Heart, Share2, ChevronLeft, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../../contexts/CartContext';
-import styled from 'styled-components';
 
 export interface ProductDetailProps {
   product: {
@@ -40,149 +39,190 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
       sellerId: product.sellerId,
       sellerName: product.seller,
     });
-    // Show success message
-    alert('Product added to cart!');
+    alert('Sản phẩm đã được thêm vào giỏ hàng!');
   };
 
-  const handleContact = () => {
-    alert('Chat with seller feature coming soon');
-  };
-
+  const handleContact = () => alert('Tính năng chat với người bán đang phát triển');
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
-    alert('Product link copied to clipboard!');
+    alert('Đã sao chép liên kết sản phẩm!');
   };
 
-  // Mock images
   const images = [product.image, product.image, product.image];
 
   return (
-    <Page>
-      <HeaderBar>
-        <Back onClick={() => navigate(-1)}><ChevronLeft size={20} /> Back</Back>
-      </HeaderBar>
+    <div className="bg-white min-h-screen">
+      {/* Header Bar */}
+      <div className="bg-gray-50 px-6 py-4 border-b-2 border-gray-100 sticky top-0 z-10">
+        <button 
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 bg-white text-green-600 border-2 border-green-600 px-4 py-2 rounded-lg font-bold hover:bg-green-50 transition-colors"
+        >
+          <ChevronLeft size={20} /> Quay lại
+        </button>
+      </div>
 
-      <Content>
-        <ImageSection>
-          <MainImage>
-            <span className="image-icon">{images[selectedImage]}</span>
-            <ConditionLarge>{product.condition}</ConditionLarge>
-          </MainImage>
-          <ThumbnailGallery>
-            {images.map((img, index) => (
-              <Thumbnail key={index} active={index === selectedImage} onClick={() => setSelectedImage(index)}><span>{img}</span></Thumbnail>
-            ))}
-          </ThumbnailGallery>
-        </ImageSection>
-
-        <InfoSection>
-          <ProductHeader>
-            <div>
-              <h1>{product.name}</h1>
-              <p className="brand-info">{product.brand} • {product.size} • {product.material}</p>
+      <div className="max-w-[1400px] mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          {/* Image Section */}
+          <div className="flex flex-col gap-4">
+            <div className="relative w-full aspect-square bg-gray-50 border-2 border-gray-100 rounded-2xl flex items-center justify-center overflow-hidden">
+              <span className="text-8xl">{images[selectedImage]}</span>
+              <span className="absolute top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-md">
+                {product.condition}
+              </span>
             </div>
-            <FavBtn className={isFavorite ? 'active' : ''} onClick={() => setIsFavorite(!isFavorite)} title="Add to favorites"><Heart size={24} fill={isFavorite ? 'currentColor' : 'none'} /></FavBtn>
-          </ProductHeader>
+            <div className="grid grid-cols-4 gap-3">
+              {images.map((img, index) => (
+                <button
+                  key={index}
+                  onClick={() => setSelectedImage(index)}
+                  className={`aspect-square bg-gray-50 border-2 rounded-xl flex items-center justify-center transition-all text-2xl
+                    ${index === selectedImage ? 'border-green-600 shadow-md' : 'border-gray-100 hover:border-green-200'}`}
+                >
+                  {img}
+                </button>
+              ))}
+            </div>
+          </div>
 
-          <Rating><span className="rating-star">⭐ {product.rating}</span><span className="reviews-count">({product.reviews} reviews)</span></Rating>
+          {/* Info Section */}
+          <div className="flex flex-col gap-6">
+            <div className="flex justify-between items-start gap-4">
+              <div>
+                <h1 className="text-4xl font-black text-gray-900 leading-tight mb-2">{product.name}</h1>
+                <p className="text-gray-500 font-medium">{product.brand} • {product.size} • {product.material}</p>
+              </div>
+              <button 
+                onClick={() => setIsFavorite(!isFavorite)}
+                className={`w-14 h-14 border-2 rounded-xl flex items-center justify-center transition-all
+                  ${isFavorite ? 'bg-red-500 border-red-500 text-white shadow-lg' : 'bg-white border-gray-100 text-gray-400 hover:border-green-600 hover:text-green-600'}`}
+              >
+                <Heart size={28} fill={isFavorite ? 'currentColor' : 'none'} />
+              </button>
+            </div>
 
-          <Price><h2 className="price">{(product.price / 1000000).toFixed(1)}M VND</h2></Price>
+            <div className="flex items-center gap-4 p-4 bg-green-50 rounded-xl">
+              <span className="flex items-center gap-1 text-green-700 font-bold text-lg">
+                <Star size={20} className="fill-green-600" /> {product.rating}
+              </span>
+              <span className="text-green-600/70 font-medium">({product.reviews} đánh giá)</span>
+            </div>
 
-          <Description><h3>Description</h3><p>{product.description}</p></Description>
+            <div className="border-b-2 border-gray-100 pb-4">
+              <h2 className="text-4xl font-black text-green-600">
+                {(product.price / 1000000).toFixed(1)}M VND
+              </h2>
+            </div>
 
-          <Specs>
-            <h3>Specifications</h3>
-            <SpecsGrid>
-              <Spec><label>Brand</label><p>{product.brand}</p></Spec>
-              <Spec><label>Frame Size</label><p>{product.size}</p></Spec>
-              <Spec><label>Material</label><p>{product.material}</p></Spec>
-              <Spec><label>Condition</label><p>{product.condition}</p></Spec>
-            </SpecsGrid>
-          </Specs>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 mb-3">Mô tả</h3>
+              <p className="text-gray-600 leading-relaxed text-base">{product.description}</p>
+            </div>
 
-          <SellerCard>
-            <SellerHeader>
-              <Avatar>👤</Avatar>
-              <SellerInfo>
-                <h4>{product.seller}</h4>
-                <p className="seller-rating">⭐ 4.6 (128 reviews)</p>
-              </SellerInfo>
-            </SellerHeader>
-            <p className="seller-joined">Member since 2023</p>
-            <StoreBtn>View Store</StoreBtn>
-          </SellerCard>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { label: 'Thương hiệu', value: product.brand },
+                { label: 'Kích cỡ khung', value: product.size },
+                { label: 'Chất liệu', value: product.material },
+                { label: 'Tình trạng', value: product.condition }
+              ].map((spec) => (
+                <div key={spec.label} className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                  <label className="block text-green-600 font-black text-[10px] uppercase tracking-wider mb-1">{spec.label}</label>
+                  <p className="text-gray-900 font-bold">{spec.value}</p>
+                </div>
+              ))}
+            </div>
 
-          <Quantity>
-            <label>Quantity</label>
-            <QuantityControl>
-              <button onClick={() => setQuantity(Math.max(1, quantity - 1))}>−</button>
-              <input type="number" value={quantity} onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))} min={1} />
-              <button onClick={() => setQuantity(quantity + 1)}>+</button>
-            </QuantityControl>
-          </Quantity>
+            {/* Seller Card */}
+            <div className="bg-white border-2 border-green-100 rounded-2xl p-6 shadow-sm">
+              <div className="flex gap-4 mb-4">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-3xl">👤</div>
+                <div className="flex-1">
+                  <h4 className="text-lg font-bold text-gray-900">{product.seller}</h4>
+                  <p className="text-sm text-gray-500">⭐ 4.6 (128 đánh giá)</p>
+                </div>
+                <button className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-green-700 transition-colors self-center">
+                  Xem cửa hàng
+                </button>
+              </div>
+              <p className="text-xs text-gray-400">Tham gia từ 2023</p>
+            </div>
 
-          <ActionRow>
-            <AddCart onClick={handleAddToCart}><ShoppingCart size={20} /> Add to Cart</AddCart>
-            <Contact onClick={handleContact}><MessageSquare size={20} /> Chat with Seller</Contact>
-          </ActionRow>
+            <div className="flex items-center gap-4">
+              <label className="font-bold text-gray-900">Số lượng:</label>
+              <div className="flex items-center gap-1 bg-gray-50 border-2 border-gray-100 rounded-xl p-1">
+                <button 
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  className="w-10 h-10 bg-white text-green-600 font-black rounded-lg hover:bg-green-600 hover:text-white transition-all shadow-sm"
+                >
+                  −
+                </button>
+                <input 
+                  type="number" 
+                  value={quantity} 
+                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-16 text-center bg-transparent font-bold text-gray-900 outline-none"
+                />
+                <button 
+                  onClick={() => setQuantity(quantity + 1)}
+                  className="w-10 h-10 bg-white text-green-600 font-black rounded-lg hover:bg-green-600 hover:text-white transition-all shadow-sm"
+                >
+                  +
+                </button>
+              </div>
+            </div>
 
-          <ShareBtn onClick={handleShare}><Share2 size={18} /> Share this product</ShareBtn>
-        </InfoSection>
-      </Content>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <button 
+                onClick={handleAddToCart}
+                className="flex items-center justify-center gap-3 bg-green-600 text-white p-4 rounded-2xl font-black text-lg shadow-lg shadow-green-200 hover:bg-green-700 hover:-translate-y-1 transition-all active:scale-95"
+              >
+                <ShoppingCart size={24} /> Thêm vào giỏ
+              </button>
+              <button 
+                onClick={handleContact}
+                className="flex items-center justify-center gap-3 bg-white text-green-600 border-2 border-green-600 p-4 rounded-2xl font-black text-lg hover:bg-green-50 transition-all"
+              >
+                <MessageSquare size={24} /> Chat ngay
+              </button>
+            </div>
 
-      <Reviews>
-        <h2>Customer Reviews ({product.reviews})</h2>
-        <ReviewsList>
-          <ReviewItem>
-            <ReviewHeader><span className="reviewer-name">Nguyễn Văn A</span><span className="review-rating">⭐⭐⭐⭐⭐</span></ReviewHeader>
-            <p className="review-text">Great bike! Exactly as described. Seller was very responsive and helpful. Highly recommended!</p>
-            <span className="review-date">Verified Buyer • 2 weeks ago</span>
-          </ReviewItem>
+            <button 
+              onClick={handleShare}
+              className="w-full bg-transparent text-green-600 border-2 border-green-100 p-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:border-green-600 hover:bg-green-50 transition-all"
+            >
+              <Share2 size={18} /> Chia sẻ sản phẩm này
+            </button>
+          </div>
+        </div>
 
-          <ReviewItem>
-            <ReviewHeader><span className="reviewer-name">Trần Thị B</span><span className="review-rating">⭐⭐⭐⭐</span></ReviewHeader>
-            <p className="review-text">Good condition bike. Shipping was fast and well-packaged.</p>
-            <span className="review-date">Verified Buyer • 1 month ago</span>
-          </ReviewItem>
-        </ReviewsList>
-      </Reviews>
-    </Page>
+        {/* Reviews Section */}
+        <div className="mt-16 pt-12 border-t-2 border-gray-100">
+          <h2 className="text-3xl font-black text-gray-900 mb-8">Đánh giá khách hàng ({product.reviews})</h2>
+          <div className="flex flex-col gap-6">
+            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6">
+              <div className="flex justify-between items-center mb-4">
+                <span className="font-bold text-gray-900">Nguyễn Văn A</span>
+                <span className="text-yellow-400 flex tracking-wider">⭐⭐⭐⭐⭐</span>
+              </div>
+              <p className="text-gray-600 leading-relaxed mb-4">Xe đạp tuyệt vời! Đúng như mô tả. Người bán nhiệt tình và hữu ích. Rất khuyến khích!</p>
+              <div className="text-xs text-gray-400">Người mua đã xác thực • 2 tuần trước</div>
+            </div>
+
+            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6">
+              <div className="flex justify-between items-center mb-4">
+                <span className="font-bold text-gray-900">Trần Thị B</span>
+                <span className="text-yellow-400 flex tracking-wider">⭐⭐⭐⭐</span>
+              </div>
+              <p className="text-gray-600 leading-relaxed mb-4">Tình trạng xe tốt. Giao hàng nhanh và đóng gói cẩn thận.</p>
+              <div className="text-xs text-gray-400">Người mua đã xác thực • 1 tháng trước</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
 export default ProductDetail;
-
-const Page = styled.div`background:white;min-height:calc(100vh - 80px)`
-const HeaderBar = styled.div`background:#f9f9f9;padding:1rem 2rem;border-bottom:2px solid #e0e0e0`
-const Back = styled.button`display:flex;align-items:center;gap:0.5rem;background:white;color:#1db854;border:2px solid #1db854;padding:0.5rem 1rem;border-radius:6px;cursor:pointer;font-weight:600; &:hover{background:#f0fdf4}`
-const Content = styled.div`display:grid;grid-template-columns:1fr 1fr;gap:3rem;max-width:1400px;margin:0 auto;padding:2rem`
-const ImageSection = styled.div`display:flex;flex-direction:column;gap:1rem`
-const MainImage = styled.div`position:relative;width:100%;aspect-ratio:1;background:#f9f9f9;border:2px solid #e0e0e0;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden .image-icon{font-size:5rem}`
-const ConditionLarge = styled.span`position:absolute;top:1rem;right:1rem;background:#1db854;color:white;padding:0.5rem 1rem;border-radius:6px;font-weight:600;font-size:0.9rem`
-const ThumbnailGallery = styled.div`display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem`
-const Thumbnail = styled.div<{active?: boolean}>`aspect-ratio:1;background:#f9f9f9;border:2px solid ${props=>props.active?'#1db854':'#e0e0e0'};border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s; &:hover{border-color:#bbf7d0}`
-const InfoSection = styled.div`display:flex;flex-direction:column;gap:1.5rem`
-const ProductHeader = styled.div`display:flex;justify-content:space-between;align-items:flex-start;gap:1rem h1{margin:0 0 0.5rem 0;color:#1db854;font-size:2rem;line-height:1.3} .brand-info{margin:0;color:#666;font-size:0.95rem}`
-const FavBtn = styled.button`background:transparent;border:2px solid #e0e0e0;color:#666;width:50px;height:50px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer; &:hover{border-color:#1db854;color:#1db854} &.active{background:#ff6b6b;border-color:#ff6b6b;color:white}`
-const Rating = styled.div`display:flex;align-items:center;gap:1rem;padding:1rem;background:#f0fdf4;border-radius:8px .rating-star{font-size:1.2rem;color:#1db854}`
-const Price = styled.div`border-bottom:2px solid #e0e0e0;padding-bottom:1rem h2{margin:0;color:#1db854;font-size:2.5rem;font-weight:700}`
-const Description = styled.div`h3{margin:0 0 0.75rem 0;color:#1db854;font-size:1.1rem} p{margin:0;color:#1a1a1a;line-height:1.6;font-size:0.95rem}`
-const Specs = styled.div`h3{margin:0 0 1rem 0;color:#1db854;font-size:1.1rem}`
-const SpecsGrid = styled.div`display:grid;grid-template-columns:repeat(2,1fr);gap:1rem`
-const Spec = styled.div`background:#f9f9f9;padding:1rem;border-radius:6px;border:1px solid #e0e0e0 label{display:block;color:#1db854;font-weight:600;font-size:0.85rem;margin-bottom:0.5rem;text-transform:uppercase}`
-const SellerCard = styled.div`background:white;border:2px solid #bbf7d0;border-radius:8px;padding:1.5rem`
-const SellerHeader = styled.div`display:flex;gap:1rem;margin-bottom:1rem;align-items:flex-start`
-const Avatar = styled.div`width:60px;height:60px;background:#f0fdf4;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem;flex-shrink:0`
-const SellerInfo = styled.div`h4{margin:0 0 0.25rem 0;color:#1db854;font-size:1.05rem} .seller-rating{margin:0;color:#666;font-size:0.9rem}`
-const StoreBtn = styled.button`width:100%;background:#1db854;color:white;border:none;padding:0.75rem;border-radius:6px;cursor:pointer;font-weight:600; &:hover{background:#0da845}`
-const Quantity = styled.div`display:flex;align-items:center;gap:1rem label{font-weight:600;color:#1db854;white-space:nowrap}`
-const QuantityControl = styled.div`display:flex;align-items:center;gap:0.5rem;background:#f9f9f9;border:2px solid #e0e0e0;border-radius:6px;padding:0.25rem button{background:white;border:none;width:36px;height:36px;cursor:pointer;color:#1db854;font-weight:600;border-radius:4px} button:hover{background:#1db854;color:white} input{width:60px;text-align:center;border:none;background:transparent;font-weight:600;color:#1a1a1a}`
-const ActionRow = styled.div`display:grid;grid-template-columns:1.5fr 1fr;gap:1rem`
-const AddCart = styled.button`display:flex;align-items:center;justify-content:center;gap:0.75rem;padding:1rem;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:1rem;background:#1db854;color:white; &:hover{background:#0da845;transform:translateY(-2px);box-shadow:0 4px 12px rgba(29,184,84,0.2)}`
-const Contact = styled.button`background:white;color:#1db854;border:2px solid #1db854;display:flex;align-items:center;justify-content:center;gap:0.75rem;padding:1rem;border-radius:8px;cursor:pointer`
-const ShareBtn = styled.button`width:100%;background:transparent;color:#1db854;border:2px solid #bbf7d0;padding:0.75rem;border-radius:6px;cursor:pointer;font-weight:600;display:flex;align-items:center;justify-content:center;gap:0.5rem; &:hover{border-color:#1db854;background:#f0fdf4}`
-const Reviews = styled.div`max-width:1400px;margin:0 auto;padding:2rem;border-top:2px solid #e0e0e0 h2{color:#1db854;margin:0 0 1.5rem 0}`
-const ReviewsList = styled.div`display:flex;flex-direction:column;gap:1.5rem`
-const ReviewItem = styled.div`background:#f9f9f9;border:1px solid #e0e0e0;border-radius:8px;padding:1.5rem`
-const ReviewHeader = styled.div`display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem`
-

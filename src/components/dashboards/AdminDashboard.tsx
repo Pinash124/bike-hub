@@ -1,5 +1,4 @@
 import { Users, Package, TrendingUp, AlertCircle, Trash2, Lock, Unlock, Eye } from 'lucide-react'
-import '../../styles/dashboards/Dashboard.css'
 
 interface AdminUser {
   id: number
