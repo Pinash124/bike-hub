@@ -1,8 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
-
-// Cấu hình URL cơ sở từ link Railway bạn cung cấp
-const API_URL = 'https://bikehub-production-2468.up.railway.app/api/v1';
+import api from '../api/axiosConfig'; // Sử dụng instance đã cấu hình
 
 export type UserRole = 'guest' | 'buyer' | 'seller' | 'inspector' | 'admin';
 
@@ -15,7 +12,7 @@ export interface UserProfile {
   avatar?: string;
   createdAt: string;
   isKYCVerified?: boolean;
-  token?: string; // Lưu JWT token để xác thực các request sau
+  token?: string; 
 }
 
 export interface AuthContextType {
@@ -29,7 +26,7 @@ export interface AuthContextType {
   updateProfile: (profile: Partial<UserProfile>) => void;
   updateRole: (role: UserRole) => void;
   setKYCVerified: (verified: boolean) => void;
-  submitKYC: (formData: FormData) => Promise<void>; // Thêm hàm xử lý KYC
+  submitKYC: (formData: FormData) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,7 +36,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [role, setRole] = useState<UserRole>('guest');
 
-  // Khởi tạo trạng thái từ localStorage khi load trang
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
@@ -55,17 +51,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  // Hàm Đăng nhập thực tế gọi API
+  // Gọi API Login thông qua instance api
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      const response = await axios.post(`${API_URL}/auth/login`, { email, password });
+      // Endpoint khớp với Swagger /api/v1/auth/login
+      const response = await api.post('/api/v1/auth/login', { email, password });
       
-      const userData: UserProfile = response.data; // Giả định API trả về đúng interface UserProfile
+      const userData: UserProfile = response.data; 
       setUser(userData);
       setRole(userData.role);
       
-      // Lưu vào localStorage để duy trì phiên đăng nhập
       localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('role', userData.role);
     } catch (error: any) {
@@ -76,11 +72,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Hàm Đăng ký thực tế gọi API
+  // Gọi API Register thông qua instance api
   const register = async (data: any) => {
     try {
       setIsLoading(true);
-      await axios.post(`${API_URL}/auth/register`, data);
+      // Endpoint khớp với Swagger /api/v1/auth/register
+      await api.post('/api/v1/auth/register', data);
     } catch (error: any) {
       console.error('Đăng ký thất bại:', error);
       throw new Error(error.response?.data?.message || 'Không thể đăng ký tài khoản');
@@ -89,15 +86,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Hàm gửi hồ sơ KYC (Xác minh danh tính)
   const submitKYC = async (formData: FormData) => {
     try {
       setIsLoading(true);
-      // Gửi request kèm Token trong Header
-      const response = await axios.post(`${API_URL}/users/kyc`, formData, {
+      // Instance api đã có interceptor tự thêm Token nếu user đã login
+      const response = await api.post('/api/v1/users/kyc', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${user?.token}`
         }
       });
       
