@@ -1,113 +1,17 @@
+/* src/index.css */
 @import "tailwindcss";
 
-/* 1. Thiết lập biến và font chữ hệ thống */
 :root {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  
-  /* Bảng màu Brand tinh chỉnh */
+  font-family: 'Inter', system-ui, sans-serif;
   --brand-green: #16a34a;
-  --brand-green-dark: #15803d;
-  --brand-green-light: #bbf7d0;
-  
-  color-scheme: light dark;
-  color: #0f172a;
-  background-color: #ffffff;
-  
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* 2. Reset & Base Styles */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
 }
 
 body {
-  min-width: 320px;
-  min-height: 100vh;
-  overflow-x: hidden;
-  background-color: #ffffff;
+  @apply min-h-screen bg-white text-slate-900 antialiased;
 }
 
-/* 3. Typography Chuyên nghiệp */
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 900;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  text-transform: uppercase;
-  margin-bottom: 1.5rem; /* Tăng khoảng cách dưới tiêu đề */
-}
+/* Chỉ giữ lại reset cho nút bấm và scrollbar toàn cục */
+button { @apply cursor-pointer transition-all duration-300 active:scale-95 outline-none; }
 
-a {
-  font-weight: 600;
-  color: var(--brand-green);
-  text-decoration: none;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-a:hover {
-  color: var(--brand-green-dark);
-}
-
-/* 4. UTILITY CLASS: THỤT LÙI 2 BÊN VÀ KHOẢNG TRỐNG TRÊN DƯỚI */
-.content-layout {
-  /* Giữ nguyên max-width và căn giữa */
-  @apply max-w-[1440px] mx-auto;
-  
-  /* Thụt lùi 2 bên (Horizontal Padding) */
-  @apply px-6 md:px-16 lg:px-24;
-  
-  /* BỔ SUNG: Khoảng trống trên dưới (Vertical Padding) 
-     Tăng dần theo kích thước màn hình để tạo độ thoáng chuyên nghiệp
-  */
-  @apply py-6 md:py-8 lg:py-8;
-}
-
-/* 5. Tùy chỉnh Scrollbar tinh tế hơn */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
-  border-radius: 20px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: var(--brand-green);
-}
-
-/* 6. Hiệu ứng Card & Khối tương tác */
-.premium-card {
-  @apply bg-white border border-gray-100 transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)] hover:-translate-y-2;
-}
-
-/* 7. Button Global Reset */
-button {
-  font-family: inherit;
-  cursor: pointer;
-  border: none;
-  outline: none;
-  transition: all 0.2s ease-in-out;
-}
-
-button:active {
-  transform: scale(0.95);
-}
-
-/* Chế độ Dark Mode nhẹ cho các phần tử đặc biệt */
-@media (prefers-color-scheme: dark) {
-  .dark-footer {
-    background-color: #0f172a;
-    color: #f8fafc;
-  }
-}
+.custom-scrollbar::-webkit-scrollbar { width: 5px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { @apply bg-slate-200 rounded-full; }

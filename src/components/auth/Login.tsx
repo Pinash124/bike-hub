@@ -1,155 +1,132 @@
+// src/components/auth/Login.tsx
 import { useState } from 'react'
-import { Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, X, Bike } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { AuthOverlay, AuthCard } from './AuthLayout'
 
-interface LoginErrors {
-  [key: string]: string | undefined
+// Sửa Props thành Optional (?) để App.tsx gọi <Login /> không bị lỗi
+interface LoginModalProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+  onSwitchToRegister?: () => void;
 }
 
-export default function Login() {
+export default function LoginModal({ 
+  isOpen = true, // Mặc định mở nếu không truyền props (dùng cho standalone page)
+  onClose, 
+  onSwitchToRegister 
+}: LoginModalProps) {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [errors, setErrors] = useState<LoginErrors>({})
-  const [isLoading, setIsLoading] = useState(false)
 
-  const validateForm = () => {
-    const newErrors: LoginErrors = {}
-    
-    if (!email) {
-      newErrors.email = 'Email không được để trống'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Email không hợp lệ'
-    }
-    
-    if (!password) {
-      newErrors.password = 'Mật khẩu không được để trống'
-    } else if (password.length < 6) {
-      newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự'
-    }
-    
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!validateForm()) {
-      return
-    }
-
-    setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
-      // Store user session (in real app, this would be an API call)
-      localStorage.setItem('user', JSON.stringify({ email, name: email.split('@')[0] }))
-      navigate('/')
-    }, 1000)
-  }
-
-  const clearError = (field: string) => {
-    const newErrors = { ...errors }
-    delete newErrors[field]
-    setErrors(newErrors)
-  }
+  if (!isOpen) return null;
 
   return (
-    <div className="min-h-[calc(100vh-80px)] flex items-center justify-center py-12 bg-gray-50">
-      <div className="w-full max-w-md px-6 relative">
-        <button 
-          className="absolute top-4 left-0 p-2 text-gray-600 hover:text-gray-800"
-          onClick={() => navigate('/')}
-          title="Quay lại trang chủ"
-        >
-          <ArrowLeft size={20} />
-        </button>
+    <AuthOverlay>
+      <AuthCard>
+        {/* Nút đóng: Chỉ hiển thị nếu có hàm onClose (khi dùng làm Modal) */}
+        {onClose && (
+          <button 
+            onClick={onClose} 
+            className="absolute top-5 right-5 p-1.5 text-slate-300 hover:text-red-500 transition-all z-10"
+          >
+            <X size={18} />
+          </button>
+        )}
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="mb-4">
-            <h2 className="text-2xl font-bold">Đăng Nhập</h2>
-            <p className="text-sm text-gray-600">Đăng nhập để quản lý tài khoản và các giao dịch của bạn</p>
+        <div className="flex flex-col items-center w-full antialiased">
+          {/* HEADER: Font chữ mềm mại, màu Slate sang trọng */}
+          <div className="text-center mb-6">
+            <div className="inline-flex bg-green-600 p-2.5 rounded-xl shadow-lg shadow-green-100 mb-3">
+              <Bike size={22} className="text-white" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 uppercase tracking-tight leading-tight">
+              Đăng nhập <br/><span className="text-green-600 font-extrabold text-2xl">BikeHub</span>
+            </h2>
+            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1 opacity-100">
+              Chào mừng bạn trở lại
+            </p>
           </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-              <div className={`mt-2 flex items-center gap-2 border rounded px-3 py-2 ${errors.email ? 'border-red-500' : 'border-gray-200'}`}>
-                <Mail size={18} />
-                <input
-                  className="flex-1 outline-none text-sm"
-                  type="email"
-                  id="email"
-                  placeholder="Nhập email của bạn"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value)
-                    if (errors.email) clearError('email')
-                  }}
+          {/* FORM: Khoảng cách space-y-4 giúp trải đều form mà không cần scroll */}
+          <form className="w-full space-y-4" onSubmit={(e) => e.preventDefault()}>
+            <div className="space-y-1.5">
+              <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-5">
+                Email Address
+              </label>
+              <div className="flex items-center gap-3 bg-slate-50 border border-slate-100 px-5 py-3.5 rounded-full focus-within:bg-white focus-within:border-green-500 focus-within:shadow-xl focus-within:shadow-green-500/5 transition-all group">
+                <Mail size={16} className="text-slate-300 group-focus-within:text-green-600" />
+                <input 
+                  className="flex-1 bg-transparent outline-none text-xs font-medium placeholder:text-slate-300" 
+                  type="email" 
+                  placeholder="email@domain.com" 
                 />
               </div>
-              {errors.email && <span className="text-red-500 text-sm">{errors.email}</span>}
             </div>
 
-            <div className="mb-4">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">Mật Khẩu</label>
-              <div className={`mt-2 flex items-center gap-2 border rounded px-3 py-2 ${errors.password ? 'border-red-500' : 'border-gray-200'}`}>
-                <Lock size={18} />
-                <input
-                  className="flex-1 outline-none text-sm"
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  placeholder="Nhập mật khẩu"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value)
-                    if (errors.password) clearError('password')
-                  }}
+            <div className="space-y-1.5">
+              <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-5">
+                Password
+              </label>
+              <div className="flex items-center gap-3 bg-slate-50 border border-slate-100 px-5 py-3.5 rounded-full focus-within:bg-white focus-within:border-green-500 focus-within:shadow-xl focus-within:shadow-green-500/5 transition-all group">
+                <Lock size={16} className="text-slate-300 group-focus-within:text-green-600" />
+                <input 
+                  className="flex-1 bg-transparent outline-none text-xs font-medium placeholder:text-slate-300" 
+                  type={showPassword ? 'text' : 'password'} 
+                  placeholder="••••••••" 
                 />
-                <button
-                  type="button"
-                  className="text-gray-600"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-slate-300 hover:text-green-600">
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
-              {errors.password && <span className="text-red-500 text-sm">{errors.password}</span>}
             </div>
 
-            <div className="flex items-center justify-between mb-4 text-sm">
-              <label className="flex items-center gap-2">
-                <input type="checkbox" className="h-4 w-4" />
-                <span>Ghi nhớ tôi</span>
+            <div className="flex items-center justify-between px-5 pt-1">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input type="checkbox" className="w-3.5 h-3.5 accent-green-600 rounded-sm border-slate-200" />
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight group-hover:text-slate-600 transition-colors">
+                  Ghi nhớ
+                </span>
               </label>
-              <a href="#" className="text-sm text-green-600">Quên mật khẩu?</a>
+              <a href="#" className="text-[10px] font-bold text-green-600 uppercase hover:underline underline-offset-2 transition-all">
+                Quên?
+              </a>
             </div>
 
-            <button 
-              type="submit" 
-              className="w-full bg-green-600 text-white py-2 rounded font-semibold"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Đang đăng nhập...' : 'Đăng Nhập'}
+            <button className="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-full font-bold text-[11px] uppercase tracking-[0.2em] shadow-lg shadow-green-900/10 transition-all active:scale-95 mt-2">
+              Xác nhận đăng nhập
             </button>
           </form>
 
-          <div className="flex items-center justify-center gap-4 my-4 text-sm text-gray-500">
-            <span>Hoặc</span>
-          </div>
+          {/* FOOTER: Gọn nhẹ, trải đều */}
+          <div className="mt-8 w-full text-center">
+            <div className="relative flex items-center justify-center mb-6">
+              <div className="w-full border-t border-slate-100"></div>
+              <span className="absolute bg-white px-3 text-[9px] font-bold text-slate-300 uppercase tracking-widest">Hoặc</span>
+            </div>
 
-          <div className="flex gap-2">
-            <button className="flex-1 py-2 rounded border text-sm">🔵 Facebook</button>
-            <button className="flex-1 py-2 rounded border text-sm">📧 Google</button>
-          </div>
-
-          <div className="text-center mt-4 text-sm text-gray-600">
-            <p>Chưa có tài khoản? <a href="/register" className="text-green-600">Đăng ký ngay</a></p>
+            <div className="flex gap-3 mb-6">
+              <button className="flex-1 py-2.5 rounded-full border border-slate-100 font-bold text-[9px] uppercase hover:bg-slate-50 transition-all text-slate-400 tracking-widest">
+                Google
+              </button>
+              <button className="flex-1 py-2.5 rounded-full border border-slate-100 font-bold text-[9px] uppercase hover:bg-slate-50 transition-all text-slate-400 tracking-widest">
+                Facebook
+              </button>
+            </div>
+            
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
+              Chưa có tài khoản? 
+              <button 
+                type="button"
+                onClick={() => onSwitchToRegister ? onSwitchToRegister() : navigate('/register')} 
+                className="text-green-600 ml-1.5 hover:underline font-extrabold cursor-pointer"
+              >
+                Đăng ký ngay
+              </button>
+            </p>
           </div>
         </div>
-      </div>
-    </div>
-  )
+      </AuthCard>
+    </AuthOverlay>
+  );
 }

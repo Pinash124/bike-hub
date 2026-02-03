@@ -1,198 +1,204 @@
+// src/pages/UnifiedAuth.tsx
 import { useState } from 'react'
-import { Mail, Lock, User, Eye, EyeOff, ArrowLeft, Phone } from 'lucide-react'
+import { 
+  Mail, Lock, User, Eye, EyeOff, Phone, Bike, 
+  ShieldCheck, ArrowLeft, ChevronRight, Hash, 
+  Calendar, MapPin, Upload, CheckCircle 
+} from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { AuthCard, AuthOverlay } from '../auth/AuthLayout'
 
-interface FormData {
-  name: string
-  email: string
-  phone: string
-  password: string
-  confirmPassword: string
-}
-
-interface FormErrors {
-  [key: string]: string | undefined
-}
-
-export default function Register() {
+export default function UnifiedAuth() {
   const navigate = useNavigate()
+  const [currentStep, setCurrentStep] = useState(1)
   const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [formData, setFormData] = useState<FormData>({
-    name: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: ''
-  })
-  const [errors, setErrors] = useState<FormErrors>({})
   const [isLoading, setIsLoading] = useState(false)
-  const [agreeTerms, setAgreeTerms] = useState(false)
-
-  const validateForm = () => {
-    const newErrors: FormErrors = {}
-    
-    if (!formData.name) {
-      newErrors.name = 'Tên không được để trống'
-    } else if (formData.name.length < 3) {
-      newErrors.name = 'Tên phải có ít nhất 3 ký tự'
-    }
-    
-    if (!formData.email) {
-      newErrors.email = 'Email không được để trống'
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Email không hợp lệ'
-    }
-    
-    if (!formData.phone) {
-      newErrors.phone = 'Số điện thoại không được để trống'
-    } else if (!/^[0-9]{10}$/.test(formData.phone.replace(/\D/g, ''))) {
-      newErrors.phone = 'Số điện thoại không hợp lệ'
-    }
-    
-    if (!formData.password) {
-      newErrors.password = 'Mật khẩu không được để trống'
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự'
-    }
-    
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Xác nhận mật khẩu không được để trống'
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Mật khẩu không khớp'
-    }
-    
-    if (!agreeTerms) {
-      newErrors.terms = 'Bạn phải đồng ý với điều khoản'
-    }
-    
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
-    if (errors[name]) {
-      const newErrors = { ...errors }
-      delete newErrors[name]
-      setErrors(newErrors)
-    }
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!validateForm()) {
-      return
-    }
-
-    setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
-      // Store user session
-      localStorage.setItem('user', JSON.stringify({ 
-        email: formData.email, 
-        name: formData.name,
-        phone: formData.phone
-      }))
-      // Navigate to KYC instead of home
-      navigate('/kyc')
-    }, 1000)
-  }
+  
+  const nextStep = () => setCurrentStep(prev => prev + 1)
+  const prevStep = () => setCurrentStep(prev => prev - 1)
 
   return (
-    <div className="min-h-[calc(100vh-80px)] flex items-center justify-center py-12 bg-gray-50">
-      <div className="w-full max-w-md px-6 relative">
+    <AuthOverlay>
+      {/* Nút thoát cố định - Chữ siêu nhỏ & dãn dòng rộng */}
+      {currentStep < 5 && (
         <button 
-          className="absolute top-4 left-0 p-2 text-gray-600 hover:text-gray-800"
           onClick={() => navigate('/')}
-          title="Quay lại trang chủ"
+          className="fixed top-10 left-10 flex items-center gap-3 text-slate-100 hover:text-green-600 transition-all font-bold text-[9px] uppercase tracking-[0.3em]"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={14} /> Back to home
         </button>
+      )}
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="mb-4">
-            <h2 className="text-2xl font-bold">Đăng Ký Tài Khoản</h2>
-            <p className="text-sm text-gray-600">Tạo tài khoản để bắt đầu mua bán xe đạp</p>
+      {/* min-h-[620px] giúp card luôn giữ dáng đứng cao ráo dù ít nội dung */}
+      <AuthCard>
+        <div className="flex flex-col min-h-[520px] w-full antialiased justify-between">
+          
+          {/* PHẦN TRÊN: Progress + Header + Form */}
+          <div>
+            {/* 1. PROGRESS BAR: Siêu mảnh (2px) */}
+            {currentStep < 5 && (
+              <div className="flex items-center justify-between mb-10 px-4">
+                {[1, 2, 3, 4].map((s) => (
+                  <div key={s} className="flex items-center flex-1 last:flex-none">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-500 ${
+                      s <= currentStep ? 'bg-green-600 text-white shadow-lg shadow-green-100' : 'bg-slate-50 text-slate-300'
+                    }`}>
+                      {s < currentStep ? '✓' : s}
+                    </div>
+                    {s < 4 && (
+                      <div className={`flex-1 h-[2px] mx-3 rounded-full ${s < currentStep ? 'bg-green-600' : 'bg-slate-50'}`} />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 2. HEADER: Căn giữa, typography mềm mại */}
+            <div className="text-center mb-10">
+              <h2 className="text-xl font-bold text-slate-900 uppercase tracking-tight mb-1">
+                {currentStep === 1 && 'Thông tin tài khoản'}
+                {currentStep === 2 && 'Bảo mật mật khẩu'}
+                {currentStep === 3 && 'Xác minh danh tính'}
+                {currentStep === 4 && 'Địa chỉ & Giấy tờ'}
+                {currentStep === 5 && 'Xác minh thành công'}
+              </h2>
+              <div className="flex justify-center items-center gap-2">
+                <span className="h-px w-4 bg-green-200"></span>
+                <p className="text-[10px] text-green-600 font-extrabold uppercase tracking-[0.2em]">Step 0{currentStep}</p>
+                <span className="h-px w-4 bg-green-200"></span>
+              </div>
+            </div>
+
+            {/* 3. FORM FIELDS: Trải đều với space-y-5 */}
+            <form className="space-y-5 animate-in fade-in slide-in-from-bottom-3 duration-700">
+              {currentStep === 1 && (
+                <>
+                  <div className="group">
+                    <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-6 mb-2">Họ và tên</label>
+                    <div className="flex items-center gap-4 bg-slate-50 border border-slate-100 px-6 py-4 rounded-full focus-within:bg-white focus-within:border-green-500 focus-within:shadow-xl focus-within:shadow-green-500/5 transition-all">
+                      <User size={16} className="text-slate-300" />
+                      <input className="flex-1 bg-transparent outline-none text-xs font-medium" placeholder="Nguyễn Văn A" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-100 px-6 py-4 rounded-full">
+                      <Mail size={14} className="text-slate-300" />
+                      <input className="flex-1 bg-transparent outline-none text-[11px] font-medium" placeholder="Email" />
+                    </div>
+                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-100 px-6 py-4 rounded-full">
+                      <Phone size={14} className="text-slate-300" />
+                      <input className="flex-1 bg-transparent outline-none text-[11px] font-medium" placeholder="SĐT" />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {currentStep === 2 && (
+                <>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4 bg-slate-50 border border-slate-100 px-6 py-4 rounded-full focus-within:bg-white focus-within:border-green-500 transition-all">
+                      <Lock size={16} className="text-slate-300" />
+                      <input className="flex-1 bg-transparent outline-none text-xs font-medium" type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu mới" />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)}><Eye size={16} className="text-slate-300" /></button>
+                    </div>
+                    <div className="flex items-center gap-4 bg-slate-50 border border-slate-100 px-6 py-4 rounded-full focus-within:bg-white focus-within:border-green-500 transition-all">
+                      <ShieldCheck size={16} className="text-slate-300" />
+                      <input className="flex-1 bg-transparent outline-none text-xs font-medium" type={showPassword ? 'text' : 'password'} placeholder="Xác nhận mật khẩu" />
+                    </div>
+                  </div>
+                  <p className="px-6 text-[9px] text-slate-400 font-medium leading-relaxed">
+                    * Mật khẩu phải bao gồm ít nhất 8 ký tự, chữ hoa và số.
+                  </p>
+                </>
+              )}
+
+              {currentStep === 3 && (
+                <>
+                  <div className="space-y-1">
+                    <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-6">Loại giấy tờ</label>
+                    <select className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-full text-xs font-medium outline-none appearance-none cursor-pointer">
+                      <option>Căn cước công dân (CCCD)</option>
+                      <option>Hộ chiếu (Passport)</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-full outline-none text-xs font-medium" placeholder="Số ID" />
+                    <input type="date" className="w-full bg-slate-50 border border-slate-100 px-5 py-4 rounded-full outline-none text-xs font-medium text-slate-400" />
+                  </div>
+                </>
+              )}
+
+              {currentStep === 4 && (
+                <>
+                  <div className="flex items-center gap-4 bg-slate-50 border border-slate-100 px-6 py-4 rounded-full">
+                    <MapPin size={16} className="text-slate-300" />
+                    <input className="flex-1 bg-transparent outline-none text-xs font-medium" placeholder="Địa chỉ thường trú" />
+                  </div>
+                  <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-100 rounded-[2.5rem] py-10 hover:bg-slate-50 cursor-pointer group transition-all">
+                    <Upload size={24} className="text-slate-200 group-hover:text-green-600 mb-3 transition-colors" />
+                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Tải lên tài liệu</span>
+                    <input type="file" className="hidden" />
+                  </label>
+                </>
+              )}
+
+              {currentStep === 5 && (
+                <div className="text-center py-4">
+                  <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                    <CheckCircle size={44} className="text-green-600" />
+                  </div>
+                  <p className="text-[12px] text-slate-500 font-medium leading-relaxed px-6">
+                    Hồ sơ của bạn đã được gửi. Đội ngũ BikeHub sẽ tiến hành xác minh trong thời gian sớm nhất.
+                  </p>
+                </div>
+              )}
+            </form>
           </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">Họ và Tên</label>
-              <div className={`mt-2 flex items-center gap-2 border rounded px-3 py-2 ${errors.name ? 'border-red-500' : 'border-gray-200'}`}>
-                <User size={18} />
-                <input className="flex-1 outline-none text-sm" type="text" id="name" name="name" placeholder="Nhập họ và tên" value={formData.name} onChange={handleChange} />
-              </div>
-              {errors.name && <span className="text-red-500 text-sm">{errors.name}</span>}
+          {/* PHẦN DƯỚI: Nút điều hướng (Luôn nằm ở đáy Card) */}
+          <div className="pt-10">
+            <div className="flex gap-3">
+              {currentStep > 1 && currentStep < 5 && (
+                <button 
+                  onClick={prevStep}
+                  className="px-8 py-4 rounded-full border border-slate-100 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300 hover:text-slate-500 hover:bg-slate-50 transition-all"
+                >
+                  Back
+                </button>
+              )}
+              
+              {currentStep < 4 ? (
+                <button 
+                  onClick={nextStep}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-4 rounded-full font-bold text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-green-900/10 active:scale-95 transition-all flex items-center justify-center gap-3"
+                >
+                  Tiếp theo <ChevronRight size={16} />
+                </button>
+              ) : currentStep === 4 ? (
+                <button 
+                  onClick={() => { setIsLoading(true); setTimeout(() => { setIsLoading(false); nextStep(); }, 1500); }}
+                  className="flex-1 bg-slate-900 hover:bg-black text-white py-4 rounded-full font-bold text-[11px] uppercase tracking-[0.2em] shadow-2xl active:scale-95 transition-all"
+                >
+                  {isLoading ? 'Đang xác thực...' : 'Gửi hồ sơ ngay'}
+                </button>
+              ) : (
+                <button 
+                  onClick={() => navigate('/')}
+                  className="flex-1 bg-green-600 text-white py-4 rounded-full font-bold text-[11px] uppercase tracking-[0.2em] active:scale-95 transition-all"
+                >
+                  Bắt đầu khám phá
+                </button>
+              )}
             </div>
-
-            <div className="mb-4">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-              <div className={`mt-2 flex items-center gap-2 border rounded px-3 py-2 ${errors.email ? 'border-red-500' : 'border-gray-200'}`}>
-                <Mail size={18} />
-                <input className="flex-1 outline-none text-sm" type="email" id="email" name="email" placeholder="Nhập email của bạn" value={formData.email} onChange={handleChange} />
-              </div>
-              {errors.email && <span className="text-red-500 text-sm">{errors.email}</span>}
-            </div>
-
-            <div className="mb-4">
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Số Điện Thoại</label>
-              <div className={`mt-2 flex items-center gap-2 border rounded px-3 py-2 ${errors.phone ? 'border-red-500' : 'border-gray-200'}`}>
-                <Phone size={18} />
-                <input className="flex-1 outline-none text-sm" type="tel" id="phone" name="phone" placeholder="Nhập số điện thoại" value={formData.phone} onChange={handleChange} />
-              </div>
-              {errors.phone && <span className="text-red-500 text-sm">{errors.phone}</span>}
-            </div>
-
-            <div className="mb-4">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">Mật Khẩu</label>
-              <div className={`mt-2 flex items-center gap-2 border rounded px-3 py-2 ${errors.password ? 'border-red-500' : 'border-gray-200'}`}>
-                <Lock size={18} />
-                <input className="flex-1 outline-none text-sm" type={showPassword ? 'text' : 'password'} id="password" name="password" placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)" value={formData.password} onChange={handleChange} />
-                <button type="button" className="text-gray-600" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
-              </div>
-              {errors.password && <span className="text-red-500 text-sm">{errors.password}</span>}
-            </div>
-
-            <div className="mb-4">
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">Xác Nhận Mật Khẩu</label>
-              <div className={`mt-2 flex items-center gap-2 border rounded px-3 py-2 ${errors.confirmPassword ? 'border-red-500' : 'border-gray-200'}`}>
-                <Lock size={18} />
-                <input className="flex-1 outline-none text-sm" type={showConfirmPassword ? 'text' : 'password'} id="confirmPassword" name="confirmPassword" placeholder="Xác nhận mật khẩu" value={formData.confirmPassword} onChange={handleChange} />
-                <button type="button" className="text-gray-600" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>{showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
-              </div>
-              {errors.confirmPassword && <span className="text-red-500 text-sm">{errors.confirmPassword}</span>}
-            </div>
-
-            <div className="mb-4">
-              <label className="flex items-center gap-2 text-sm">
-                <input className="h-4 w-4" type="checkbox" checked={agreeTerms} onChange={(e) => { setAgreeTerms(e.target.checked); if (errors.terms) { const newErrors = { ...errors }; delete newErrors.terms; setErrors(newErrors); } }} />
-                <span>Tôi đồng ý với <a href="#" className="text-green-600">Điều khoản sử dụng</a> và <a href="#" className="text-green-600">Chính sách bảo mật</a></span>
-              </label>
-              {errors.terms && <span className="text-red-500 text-sm">{errors.terms}</span>}
-            </div>
-
-            <button type="submit" className="w-full bg-green-600 text-white py-2 rounded font-semibold" disabled={isLoading}>{isLoading ? 'Đang tạo tài khoản...' : 'Đăng Ký'}</button>
-          </form>
-
-          <div className="flex items-center justify-center gap-4 my-4 text-sm text-gray-500">
-            <span>Hoặc</span>
+            
+            {currentStep === 1 && (
+              <p className="text-center mt-6 text-[10px] text-slate-300 font-bold uppercase tracking-tight">
+                Đã có tài khoản? <span onClick={() => navigate('/')} className="text-green-600 cursor-pointer hover:underline ml-1">Đăng nhập</span>
+              </p>
+            )}
           </div>
-
-          <div className="flex gap-2">
-            <button className="flex-1 py-2 rounded border text-sm">🔵 Facebook</button>
-            <button className="flex-1 py-2 rounded border text-sm">📧 Google</button>
-          </div>
-
-          <div className="text-center mt-4 text-sm text-gray-600">Đã có tài khoản? <a href="/login" className="text-green-600">Đăng nhập ngay</a></div>
         </div>
-      </div>
-    </div>
+      </AuthCard>
+    </AuthOverlay>
   )
 }
