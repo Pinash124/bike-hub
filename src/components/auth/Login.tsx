@@ -1,128 +1,116 @@
 // src/components/auth/Login.tsx
 import { useState } from 'react'
-import { Mail, Lock, Eye, EyeOff, X, Bike } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, X, Bike, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { AuthOverlay, AuthCard } from './AuthLayout'
+import { useAuth } from '../../contexts/AuthContext' // 1. Import useAuth
 
-// Sửa Props thành Optional (?) để App.tsx gọi <Login /> không bị lỗi
 interface LoginModalProps {
   isOpen?: boolean;
   onClose?: () => void;
   onSwitchToRegister?: () => void;
 }
 
-export default function LoginModal({ 
-  isOpen = true, // Mặc định mở nếu không truyền props (dùng cho standalone page)
-  onClose, 
-  onSwitchToRegister 
-}: LoginModalProps) {
+export default function LoginModal({ isOpen = true, onClose, onSwitchToRegister }: LoginModalProps) {
   const navigate = useNavigate()
+  const { login } = useAuth() // 2. Lấy hàm login từ Context
+  
+  // 3. Khai báo state cho form
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
   if (!isOpen) return null;
+
+  // 4. Xử lý logic khi nhấn nút đăng nhập
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    
+    if (!email || !password) {
+      setError('Vui lòng nhập đầy đủ email và mật khẩu')
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+      await login(email, password) // Gọi hàm login từ context
+      if (onClose) onClose() // Đóng modal nếu đang ở trang chủ
+      navigate('/') // Chuyển hướng về trang chủ hoặc dashboard
+    } catch (err) {
+      setError('Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <AuthOverlay>
       <AuthCard>
-        {/* Nút đóng: Chỉ hiển thị nếu có hàm onClose (khi dùng làm Modal) */}
         {onClose && (
-          <button 
-            onClick={onClose} 
-            className="absolute top-5 right-5 p-1.5 text-slate-300 hover:text-red-500 transition-all z-10"
-          >
-            <X size={18} />
+          <button onClick={onClose} className="absolute top-6 right-6 p-2 text-slate-400 hover:text-red-500 rounded-full transition-all z-10">
+            <X size={20} />
           </button>
         )}
 
         <div className="flex flex-col items-center w-full antialiased">
-          {/* HEADER: Font chữ mềm mại, màu Slate sang trọng */}
-          <div className="text-center mb-6">
-            <div className="inline-flex bg-green-600 p-2.5 rounded-xl shadow-lg shadow-green-100 mb-3">
-              <Bike size={22} className="text-white" />
+          <div className="text-center mb-8">
+            <div className="inline-flex bg-green-600 p-3.5 rounded-2xl shadow-xl shadow-green-200 mb-4">
+              <Bike size={26} className="text-white" />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 uppercase tracking-tight leading-tight">
-              Đăng nhập <br/><span className="text-green-600 font-extrabold text-2xl">BikeHub</span>
-            </h2>
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1 opacity-100">
-              Chào mừng bạn trở lại
-            </p>
+            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Đăng nhập <span className="text-green-600">BikeHub</span></h2>
           </div>
 
-          {/* FORM: Khoảng cách space-y-4 giúp trải đều form mà không cần scroll */}
-          <form className="w-full space-y-4" onSubmit={(e) => e.preventDefault()}>
-            <div className="space-y-1.5">
-              <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-5">
-                Email Address
-              </label>
-              <div className="flex items-center gap-3 bg-slate-50 border border-slate-100 px-5 py-3.5 rounded-full focus-within:bg-white focus-within:border-green-500 focus-within:shadow-xl focus-within:shadow-green-500/5 transition-all group">
-                <Mail size={16} className="text-slate-300 group-focus-within:text-green-600" />
+          {/* Hiển thị thông báo lỗi nếu có */}
+          {error && <div className="w-full mb-4 p-3 bg-red-50 border border-red-100 text-red-600 text-[11px] font-bold rounded-xl text-center uppercase tracking-wider">{error}</div>}
+
+          <form className="w-full space-y-5" onSubmit={handleSubmit}> {/* 5. Gắn hàm handleSubmit */}
+            <div className="space-y-2">
+              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-6">Email Address</label>
+              <div className="flex items-center gap-4 bg-slate-50 border-2 border-transparent px-6 py-4 rounded-full focus-within:bg-white focus-within:border-green-500 transition-all group">
+                <Mail size={18} className="text-slate-400 group-focus-within:text-green-600" />
                 <input 
-                  className="flex-1 bg-transparent outline-none text-xs font-medium placeholder:text-slate-300" 
+                  className="flex-1 bg-transparent outline-none text-sm font-bold text-slate-800 placeholder:text-slate-300" 
                   type="email" 
-                  placeholder="email@domain.com" 
+                  placeholder="name@domain.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)} // Cập nhật state email
                 />
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-5">
-                Password
-              </label>
-              <div className="flex items-center gap-3 bg-slate-50 border border-slate-100 px-5 py-3.5 rounded-full focus-within:bg-white focus-within:border-green-500 focus-within:shadow-xl focus-within:shadow-green-500/5 transition-all group">
-                <Lock size={16} className="text-slate-300 group-focus-within:text-green-600" />
+            <div className="space-y-2">
+              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest ml-6">Password</label>
+              <div className="flex items-center gap-4 bg-slate-50 border-2 border-transparent px-6 py-4 rounded-full focus-within:bg-white focus-within:border-green-500 transition-all group">
+                <Lock size={18} className="text-slate-400 group-focus-within:text-green-600" />
                 <input 
-                  className="flex-1 bg-transparent outline-none text-xs font-medium placeholder:text-slate-300" 
+                  className="flex-1 bg-transparent outline-none text-sm font-bold text-slate-800 placeholder:text-slate-300" 
                   type={showPassword ? 'text' : 'password'} 
-                  placeholder="••••••••" 
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)} // Cập nhật state password
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-slate-300 hover:text-green-600">
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-slate-400 hover:text-green-600">
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
 
-            <div className="flex items-center justify-between px-5 pt-1">
-              <label className="flex items-center gap-2 cursor-pointer group">
-                <input type="checkbox" className="w-3.5 h-3.5 accent-green-600 rounded-sm border-slate-200" />
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight group-hover:text-slate-600 transition-colors">
-                  Ghi nhớ
-                </span>
-              </label>
-              <a href="#" className="text-[10px] font-bold text-green-600 uppercase hover:underline underline-offset-2 transition-all">
-                Quên?
-              </a>
-            </div>
-
-            <button className="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-full font-bold text-[11px] uppercase tracking-[0.2em] shadow-lg shadow-green-900/10 transition-all active:scale-95 mt-2">
-              Xác nhận đăng nhập
+            <button 
+              type="submit" // 6. Đảm bảo type là submit
+              disabled={isSubmitting}
+              className="w-full bg-green-600 hover:bg-green-700 text-white py-4.5 rounded-full font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-green-200 transition-all active:scale-95 mt-4 flex items-center justify-center gap-2"
+            >
+              {isSubmitting ? <><Loader2 size={16} className="animate-spin" /> Đang xử lý...</> : 'Xác nhận đăng nhập'}
             </button>
           </form>
 
-          {/* FOOTER: Gọn nhẹ, trải đều */}
-          <div className="mt-8 w-full text-center">
-            <div className="relative flex items-center justify-center mb-6">
-              <div className="w-full border-t border-slate-100"></div>
-              <span className="absolute bg-white px-3 text-[9px] font-bold text-slate-300 uppercase tracking-widest">Hoặc</span>
-            </div>
-
-            <div className="flex gap-3 mb-6">
-              <button className="flex-1 py-2.5 rounded-full border border-slate-100 font-bold text-[9px] uppercase hover:bg-slate-50 transition-all text-slate-400 tracking-widest">
-                Google
-              </button>
-              <button className="flex-1 py-2.5 rounded-full border border-slate-100 font-bold text-[9px] uppercase hover:bg-slate-50 transition-all text-slate-400 tracking-widest">
-                Facebook
-              </button>
-            </div>
-            
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
+          <div className="mt-10 w-full text-center">
+             <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">
               Chưa có tài khoản? 
-              <button 
-                type="button"
-                onClick={() => onSwitchToRegister ? onSwitchToRegister() : navigate('/register')} 
-                className="text-green-600 ml-1.5 hover:underline font-extrabold cursor-pointer"
-              >
-                Đăng ký ngay
-              </button>
+              <button onClick={() => onSwitchToRegister ? onSwitchToRegister() : navigate('/register')} className="text-green-600 ml-2 hover:underline font-black">Đăng ký ngay</button>
             </p>
           </div>
         </div>

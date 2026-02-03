@@ -1,9 +1,10 @@
 // src/pages/UnifiedAuth.tsx
 import { useState } from 'react'
 import { 
-  Mail, Lock, User, Eye, EyeOff, Phone, Bike, 
+  Mail, Lock, User, Eye, EyeOff, Phone, 
   ShieldCheck, ArrowLeft, ChevronRight, Hash, 
-  Calendar, MapPin, Upload, CheckCircle 
+  Calendar, MapPin, Upload, CheckCircle, 
+  ShoppingBag, Store 
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { AuthCard, AuthOverlay } from '../auth/AuthLayout'
@@ -14,28 +15,28 @@ export default function UnifiedAuth() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   
+  // Thêm state role vào formData
+  const [role, setRole] = useState<'buyer' | 'seller'>('buyer')
+
   const nextStep = () => setCurrentStep(prev => prev + 1)
   const prevStep = () => setCurrentStep(prev => prev - 1)
 
   return (
     <AuthOverlay>
-      {/* Nút thoát cố định - Chữ siêu nhỏ & dãn dòng rộng */}
       {currentStep < 5 && (
         <button 
           onClick={() => navigate('/')}
-          className="fixed top-10 left-10 flex items-center gap-3 text-slate-100 hover:text-green-600 transition-all font-bold text-[9px] uppercase tracking-[0.3em]"
+          className="fixed top-10 left-10 flex items-center gap-3 text-slate-400 hover:text-green-600 transition-all font-bold text-[9px] uppercase tracking-[0.3em]"
         >
           <ArrowLeft size={14} /> Back to home
         </button>
       )}
 
-      {/* min-h-[620px] giúp card luôn giữ dáng đứng cao ráo dù ít nội dung */}
       <AuthCard>
-        <div className="flex flex-col min-h-[520px] w-full antialiased justify-between">
+        <div className="flex flex-col min-h-[560px] w-full antialiased justify-between">
           
-          {/* PHẦN TRÊN: Progress + Header + Form */}
           <div>
-            {/* 1. PROGRESS BAR: Siêu mảnh (2px) */}
+            {/* 1. PROGRESS BAR */}
             {currentStep < 5 && (
               <div className="flex items-center justify-between mb-10 px-4">
                 {[1, 2, 3, 4].map((s) => (
@@ -53,10 +54,10 @@ export default function UnifiedAuth() {
               </div>
             )}
 
-            {/* 2. HEADER: Căn giữa, typography mềm mại */}
-            <div className="text-center mb-10">
+            {/* 2. HEADER */}
+            <div className="text-center mb-8">
               <h2 className="text-xl font-bold text-slate-900 uppercase tracking-tight mb-1">
-                {currentStep === 1 && 'Thông tin tài khoản'}
+                {currentStep === 1 && 'Chọn vai trò của bạn'}
                 {currentStep === 2 && 'Bảo mật mật khẩu'}
                 {currentStep === 3 && 'Xác minh danh tính'}
                 {currentStep === 4 && 'Địa chỉ & Giấy tờ'}
@@ -69,45 +70,71 @@ export default function UnifiedAuth() {
               </div>
             </div>
 
-            {/* 3. FORM FIELDS: Trải đều với space-y-5 */}
-            <form className="space-y-5 animate-in fade-in slide-in-from-bottom-3 duration-700">
+            {/* 3. FORM FIELDS */}
+            <form className="space-y-4 animate-in fade-in slide-in-from-bottom-3 duration-700">
               {currentStep === 1 && (
-                <>
-                  <div className="group">
-                    <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-6 mb-2">Họ và tên</label>
-                    <div className="flex items-center gap-4 bg-slate-50 border border-slate-100 px-6 py-4 rounded-full focus-within:bg-white focus-within:border-green-500 focus-within:shadow-xl focus-within:shadow-green-500/5 transition-all">
-                      <User size={16} className="text-slate-300" />
-                      <input className="flex-1 bg-transparent outline-none text-xs font-medium" placeholder="Nguyễn Văn A" />
+                <div className="space-y-6">
+                  {/* ROLE SELECTION CARDS */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setRole('buyer')}
+                      className={`flex flex-col items-center justify-center p-4 rounded-[2rem] border-2 transition-all duration-300 gap-2 ${
+                        role === 'buyer' 
+                        ? 'border-green-500 bg-green-50/50 shadow-lg shadow-green-100' 
+                        : 'border-slate-100 bg-slate-50/50 opacity-60'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-full ${role === 'buyer' ? 'bg-green-600 text-white' : 'bg-slate-200 text-slate-400'}`}>
+                        <ShoppingBag size={18} />
+                      </div>
+                      <span className={`text-[10px] font-bold uppercase tracking-widest ${role === 'buyer' ? 'text-green-700' : 'text-slate-400'}`}>Người mua</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setRole('seller')}
+                      className={`flex flex-col items-center justify-center p-4 rounded-[2rem] border-2 transition-all duration-300 gap-2 ${
+                        role === 'seller' 
+                        ? 'border-green-500 bg-green-50/50 shadow-lg shadow-green-100' 
+                        : 'border-slate-100 bg-slate-50/50 opacity-60'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-full ${role === 'seller' ? 'bg-green-600 text-white' : 'bg-slate-200 text-slate-400'}`}>
+                        <Store size={18} />
+                      </div>
+                      <span className={`text-[10px] font-bold uppercase tracking-widest ${role === 'seller' ? 'text-green-700' : 'text-slate-400'}`}>Người bán</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-4 bg-slate-50 border border-slate-100 px-6 py-4 rounded-full focus-within:bg-white focus-within:border-green-500 transition-all group">
+                      <User size={16} className="text-slate-300 group-focus-within:text-green-500" />
+                      <input className="flex-1 bg-transparent outline-none text-xs font-medium" placeholder="Họ và tên của bạn" />
+                    </div>
+                    <div className="flex items-center gap-4 bg-slate-50 border border-slate-100 px-6 py-4 rounded-full focus-within:bg-white focus-within:border-green-500 transition-all group">
+                      <Mail size={16} className="text-slate-300 group-focus-within:text-green-500" />
+                      <input className="flex-1 bg-transparent outline-none text-xs font-medium" placeholder="Địa chỉ Email" />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-100 px-6 py-4 rounded-full">
-                      <Mail size={14} className="text-slate-300" />
-                      <input className="flex-1 bg-transparent outline-none text-[11px] font-medium" placeholder="Email" />
-                    </div>
-                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-100 px-6 py-4 rounded-full">
-                      <Phone size={14} className="text-slate-300" />
-                      <input className="flex-1 bg-transparent outline-none text-[11px] font-medium" placeholder="SĐT" />
-                    </div>
-                  </div>
-                </>
+                </div>
               )}
 
               {currentStep === 2 && (
                 <>
                   <div className="space-y-4">
-                    <div className="flex items-center gap-4 bg-slate-50 border border-slate-100 px-6 py-4 rounded-full focus-within:bg-white focus-within:border-green-500 transition-all">
-                      <Lock size={16} className="text-slate-300" />
+                    <div className="flex items-center gap-4 bg-slate-50 border border-slate-100 px-6 py-4 rounded-full focus-within:bg-white focus-within:border-green-500 transition-all group">
+                      <Lock size={16} className="text-slate-300 group-focus-within:text-green-500" />
                       <input className="flex-1 bg-transparent outline-none text-xs font-medium" type={showPassword ? 'text' : 'password'} placeholder="Mật khẩu mới" />
                       <button type="button" onClick={() => setShowPassword(!showPassword)}><Eye size={16} className="text-slate-300" /></button>
                     </div>
-                    <div className="flex items-center gap-4 bg-slate-50 border border-slate-100 px-6 py-4 rounded-full focus-within:bg-white focus-within:border-green-500 transition-all">
-                      <ShieldCheck size={16} className="text-slate-300" />
+                    <div className="flex items-center gap-4 bg-slate-50 border border-slate-100 px-6 py-4 rounded-full focus-within:bg-white focus-within:border-green-500 transition-all group">
+                      <ShieldCheck size={16} className="text-slate-300 group-focus-within:text-green-500" />
                       <input className="flex-1 bg-transparent outline-none text-xs font-medium" type={showPassword ? 'text' : 'password'} placeholder="Xác nhận mật khẩu" />
                     </div>
                   </div>
                   <p className="px-6 text-[9px] text-slate-400 font-medium leading-relaxed">
-                    * Mật khẩu phải bao gồm ít nhất 8 ký tự, chữ hoa và số.
+                    * Bạn đang đăng ký với vai trò <span className="text-green-600 font-bold uppercase">{role === 'buyer' ? 'Người mua' : 'Người bán'}</span>.
                   </p>
                 </>
               )}
@@ -130,13 +157,13 @@ export default function UnifiedAuth() {
 
               {currentStep === 4 && (
                 <>
-                  <div className="flex items-center gap-4 bg-slate-50 border border-slate-100 px-6 py-4 rounded-full">
-                    <MapPin size={16} className="text-slate-300" />
-                    <input className="flex-1 bg-transparent outline-none text-xs font-medium" placeholder="Địa chỉ thường trú" />
+                  <div className="flex items-center gap-4 bg-slate-50 border border-slate-100 px-6 py-4 rounded-full group">
+                    <MapPin size={16} className="text-slate-300 group-focus-within:text-green-500" />
+                    <input className="flex-1 bg-transparent outline-none text-xs font-medium" placeholder="Địa chỉ cư trú" />
                   </div>
                   <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-100 rounded-[2.5rem] py-10 hover:bg-slate-50 cursor-pointer group transition-all">
                     <Upload size={24} className="text-slate-200 group-hover:text-green-600 mb-3 transition-colors" />
-                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Tải lên tài liệu</span>
+                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Tải lên mặt trước ID</span>
                     <input type="file" className="hidden" />
                   </label>
                 </>
@@ -148,15 +175,15 @@ export default function UnifiedAuth() {
                     <CheckCircle size={44} className="text-green-600" />
                   </div>
                   <p className="text-[12px] text-slate-500 font-medium leading-relaxed px-6">
-                    Hồ sơ của bạn đã được gửi. Đội ngũ BikeHub sẽ tiến hành xác minh trong thời gian sớm nhất.
+                    Chào mừng <span className="font-bold text-slate-900">{role === 'buyer' ? 'Người mua' : 'Người bán'}</span>! Hồ sơ của bạn đang được BikeHub xác minh.
                   </p>
                 </div>
               )}
             </form>
           </div>
 
-          {/* PHẦN DƯỚI: Nút điều hướng (Luôn nằm ở đáy Card) */}
-          <div className="pt-10">
+          {/* PHẦN DƯỚI: Nút điều hướng */}
+          <div className="pt-8">
             <div className="flex gap-3">
               {currentStep > 1 && currentStep < 5 && (
                 <button 
@@ -179,23 +206,17 @@ export default function UnifiedAuth() {
                   onClick={() => { setIsLoading(true); setTimeout(() => { setIsLoading(false); nextStep(); }, 1500); }}
                   className="flex-1 bg-slate-900 hover:bg-black text-white py-4 rounded-full font-bold text-[11px] uppercase tracking-[0.2em] shadow-2xl active:scale-95 transition-all"
                 >
-                  {isLoading ? 'Đang xác thực...' : 'Gửi hồ sơ ngay'}
+                  {isLoading ? 'Đang xử lý...' : 'Hoàn tất đăng ký'}
                 </button>
               ) : (
                 <button 
                   onClick={() => navigate('/')}
                   className="flex-1 bg-green-600 text-white py-4 rounded-full font-bold text-[11px] uppercase tracking-[0.2em] active:scale-95 transition-all"
                 >
-                  Bắt đầu khám phá
+                  Vào trang chủ
                 </button>
               )}
             </div>
-            
-            {currentStep === 1 && (
-              <p className="text-center mt-6 text-[10px] text-slate-300 font-bold uppercase tracking-tight">
-                Đã có tài khoản? <span onClick={() => navigate('/')} className="text-green-600 cursor-pointer hover:underline ml-1">Đăng nhập</span>
-              </p>
-            )}
           </div>
         </div>
       </AuthCard>
