@@ -1,4 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
+
+// Cấu hình URL cơ sở từ link Railway bạn cung cấp
+const API_URL = 'https://bikehub-production-2468.up.railway.app/api/v1';
 
 export type UserRole = 'guest' | 'buyer' | 'seller' | 'inspector' | 'admin';
 
@@ -11,6 +15,7 @@ export interface UserProfile {
   avatar?: string;
   createdAt: string;
   isKYCVerified?: boolean;
+  token?: string; // Lưu JWT token để xác thực các request sau
 }
 
 export interface AuthContextType {
@@ -19,11 +24,12 @@ export interface AuthContextType {
   isLoading: boolean;
   role: UserRole;
   login: (email: string, password: string) => Promise<void>;
-  register: (data: Omit<UserProfile, 'id' | 'createdAt' | 'role'> & { password: string }) => Promise<void>;
+  register: (data: any) => Promise<void>;
   logout: () => void;
   updateProfile: (profile: Partial<UserProfile>) => void;
   updateRole: (role: UserRole) => void;
   setKYCVerified: (verified: boolean) => void;
+  submitKYC: (formData: FormData) => Promise<void>; // Thêm hàm xử lý KYC
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,77 +39,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [role, setRole] = useState<UserRole>('guest');
 
-  // Initialize from localStorage on mount
+  // Khởi tạo trạng thái từ localStorage khi load trang
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    const storedRole = localStorage.getItem('role') as UserRole;
-    
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
-        setRole(parsedUser.role || storedRole || 'buyer');
+        setRole(parsedUser.role || 'buyer');
       } catch (error) {
-        console.error('Failed to parse stored user:', error);
+        console.error('Lỗi phân giải dữ liệu người dùng:', error);
         localStorage.removeItem('user');
-        localStorage.removeItem('role');
       }
     }
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, _password: string) => {
+  // Hàm Đăng nhập thực tế gọi API
+  const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
+      const response = await axios.post(`${API_URL}/auth/login`, { email, password });
       
-      // Simulate API call - replace with actual backend call
-      const _newUser: UserProfile = {
-        id: 'user_' + Date.now(),
-        email,
-        name: email.split('@')[0],
-        phone: '',
-        role: 'buyer',
-        createdAt: new Date().toISOString(),
-        isKYCVerified: false,
-      };
-
-      setUser(_newUser);
-      setRole('buyer');
-      localStorage.setItem('user', JSON.stringify(_newUser));
-      localStorage.setItem('role', 'buyer');
-    } catch (error) {
-      console.error('Login failed:', error);
-      throw error;
+      const userData: UserProfile = response.data; // Giả định API trả về đúng interface UserProfile
+      setUser(userData);
+      setRole(userData.role);
+      
+      // Lưu vào localStorage để duy trì phiên đăng nhập
+      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('role', userData.role);
+    } catch (error: any) {
+      console.error('Đăng nhập thất bại:', error);
+      throw new Error(error.response?.data?.message || 'Email hoặc mật khẩu không chính xác');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const register = async (data: Omit<UserProfile, 'id' | 'createdAt' | 'role'> & { password: string }) => {
+  // Hàm Đăng ký thực tế gọi API
+  const register = async (data: any) => {
     try {
       setIsLoading(true);
-      
-      // Simulate API call - replace with actual backend call
-      const _newUser: UserProfile = {
-        id: 'user_' + Date.now(),
-        email: data.email,
-        name: data.name,
-        phone: data.phone,
-        role: 'buyer',
-        createdAt: new Date().toISOString(),
-        isKYCVerified: false,
-      };
+      await axios.post(`${API_URL}/auth/register`, data);
+    } catch (error: any) {
+      console.error('Đăng ký thất bại:', error);
+      throw new Error(error.response?.data?.message || 'Không thể đăng ký tài khoản');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      // Store registration data but don't auto-login
-      // User must go to login page with their credentials
-      localStorage.setItem('registeredUser', JSON.stringify({
-        email: _newUser.email,
-        // Note: Never store passwords in localStorage in production
-        // This is for demo only
-      }));
-    } catch (error) {
-      console.error('Registration failed:', error);
-      throw error;
+  // Hàm gửi hồ sơ KYC (Xác minh danh tính)
+  const submitKYC = async (formData: FormData) => {
+    try {
+      setIsLoading(true);
+      // Gửi request kèm Token trong Header
+      const response = await axios.post(`${API_URL}/users/kyc`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${user?.token}`
+        }
+      });
+      
+      if (response.status === 200) {
+        setKYCVerified(true);
+      }
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Gửi hồ sơ KYC thất bại');
     } finally {
       setIsLoading(false);
     }
@@ -153,6 +155,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateProfile,
     updateRole,
     setKYCVerified,
+    submitKYC,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

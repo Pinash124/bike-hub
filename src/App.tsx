@@ -13,9 +13,10 @@ import FeaturedBikes from './components/sections/FeaturedBikes'
 import Categories from './components/sections/Categories'
 import Features from './components/sections/Features'
 
-// --- Auth Components ---
+// --- Auth & Verification Components ---
 import Login from './components/auth/Login'
 import Register from './components/auth/Register' 
+import KYC from './components/auth/KYC'
 
 // --- Dashboards & Pages ---
 import SellerDashboard from './components/dashboards/SellerDashboard'
@@ -34,8 +35,7 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { GuestMarketplace } from './components/guest/GuestMarketplace'
 
 /**
- * Component Home: Giao diện nền tảng
- * Được tái sử dụng làm "phông nền" cho các lớp phủ Auth
+ * Component Home: Giao diện nền tảng chính
  */
 function Home() {
   const [selectedCategory, setSelectedCategory] = useState('Tất cả')
@@ -71,9 +71,8 @@ function App() {
               <><Header /><GuestMarketplace /><Footer /></>
             } />
 
-            {/* AUTH ROUTES CÓ HIỆU ỨNG NỀN MỜ:
-              Chúng ta render <Home /> trước, sau đó là <Login /> hoặc <Register />.
-              Vì Auth component sử dụng 'fixed inset-0', nó sẽ phủ lên trên Home.
+            {/* AUTH ROUTES:
+                Sử dụng logic phủ lên Home để tạo hiệu ứng Modal/Overlay
             */}
             <Route path="/login" element={
               <>
@@ -88,6 +87,13 @@ function App() {
                 <Register />
               </>
             } /> 
+
+            {/* --- KYC Route (Bảo vệ bởi đăng nhập) --- */}
+            <Route path="/kyc" element={
+              <ProtectedRoute>
+                <KYC />
+              </ProtectedRoute>
+            } />
             
             {/* --- Product Discovery --- */}
             <Route path="/search" element={<><Header /><SearchPage /><Footer /></>} />
