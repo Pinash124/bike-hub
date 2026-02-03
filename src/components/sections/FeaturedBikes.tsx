@@ -9,13 +9,33 @@ const featuredBikes = [
 
 export default function FeaturedBikes() {
   return (
-    <section className="bg-white py-12 border-b border-gray-50">
-      <div className="max-w-[1440px] mx-auto px-6">
-        <div className="flex justify-between items-end mb-8">
-          <h2 className="text-2xl font-bold text-green-600">Selected for you</h2>
-          <a href="#" className="text-sm font-bold text-gray-400 hover:text-green-600 transition-colors">See all bikes →</a>
+    // Tăng py-12 lên py-24 để tạo độ thoáng "Premium"
+    <section className="bg-white py-24 border-b border-gray-50">
+      
+      {/* Sử dụng class content-layout đã định nghĩa trong index.css để thụt lùi 2 bên */}
+      <div className="content-layout">
+        
+        {/* Header của Section: Làm tiêu đề nhỏ lại nhưng đậm và giãn cách rộng */}
+        <div className="flex justify-between items-end mb-16">
+          <div className="space-y-2">
+            <span className="text-[10px] font-black text-green-600 uppercase tracking-[0.4em]">
+              Sản phẩm nổi bật
+            </span>
+            <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tighter">
+              Dành riêng cho bạn
+            </h2>
+          </div>
+          
+          <a 
+            href="#" 
+            className="text-[11px] font-black text-gray-400 hover:text-green-600 uppercase tracking-widest transition-all border-b-2 border-transparent hover:border-green-600 pb-1"
+          >
+            Xem tất cả sản phẩm →
+          </a>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+
+        {/* Grid sản phẩm: Tăng gap-6 lên gap-10 để các card có không gian "thở" */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
           {featuredBikes.map((bike) => (
             <BikeCard key={bike.id} {...bike} />
           ))}
