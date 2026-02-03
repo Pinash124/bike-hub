@@ -1,0 +1,17 @@
+/* src/index.css */
+@import "tailwindcss";
+
+:root {
+  font-family: 'Inter', system-ui, sans-serif;
+  --brand-green: #16a34a;
+}
+
+body {
+  @apply min-h-screen bg-white text-slate-900 antialiased;
+}
+
+/* Chỉ giữ lại reset cho nút bấm và scrollbar toàn cục */
+button { @apply cursor-pointer transition-all duration-300 active:scale-95 outline-none; }
+
+.custom-scrollbar::-webkit-scrollbar { width: 5px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { @apply bg-slate-200 rounded-full; }
