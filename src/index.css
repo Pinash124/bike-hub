@@ -40,7 +40,7 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.1;
   letter-spacing: -0.02em;
   text-transform: uppercase;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem; /* Tăng khoảng cách dưới tiêu đề */
 }
 
 a {
@@ -54,10 +54,18 @@ a:hover {
   color: var(--brand-green-dark);
 }
 
-/* 4. UTILITY CLASS: THỤT LÙI 2 BÊN (LAYOUT CHUẨN) */
-/* Áp dụng class này cho thẻ div bọc ngoài cùng của mỗi Section */
+/* 4. UTILITY CLASS: THỤT LÙI 2 BÊN VÀ KHOẢNG TRỐNG TRÊN DƯỚI */
 .content-layout {
-  @apply max-w-[1440px] mx-auto px-6 md:px-16 lg:px-24;
+  /* Giữ nguyên max-width và căn giữa */
+  @apply max-w-[1440px] mx-auto;
+  
+  /* Thụt lùi 2 bên (Horizontal Padding) */
+  @apply px-6 md:px-16 lg:px-24;
+  
+  /* BỔ SUNG: Khoảng trống trên dưới (Vertical Padding) 
+     Tăng dần theo kích thước màn hình để tạo độ thoáng chuyên nghiệp
+  */
+  @apply py-6 md:py-8 lg:py-8;
 }
 
 /* 5. Tùy chỉnh Scrollbar tinh tế hơn */

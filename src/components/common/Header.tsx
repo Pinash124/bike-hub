@@ -60,12 +60,7 @@ export default function Header() {
 
         {/* SEARCH BAR - Tăng chiều cao lên py-7 */}
         <div className="hidden md:flex flex-1 max-w-2xl relative group items-center">
-          <Search 
-            size={22} 
-            className={`absolute left-6 transition-colors z-10 ${
-              isScrolled ? 'text-gray-400' : 'text-white/40'
-            }`} 
-          />
+
           <input 
             type="text" 
             placeholder="Tìm kiếm mẫu xe, phụ kiện..." 

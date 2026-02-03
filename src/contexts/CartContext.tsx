@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 
+// --- Interfaces ---
 export interface CartItem {
   id: string;
   productId: string;
@@ -26,85 +27,95 @@ export interface CartContextType {
   selectItems: (productIds: string[]) => void;
 }
 
+// --- Context ---
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+// --- Provider ---
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // 1. Khởi tạo state từ localStorage nếu có
+  // 1. State Management
   const [items, setItems] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem('cart_items');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('cart_items');
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error("Failed to parse cart items:", error);
+      return [];
+    }
   });
   
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
 
-  // 2. Đồng bộ hóa với localStorage mỗi khi items thay đổi
+  // 2. Persistence Layer
   useEffect(() => {
     localStorage.setItem('cart_items', JSON.stringify(items));
   }, [items]);
 
-  const addItem = (item: CartItem) => {
+  // 3. Actions (Memoized with useCallback)
+  const addItem = useCallback((item: CartItem) => {
     setItems((prev) => {
-      const existing = prev.find((i) => i.productId === item.productId);
-      if (existing) {
-        return prev.map((i) =>
-          i.productId === item.productId
-            ? { ...i, quantity: i.quantity + (item.quantity || 1) }
-            : i
-        );
+      const existingIndex = prev.findIndex((i) => i.productId === item.productId);
+      if (existingIndex > -1) {
+        const newItems = [...prev];
+        newItems[existingIndex] = {
+          ...newItems[existingIndex],
+          quantity: newItems[existingIndex].quantity + (item.quantity || 1),
+        };
+        return newItems;
       }
       return [...prev, { ...item, quantity: item.quantity || 1 }];
     });
-  };
+  }, []);
 
-  const removeItem = (productId: string) => {
+  const removeItem = useCallback((productId: string) => {
     setItems((prev) => prev.filter((i) => i.productId !== productId));
     setSelectedProductIds((prev) => prev.filter((id) => id !== productId));
-  };
+  }, []);
 
-  const updateQuantity = (productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeItem(productId);
-      return;
-    }
-    setItems((prev) =>
-      prev.map((i) => (i.productId === productId ? { ...i, quantity } : i))
-    );
-  };
+  const updateQuantity = useCallback((productId: string, quantity: number) => {
+    setItems((prev) => {
+      if (quantity <= 0) return prev.filter((i) => i.productId !== productId);
+      return prev.map((i) => (i.productId === productId ? { ...i, quantity } : i));
+    });
+  }, []);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setItems([]);
     setSelectedProductIds([]);
-  };
+  }, []);
 
-  // Chọn hoặc bỏ chọn một sản phẩm cụ thể
-  const toggleSelectItem = (productId: string) => {
+  const toggleSelectItem = useCallback((productId: string) => {
     setSelectedProductIds((prev) =>
       prev.includes(productId)
         ? prev.filter((id) => id !== productId)
         : [...prev, productId]
     );
-  };
+  }, []);
 
-  const selectItems = (productIds: string[]) => {
+  const selectItems = useCallback((productIds: string[]) => {
     setSelectedProductIds(productIds);
-  };
+  }, []);
 
-  // 3. Các giá trị tính toán (Derived State)
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  // 4. Derived State (Calculated with useMemo)
+  const totalItems = useMemo(() => 
+    items.reduce((sum, item) => sum + item.quantity, 0), 
+  [items]);
+
+  const totalPrice = useMemo(() => 
+    items.reduce((sum, item) => sum + item.price * item.quantity, 0), 
+  [items]);
   
-  const selectedItems = items.filter((item) =>
-    selectedProductIds.includes(item.productId)
-  );
+  const selectedItems = useMemo(() => 
+    items.filter((item) => selectedProductIds.includes(item.productId)), 
+  [items, selectedProductIds]);
   
-  const selectedTotalPrice = selectedItems.reduce(
-    (sum, item) => sum + item.price * item.quantity, 
-    0
-  );
+  const selectedTotalPrice = useMemo(() => 
+    selectedItems.reduce((sum, item) => sum + item.price * item.quantity, 0), 
+  [selectedItems]);
 
   const selectedCount = selectedItems.length;
 
-  const value: CartContextType = {
+  // 5. Context Value (Memoized to prevent unnecessary re-renders of consumers)
+  const contextValue: CartContextType = useMemo(() => ({
     items,
     totalItems,
     totalPrice,
@@ -117,14 +128,23 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     clearCart,
     toggleSelectItem,
     selectItems,
-  };
+  }), [
+    items, totalItems, totalPrice, selectedItems, selectedTotalPrice, 
+    selectedCount, addItem, removeItem, updateQuantity, clearCart, 
+    toggleSelectItem, selectItems
+  ]);
 
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+  return (
+    <CartContext.Provider value={contextValue}>
+      {children}
+    </CartContext.Provider>
+  );
 };
 
+// --- Hook ---
 export const useCart = (): CartContextType => {
   const context = useContext(CartContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useCart must be used within a CartProvider');
   }
   return context;
