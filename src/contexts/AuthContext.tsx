@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import api from '../api/axiosConfig'; // Sử dụng instance đã cấu hình
+import React, { createContext, useContext, useState, useEffect } from "react";
+import api from "../api/axiosConfig"; // Sử dụng instance đã cấu hình
 
-export type UserRole = 'guest' | 'buyer' | 'seller' | 'inspector' | 'admin';
+export type UserRole = "guest" | "buyer" | "seller" | "inspector" | "admin";
 
 export interface UserProfile {
   id: string;
@@ -12,7 +12,7 @@ export interface UserProfile {
   avatar?: string;
   createdAt: string;
   isKYCVerified?: boolean;
-  token?: string; 
+  token?: string;
 }
 
 export interface AuthContextType {
@@ -31,21 +31,23 @@ export interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [role, setRole] = useState<UserRole>('guest');
+  const [role, setRole] = useState<UserRole>("guest");
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
-        setRole(parsedUser.role || 'buyer');
+        setRole(parsedUser.role || "buyer");
       } catch (error) {
-        console.error('Lỗi phân giải dữ liệu người dùng:', error);
-        localStorage.removeItem('user');
+        console.error("Lỗi phân giải dữ liệu người dùng:", error);
+        localStorage.removeItem("user");
       }
     }
     setIsLoading(false);
@@ -55,18 +57,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      // Endpoint khớp với Swagger /api/v1/auth/login
-      const response = await api.post('/api/v1/auth/login', { email, password });
-      
-      const userData: UserProfile = response.data; 
+      // Swagger login: POST /auth/login with { username, password }
+      const response = await api.post("/auth/login", {
+        username: email,
+        password,
+      });
+
+      const token = response?.data?.result?.token;
+      const authenticated = response?.data?.result?.authenticated;
+      if (!token || !authenticated) {
+        throw new Error(response?.data?.message || "Đăng nhập thất bại");
+      }
+
+      // Create a minimal user object so axios interceptor can read token
+      const userData: UserProfile = {
+        id: "",
+        email,
+        name: email,
+        phone: "",
+        role: "buyer",
+        avatar: undefined,
+        createdAt: new Date().toISOString(),
+        token,
+      };
+
       setUser(userData);
       setRole(userData.role);
-      
-      localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('role', userData.role);
+
+      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("role", userData.role);
     } catch (error: any) {
-      console.error('Đăng nhập thất bại:', error);
-      throw new Error(error.response?.data?.message || 'Email hoặc mật khẩu không chính xác');
+      console.error("Đăng nhập thất bại:", error);
+      throw new Error(
+        error.response?.data?.message || "Email hoặc mật khẩu không chính xác",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -77,10 +101,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setIsLoading(true);
       // Endpoint khớp với Swagger /api/v1/auth/register
-      await api.post('/api/v1/auth/register', data);
+      await api.post("/api/v1/auth/register", data);
     } catch (error: any) {
-      console.error('Đăng ký thất bại:', error);
-      throw new Error(error.response?.data?.message || 'Không thể đăng ký tài khoản');
+      console.error("Đăng ký thất bại:", error);
+      throw new Error(
+        error.response?.data?.message || "Không thể đăng ký tài khoản",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -90,17 +116,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setIsLoading(true);
       // Instance api đã có interceptor tự thêm Token nếu user đã login
-      const response = await api.post('/api/v1/users/kyc', formData, {
+      const response = await api.post("/api/v1/users/kyc", formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
-        }
+          "Content-Type": "multipart/form-data",
+        },
       });
-      
+
       if (response.status === 200) {
         setKYCVerified(true);
       }
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Gửi hồ sơ KYC thất bại');
+      throw new Error(
+        error.response?.data?.message || "Gửi hồ sơ KYC thất bại",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -108,16 +136,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     setUser(null);
-    setRole('guest');
-    localStorage.removeItem('user');
-    localStorage.removeItem('role');
+    setRole("guest");
+    localStorage.removeItem("user");
+    localStorage.removeItem("role");
   };
 
   const updateProfile = (updates: Partial<UserProfile>) => {
     if (user) {
       const updatedUser = { ...user, ...updates };
       setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      localStorage.setItem("user", JSON.stringify(updatedUser));
     }
   };
 
@@ -126,16 +154,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (user) {
       const updatedUser = { ...user, role: newRole };
       setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      localStorage.setItem("user", JSON.stringify(updatedUser));
     }
-    localStorage.setItem('role', newRole);
+    localStorage.setItem("role", newRole);
   };
 
   const setKYCVerified = (verified: boolean) => {
     if (user) {
       const updatedUser = { ...user, isKYCVerified: verified };
       setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      localStorage.setItem("user", JSON.stringify(updatedUser));
     }
   };
 
@@ -159,7 +187,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
