@@ -1,5 +1,5 @@
 // src/App.tsx
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom' // Đã xóa Navigate dư thừa
 import { useState } from 'react'
 
 // --- Layout & Common Components ---
@@ -15,7 +15,8 @@ import Features from './components/sections/Features'
 
 // --- Auth Components ---
 import Login from './components/auth/Login'
-import Register from './components/auth/Register' 
+import Register from './components/auth/Register'
+import KYC from './components/auth/KYC' // Bổ sung tệp KYC đã tạo
 
 // --- Dashboards & Pages ---
 import SellerDashboard from './components/dashboards/SellerDashboard'
@@ -34,9 +35,20 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { GuestMarketplace } from './components/guest/GuestMarketplace'
 
 /**
- * Component Home: Giao diện nền tảng
- * Được tái sử dụng làm "phông nền" cho các lớp phủ Auth
+ * Trang thông báo khi không có quyền truy cập
  */
+function Unauthorized() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-10">
+      <h1 className="text-4xl font-black text-red-600 mb-4 uppercase">403 - Truy cập bị từ chối</h1>
+      <p className="text-slate-500 mb-8">Bạn không có quyền hạn để truy cập vào trang này.</p>
+      <a href="/" className="bg-green-600 text-white px-8 py-3 rounded-full font-bold uppercase text-xs tracking-widest hover:bg-green-700 transition-all">
+        Quay lại trang chủ
+      </a>
+    </div>
+  )
+}
+
 function Home() {
   const [selectedCategory, setSelectedCategory] = useState('Tất cả')
 
@@ -66,32 +78,26 @@ function App() {
           <Routes>
             {/* --- Public Routes --- */}
             <Route path="/" element={<Home />} />
+            <Route path="/unauthorized" element={<><Header /><Unauthorized /><Footer /></>} />
             
             <Route path="/marketplace" element={
               <><Header /><GuestMarketplace /><Footer /></>
             } />
 
-            {/* AUTH ROUTES CÓ HIỆU ỨNG NỀN MỜ:
-              Chúng ta render <Home /> trước, sau đó là <Login /> hoặc <Register />.
-              Vì Auth component sử dụng 'fixed inset-0', nó sẽ phủ lên trên Home.
-            */}
-            <Route path="/login" element={
-              <>
-                <Home /> 
-                <Login />
-              </>
-            } />
-            
-            <Route path="/register" element={
-              <>
-                <Home />
-                <Register />
-              </>
-            } /> 
+            {/* AUTH ROUTES */}
+            <Route path="/login" element={<><Home /><Login /></>} />
+            <Route path="/register" element={<><Home /><Register /></>} />
             
             {/* --- Product Discovery --- */}
             <Route path="/search" element={<><Header /><SearchPage /><Footer /></>} />
             <Route path="/product/:id" element={<><Header /><ProductDetailPage /><Footer /></>} />
+            
+            {/* --- KYC Route --- */}
+            <Route path="/kyc" element={
+              <ProtectedRoute>
+                <KYC />
+              </ProtectedRoute>
+            } />
             
             {/* --- Protected Routes - Seller --- */}
             <Route path="/seller/dashboard" element={
@@ -119,19 +125,21 @@ function App() {
               </ProtectedRoute>
             } />
             
-            {/* --- Protected Routes - Admin --- */}
+            {/* --- Protected Routes - Admin & Inspector --- */}
             <Route path="/admin/dashboard" element={
               <ProtectedRoute requiredRole="admin">
                 <><Header /><AdminDashboard /><Footer /></>
               </ProtectedRoute>
             } />
             
-            {/* --- Protected Routes - Inspector --- */}
             <Route path="/inspector/dashboard" element={
               <ProtectedRoute requiredRole="inspector">
                 <><Header /><InspectorDashboard /><Footer /></>
               </ProtectedRoute>
             } />
+
+            {/* --- 404 Route --- */}
+            <Route path="*" element={<><Header /><div className="py-20 text-center font-bold text-slate-400">404 - TRANG KHÔNG TỒN TẠI</div><Footer /></>} />
           </Routes>
         </Router>
       </CartProvider>
