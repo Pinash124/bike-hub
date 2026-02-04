@@ -2,13 +2,14 @@ import { Search, ShoppingCart, ChevronDown, PlusCircle, Bike } from 'lucide-reac
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useCart } from '../../contexts/CartContext'
+import { useAuth } from '../../contexts/AuthContext'
 import LoginModal from '../auth/Login'
 import { Container } from './Container' // Đảm bảo bạn đã tạo file Container.tsx
 
 export default function Header() {
   const navigate = useNavigate()
   const { items } = useCart()
-  const [user, setUser] = useState<{ email: string; name: string } | null>(null)
+  const { user, isAuthenticated } = useAuth()
   const [isScrolled, setIsScrolled] = useState(false)
   const [isLoginOpen, setIsLoginOpen] = useState(false)
 
@@ -17,12 +18,6 @@ export default function Header() {
     const handleScroll = () => setIsScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-
-  // Kiểm tra user từ localStorage
-  useEffect(() => {
-    const userStr = localStorage.getItem('user')
-    if (userStr) setUser(JSON.parse(userStr))
   }, [])
 
   return (
@@ -110,7 +105,7 @@ export default function Header() {
 
             <div className={`w-px h-8 hidden sm:block ${isScrolled ? 'bg-gray-200' : 'bg-white/20'}`}></div>
 
-            {user ? (
+            {isAuthenticated && user ? (
               <div 
                 onClick={() => navigate('/buyer/dashboard')} 
                 className={`flex items-center gap-3 p-1.5 pr-4 cursor-pointer transition-all border rounded-full ${

@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import api from "../api/axiosConfig"; // Sử dụng instance đã cấu hình
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 
-export type UserRole = "guest" | "buyer" | "seller" | "inspector" | "admin";
+export type UserRole = 'guest' | 'buyer' | 'seller' | 'inspector' | 'admin';
 
 export interface UserProfile {
   id: string;
@@ -12,140 +13,215 @@ export interface UserProfile {
   avatar?: string;
   createdAt: string;
   isKYCVerified?: boolean;
-  token?: string;
 }
 
 export interface AuthContextType {
   user: UserProfile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isLoggingOut: boolean;
   role: UserRole;
   login: (email: string, password: string) => Promise<void>;
-  register: (data: any) => Promise<void>;
-  logout: () => void;
+  register: (data: Omit<UserProfile, 'id' | 'createdAt' | 'role'> & { password: string }) => Promise<void>;
+  logout: () => Promise<void>;
+  refreshToken: () => Promise<string>;
   updateProfile: (profile: Partial<UserProfile>) => void;
   updateRole: (role: UserRole) => void;
   setKYCVerified: (verified: boolean) => void;
-  submitKYC: (formData: FormData) => Promise<void>;
+  getMyInfo: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [role, setRole] = useState<UserRole>("guest");
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [role, setRole] = useState<UserRole>('guest');
 
+  // Initialize from localStorage on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
+    const storedUser = localStorage.getItem('user');
+    const storedRole = localStorage.getItem('role') as UserRole;
+    
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
         setUser(parsedUser);
-        setRole(parsedUser.role || "buyer");
+        setRole(parsedUser.role || storedRole || 'buyer');
       } catch (error) {
-        console.error("Lỗi phân giải dữ liệu người dùng:", error);
-        localStorage.removeItem("user");
+        console.error('Failed to parse stored user:', error);
+        localStorage.removeItem('user');
+        localStorage.removeItem('role');
       }
     }
     setIsLoading(false);
   }, []);
 
-  // Gọi API Login thông qua instance api
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      // Swagger login: POST /auth/login with { username, password }
-      const response = await api.post("/auth/login", {
-        username: email,
-        password,
+      
+      const response = await axios.post(API_ENDPOINTS.LOGIN, {
+        username: email, 
+        password: password,
       });
 
-      const token = response?.data?.result?.token;
-      const authenticated = response?.data?.result?.authenticated;
-      if (!token || !authenticated) {
-        throw new Error(response?.data?.message || "Đăng nhập thất bại");
+      const { code, message, result } = response.data;
+
+      if (code !== 1000) {
+        throw new Error(message || 'Login failed');
       }
 
-      // Create a minimal user object so axios interceptor can read token
+      const { token, authenticated } = result;
+
+      if (!authenticated || !token) {
+        throw new Error('Authentication failed');
+      }
+
+      // Store token
+      localStorage.setItem('token', token);
+
+      // Fetch user info after successful login
+      await getMyInfo();
+    } catch (error) {
+      console.error('Login failed:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getMyInfo = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await axios.get(API_ENDPOINTS.GET_MY_INFO, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const { code, message, result } = response.data;
+
+      if (code !== 1000) {
+        throw new Error(message || 'Failed to fetch user info');
+      }
+
+      // Assuming result is the user object
       const userData: UserProfile = {
-        id: "",
-        email,
-        name: email,
-        phone: "",
-        role: "buyer",
-        avatar: undefined,
+        id: result.id,
+        email: result.username, 
+        name: result.name,
+        phone: '', 
+        role: result.roles?.[0]?.name?.toLowerCase() || 'buyer', 
         createdAt: new Date().toISOString(),
-        token,
+        isKYCVerified: result.verified || false,
       };
 
       setUser(userData);
       setRole(userData.role);
+      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('role', userData.role);
+    } catch (error) {
+      console.error('Failed to fetch user info:', error);
+      throw error;
+    }
+  };
 
-      localStorage.setItem("user", JSON.stringify(userData));
-      localStorage.setItem("role", userData.role);
-    } catch (error: any) {
-      console.error("Đăng nhập thất bại:", error);
-      throw new Error(
-        error.response?.data?.message || "Email hoặc mật khẩu không chính xác",
-      );
+  const register = async (data: Omit<UserProfile, 'id' | 'createdAt' | 'role'> & { password: string }) => {
+    try {
+      setIsLoading(true);
+      
+      // Simulate API call - replace with actual backend call
+      const _newUser: UserProfile = {
+        id: 'user_' + Date.now(),
+        email: data.email,
+        name: data.name,
+        phone: data.phone,
+        role: 'buyer',
+        createdAt: new Date().toISOString(),
+        isKYCVerified: false,
+      };
+
+      // Store registration data but don't auto-login
+      // User must go to login page with their credentials
+      localStorage.setItem('registeredUser', JSON.stringify({
+        email: _newUser.email,
+        // Note: Never store passwords in localStorage in production
+        // This is for demo only
+      }));
+    } catch (error) {
+      console.error('Registration failed:', error);
+      throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Gọi API Register thông qua instance api
-  const register = async (data: any) => {
+  const logout = async () => {
     try {
-      setIsLoading(true);
-      // Endpoint khớp với Swagger /api/v1/auth/register
-      await api.post("/api/v1/auth/register", data);
-    } catch (error: any) {
-      console.error("Đăng ký thất bại:", error);
-      throw new Error(
-        error.response?.data?.message || "Không thể đăng ký tài khoản",
-      );
+      setIsLoggingOut(true);
+      const token = localStorage.getItem('token');
+      if (token) {
+        await axios.post(API_ENDPOINTS.LOGOUT, {
+          token: token,
+        });
+      }
+    } catch (error) {
+      console.error('Logout API failed:', error);
+      // Continue with local logout even if API fails
     } finally {
-      setIsLoading(false);
+      setUser(null);
+      setRole('guest');
+      localStorage.removeItem('user');
+      localStorage.removeItem('role');
+      localStorage.removeItem('token');
+      setIsLoggingOut(false);
     }
   };
 
-  const submitKYC = async (formData: FormData) => {
+  const refreshToken = async () => {
     try {
-      setIsLoading(true);
-      // Instance api đã có interceptor tự thêm Token nếu user đã login
-      const response = await api.post("/api/v1/users/kyc", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No token to refresh');
+      }
+
+      const response = await axios.post(API_ENDPOINTS.REFRESH_TOKEN, {
+        token: token,
       });
 
-      if (response.status === 200) {
-        setKYCVerified(true);
-      }
-    } catch (error: any) {
-      throw new Error(
-        error.response?.data?.message || "Gửi hồ sơ KYC thất bại",
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      const { code, message, result } = response.data;
 
-  const logout = () => {
-    setUser(null);
-    setRole("guest");
-    localStorage.removeItem("user");
-    localStorage.removeItem("role");
+      if (code !== 0) {
+        throw new Error(message || 'Token refresh failed');
+      }
+
+      const { token: newToken, authenticated } = result;
+
+      if (!authenticated || !newToken) {
+        throw new Error('Refresh failed');
+      }
+
+      localStorage.setItem('token', newToken);
+      return newToken;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      // If refresh fails, logout
+      await logout();
+      throw error;
+    }
   };
 
   const updateProfile = (updates: Partial<UserProfile>) => {
     if (user) {
       const updatedUser = { ...user, ...updates };
       setUser(updatedUser);
-      localStorage.setItem("user", JSON.stringify(updatedUser));
+      localStorage.setItem('user', JSON.stringify(updatedUser));
     }
   };
 
@@ -154,16 +230,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     if (user) {
       const updatedUser = { ...user, role: newRole };
       setUser(updatedUser);
-      localStorage.setItem("user", JSON.stringify(updatedUser));
+      localStorage.setItem('user', JSON.stringify(updatedUser));
     }
-    localStorage.setItem("role", newRole);
+    localStorage.setItem('role', newRole);
   };
 
   const setKYCVerified = (verified: boolean) => {
     if (user) {
       const updatedUser = { ...user, isKYCVerified: verified };
       setUser(updatedUser);
-      localStorage.setItem("user", JSON.stringify(updatedUser));
+      localStorage.setItem('user', JSON.stringify(updatedUser));
     }
   };
 
@@ -171,14 +247,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     user,
     isAuthenticated: user !== null,
     isLoading,
+    isLoggingOut,
     role,
     login,
     register,
     logout,
+    refreshToken,
     updateProfile,
     updateRole,
     setKYCVerified,
-    submitKYC,
+    getMyInfo,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -187,7 +265,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };

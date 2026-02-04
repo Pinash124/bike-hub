@@ -10,7 +10,7 @@ interface Tab {
 }
 
 export const BuyerDashboard: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoggingOut } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
 
   const tabs: Tab[] = [
@@ -23,7 +23,6 @@ export const BuyerDashboard: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    window.location.href = '/';
   };
 
   return (
@@ -34,7 +33,22 @@ export const BuyerDashboard: React.FC = () => {
           <h1 className="text-2xl font-semibold">Welcome, {user?.name}!</h1>
           <p className="text-sm text-gray-600">{user?.email}</p>
         </div>
-        <button className="bg-red-500 text-white px-3 py-2 rounded flex items-center gap-2" onClick={handleLogout}><LogOut size={18} /> Logout</button>
+        <button 
+          className="bg-red-500 text-white px-3 py-2 rounded flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" 
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+        >
+          {isLoggingOut ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              Logging out...
+            </>
+          ) : (
+            <>
+              <LogOut size={18} /> Logout
+            </>
+          )}
+        </button>
       </div>
 
       {/* Navigation Tabs */}
