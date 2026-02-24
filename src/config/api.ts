@@ -1,5 +1,5 @@
 // src/config/api.ts
-export const API_BASE_URL = 'https://bikehub-production-2468.up.railway.app';
+export const API_BASE_URL = "https://bikehub-production-978c.up.railway.app";
 
 export const API_ENDPOINTS = {
   LOGIN: `${API_BASE_URL}/auth/login`,
