@@ -23,10 +23,12 @@ import SellerDashboard from './components/dashboards/SellerDashboard'
 import BuyerDashboardPage from './components/buyer/BuyerDashboard'
 import AdminDashboard from './components/dashboards/AdminDashboard'
 import InspectorDashboard from './components/dashboards/InspectorDashboard'
+import ProfilePage from './pages/ProfilePage' // Bổ sung ProfilePage
 import SearchPage from './pages/SearchPage'
 import ProductDetailPage from './pages/ProductDetailPage'
 import CheckoutPage from './pages/CheckoutPage'
 import OrderTrackingPage from './pages/OrderTrackingPage'
+import CreateListingPage from './pages/CreateListingPage'
 
 // --- Contexts & Protection ---
 import { AuthProvider } from './contexts/AuthContext'
@@ -49,8 +51,20 @@ function Unauthorized() {
   )
 }
 
+import { Navigate } from 'react-router-dom'
+import { useAuth } from './contexts/AuthContext'
+
 function Home() {
   const [selectedCategory, setSelectedCategory] = useState('Tất cả')
+  const { role } = useAuth()
+
+  if (role === 'admin') {
+    return <Navigate to="/admin/dashboard" replace />
+  }
+
+  if (role === 'inspector') {
+    return <Navigate to="/inspector/dashboard" replace />
+  }
 
   return (
     <div className="relative">
@@ -59,9 +73,9 @@ function Home() {
         <Banner />
         <FilterSection />
         <FeaturedBikes />
-        <Categories 
-          onSelectCategory={setSelectedCategory} 
-          selectedCategory={selectedCategory} 
+        <Categories
+          onSelectCategory={setSelectedCategory}
+          selectedCategory={selectedCategory}
         />
         <Features />
       </main>
@@ -79,7 +93,7 @@ function App() {
             {/* --- Public Routes --- */}
             <Route path="/" element={<Home />} />
             <Route path="/unauthorized" element={<><Header /><Unauthorized /><Footer /></>} />
-            
+
             <Route path="/marketplace" element={
               <><Header /><GuestMarketplace /><Footer /></>
             } />
@@ -87,51 +101,67 @@ function App() {
             {/* AUTH ROUTES */}
             <Route path="/login" element={<><Home /><Login /></>} />
             <Route path="/register" element={<><Home /><Register /></>} />
-            
+
             {/* --- Product Discovery --- */}
             <Route path="/search" element={<><Header /><SearchPage /><Footer /></>} />
             <Route path="/product/:id" element={<><Header /><ProductDetailPage /><Footer /></>} />
-            
+
             {/* --- KYC Route --- */}
             <Route path="/kyc" element={
               <ProtectedRoute>
                 <KYC />
               </ProtectedRoute>
             } />
-            
+
+            {/* --- Profile Route (All Authenticated Users) --- */}
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <><Header /><ProfilePage /><Footer /></>
+              </ProtectedRoute>
+            } />
+
             {/* --- Protected Routes - Seller --- */}
+
+            // --- Route Section ---
             <Route path="/seller/dashboard" element={
               <ProtectedRoute requiredRole="seller">
                 <><Header /><SellerDashboard /><Footer /></>
               </ProtectedRoute>
             } />
-            
+
+            <Route path="/seller/new-bike" element={
+              <ProtectedRoute requiredRole="seller">
+                <><Header /><CreateListingPage /><Footer /></>
+              </ProtectedRoute>
+            } />
+
+
             {/* --- Protected Routes - Buyer --- */}
             <Route path="/buyer/dashboard" element={
               <ProtectedRoute requiredRole="buyer">
                 <><Header /><BuyerDashboardPage /><Footer /></>
               </ProtectedRoute>
             } />
-            
+
             <Route path="/buyer/checkout" element={
               <ProtectedRoute requiredRole="buyer">
                 <><Header /><CheckoutPage /><Footer /></>
               </ProtectedRoute>
             } />
-            
+
             <Route path="/buyer/orders" element={
               <ProtectedRoute requiredRole="buyer">
                 <><Header /><OrderTrackingPage /><Footer /></>
               </ProtectedRoute>
             } />
-            
+
             {/* --- Protected Routes - Admin & Inspector --- */}
             <Route path="/admin/dashboard" element={
               <ProtectedRoute requiredRole="admin">
                 <><Header /><AdminDashboard /><Footer /></>
               </ProtectedRoute>
             } />
-            
+
             <Route path="/inspector/dashboard" element={
               <ProtectedRoute requiredRole="inspector">
                 <><Header /><InspectorDashboard /><Footer /></>

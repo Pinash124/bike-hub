@@ -1,111 +1,231 @@
-import { CheckCircle, XCircle, Clock, AlertCircle, Camera } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+// src/components/dashboards/InspectorDashboard.tsx
+import { CheckCircle, XCircle, Clock, AlertCircle, Edit } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { inspectionService, type InspectionTask } from '../../services/inspection.service'
+import { componentService, type InspectionComponent } from '../../services/component.service'
+import { useAuth } from '../../contexts/AuthContext'
 
-interface BikeForInspection {
-  id: number
-  title: string
-  seller: string
-  submittedAt: string
-  status: 'pending' | 'inspecting' | 'approved' | 'rejected'
-  image: string
-  price: number
+const STATUS_LABEL: Record<string, string> = {
+  PENDING: 'Hàng chờ',
+  PENDING_ASSIGNED: 'Đã phân công',
+  ASSIGNED: 'Đã phân công',
+  IN_PROGRESS: 'Đang kiểm tra',
+  COMPLETED: 'Hoàn thành',
+  REJECTED: 'Từ chối',
 }
 
-interface InspectionHistory {
-  id: number
-  title: string
-  inspectedDate: string
-  result: 'approved' | 'rejected'
-  notes: string
+const STATUS_COLOR: Record<string, string> = {
+  PENDING: 'bg-yellow-100 text-yellow-800',
+  PENDING_ASSIGNED: 'bg-blue-100 text-blue-800',
+  ASSIGNED: 'bg-blue-100 text-blue-800',
+  IN_PROGRESS: 'bg-purple-100 text-purple-800',
+  COMPLETED: 'bg-green-100 text-green-800',
+  REJECTED: 'bg-red-100 text-red-800',
 }
 
 export default function InspectorDashboard() {
-  const navigate = useNavigate()
+  const { user } = useAuth()
+  const [myTasks, setMyTasks] = useState<InspectionTask[]>([])
+  const [pendingTasks, setPendingTasks] = useState<InspectionTask[]>([])
+  const [isLoadingMy, setIsLoadingMy] = useState(true)
+  const [isLoadingPending, setIsLoadingPending] = useState(true)
 
-  const bikesForInspection: BikeForInspection[] = [
-    {
-      id: 1,
-      title: 'Giant Escape 3 2024',
-      seller: 'Anh Tùng',
-      submittedAt: '2024-01-22',
-      status: 'pending',
-      image: '🚴',
-      price: 8500000
-    },
-    {
-      id: 2,
-      title: 'Trek Marlin 5',
-      seller: 'Chị Lan',
-      submittedAt: '2024-01-20',
-      status: 'inspecting',
-      image: '🚲',
-      price: 12000000
-    },
-    {
-      id: 3,
-      title: 'Specialized Rockhopper',
-      seller: 'Anh Minh',
-      submittedAt: '2024-01-18',
-      status: 'approved',
-      image: '🚴',
-      price: 9500000
-    }
-  ]
+  // Scoring Modal
+  const [isScoring, setIsScoring] = useState(false)
+  const [currentTask, setCurrentTask] = useState<InspectionTask | null>(null)
+  const [components, setComponents] = useState<InspectionComponent[]>([])
+  const [scores, setScores] = useState<Record<number, number>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const inspectionHistory: InspectionHistory[] = [
-    {
-      id: 1,
-      title: 'Trek FX 3 Hybrid',
-      inspectedDate: '2024-01-20',
-      result: 'approved',
-      notes: 'Điều kiện tốt, hình ảnh rõ ràng'
-    },
-    {
-      id: 2,
-      title: 'Giant Escape 2023',
-      inspectedDate: '2024-01-15',
-      result: 'rejected',
-      notes: 'Hình ảnh không rõ, thiếu thông tin kỹ thuật'
+  useEffect(() => {
+    fetchMyAssigned()
+    fetchPending()
+    fetchComponents()
+  }, [])
+
+  const fetchMyAssigned = async () => {
+    try {
+      const data = await inspectionService.getMyAssignedInspections()
+      setMyTasks(data)
+    } catch (error) {
+      console.error('Failed to fetch assigned inspections:', error)
+    } finally {
+      setIsLoadingMy(false)
     }
-  ]
+  }
+
+  const fetchPending = async () => {
+    try {
+      const data = await inspectionService.getPendingInspections()
+      setPendingTasks(data)
+    } catch (error) {
+      console.error('Failed to fetch pending inspections:', error)
+    } finally {
+      setIsLoadingPending(false)
+    }
+  }
+
+  const fetchComponents = async () => {
+    try {
+      const data = await componentService.getAllComponents()
+      setComponents(data)
+    } catch (error) {
+      console.error('Failed to fetch components:', error)
+    }
+  }
+
+  const handleAssign = async (inspectionId: string) => {
+    if (!user?.id) {
+      alert('Không tìm thấy thông tin Inspector.')
+      return
+    }
+    const confirmed = window.confirm('Bạn có chắc chắn muốn nhận kiểm tra đơn này?')
+    if (!confirmed) return
+
+    const success = await inspectionService.assignInspector({ inspectionId, inspectorId: String(user.id) })
+    if (success) {
+      alert('Nhận việc thành công!')
+      fetchMyAssigned()
+      fetchPending()
+    } else {
+      alert('Nhận việc thất bại. Đơn này có thể đã được người khác nhận.')
+    }
+  }
+
+  const openScoreModal = (task: InspectionTask) => {
+    setCurrentTask(task)
+    setScores({})
+    setIsScoring(true)
+  }
+
+  const closeScoreModal = () => {
+    setIsScoring(false)
+    setCurrentTask(null)
+    setScores({})
+  }
+
+  const handleScoreChange = (componentId: number, score: number) => {
+    setScores(prev => ({ ...prev, [componentId]: score }))
+  }
+
+  const handleSubmitScores = async () => {
+    if (!currentTask) return
+
+    // Validate if all components have scores
+    if (Object.keys(scores).length !== components.length) {
+      const confirmed = window.confirm('Bạn chưa chấm điểm tất cả các hạng mục. Bạn có chắc chắn muốn nộp kết quả?')
+      if (!confirmed) return
+    }
+
+    const payload = Object.entries(scores).map(([compId, score]) => ({
+      componentId: Number(compId),
+      score
+    }))
+
+    if (payload.length === 0) {
+      alert('Vui lòng nhập ít nhất 1 điểm số.')
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      const success = await inspectionService.submitScores(currentTask.inspectionId, payload)
+      if (success) {
+        alert('Nộp kết quả kiểm tra thành công!')
+        closeScoreModal()
+        // Refresh the lists
+        fetchMyAssigned()
+      } else {
+        alert('Nộp kết quả thất bại. Vui lòng thử lại.')
+      }
+    } catch (err: any) {
+      alert(err.message || 'Có lỗi xảy ra khi nộp điểm.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const completedCount = myTasks.filter(t => t.status === 'COMPLETED').length
+  const inProgressCount = myTasks.filter(t => t.status === 'IN_PROGRESS' || t.status === 'PENDING_ASSIGNED' || t.status === 'ASSIGNED').length
+  const rejectedCount = myTasks.filter(t => t.status === 'REJECTED').length
 
   const stats = [
-    { label: 'Đang Chờ', value: '8', icon: Clock },
-    { label: 'Đang Kiểm Duyệt', value: '2', icon: AlertCircle },
-    { label: 'Đã Duyệt', value: '45', icon: CheckCircle },
-    { label: 'Từ Chối', value: '3', icon: XCircle }
+    { label: 'Hàng chờ (Mới)', value: isLoadingPending ? '...' : pendingTasks.length.toString(), icon: Clock },
+    { label: 'Việc đang làm', value: isLoadingMy ? '...' : inProgressCount.toString(), icon: AlertCircle },
+    { label: 'Kiểm duyệt xong', value: isLoadingMy ? '...' : completedCount.toString(), icon: CheckCircle },
+    { label: 'Bị từ chối', value: isLoadingMy ? '...' : rejectedCount.toString(), icon: XCircle },
   ]
 
-  const getStatusColor = (status: string) => {
-    const statusMap: Record<string, string> = {
-      'pending': 'Chờ kiểm duyệt',
-      'inspecting': 'Đang kiểm duyệt',
-      'approved': 'Đã phê duyệt',
-      'rejected': 'Bị từ chối'
-    }
-    return statusMap[status] || status
+  const renderTaskList = (tasks: InspectionTask[], loading: boolean, emptyMsg: string, isPendingQueue: boolean) => {
+    if (loading) return <div className="p-6 text-center text-slate-500 font-medium">Đang tải dữ liệu...</div>
+    if (tasks.length === 0) return <div className="p-6 text-center text-slate-500 font-medium">{emptyMsg}</div>
+    return (
+      <div className="divide-y divide-slate-100">
+        {tasks.map(task => (
+          <div key={task.inspectionId} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
+            <div className="flex items-center gap-4 flex-1">
+              <div className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center text-2xl border border-indigo-100">
+                🛠️
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-slate-800">Mã đơn: {task.inspectionId.split('-')[0]}</h3>
+                <p className="text-indigo-600 font-bold tracking-tight">Loại: {task.inspectionType === 'COMPANY' ? 'Tại Trung Tâm' : 'Tận Nơi'}</p>
+                <div className="text-sm text-slate-500 mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+                  {task.scheduledAt && <span className="flex items-center gap-1">📅 Lịch hẹn: <span className="font-medium text-slate-700">{new Date(task.scheduledAt).toLocaleDateString('vi-VN')}</span></span>}
+                  {!isPendingQueue && task.inspector && <span className="flex items-center gap-1">🕵️ KĐV: <span className="font-medium text-slate-700">{task.inspector.name || task.inspector.username}</span></span>}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest ${STATUS_COLOR[task.status] ?? 'bg-slate-100 text-slate-700'}`}>
+                {STATUS_LABEL[task.status] ?? task.status}
+              </span>
+
+              {/* Actions */}
+              {isPendingQueue && (
+                <button
+                  onClick={() => handleAssign(task.inspectionId)}
+                  className="px-4 py-1.5 bg-green-600 text-white text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-green-700 transition shadow-sm active:scale-95"
+                >
+                  Nhận việc
+                </button>
+              )}
+              {!isPendingQueue && ['PENDING_ASSIGNED', 'ASSIGNED', 'IN_PROGRESS'].includes(task.status) && (
+                <button
+                  onClick={() => openScoreModal(task)}
+                  className="px-4 py-1.5 bg-indigo-600 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-lg hover:bg-indigo-700 transition shadow-sm active:scale-95"
+                >
+                  <Edit size={14} /> Chấm điểm
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    )
   }
 
   return (
-    <div className="bg-white min-h-[calc(100vh-80px)]">
-      <div className="max-w-[1400px] mx-auto px-6 py-8">
+    <div className="bg-slate-50 min-h-[calc(100vh-80px)] font-sans">
+      <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Bảng Điều Khiển Kiểm Duyệt Viên</h1>
-          <p className="text-gray-600">Kiểm duyệt thông tin xe đạp trên nền tảng</p>
+          <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">Bảng Điều Khiển KĐV</h1>
+          <p className="text-slate-500 font-medium">Quản lý và nhập điểm đánh giá tình trạng xe đạp cũ.</p>
         </div>
 
+        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {stats.map((stat) => {
             const Icon = stat.icon
             return (
-              <div key={stat.label} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-green-50 rounded-lg">
-                    <Icon size={24} className="text-green-600" />
+              <div key={stat.label} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition">
+                <div className="flex items-center gap-4">
+                  <div className="p-3.5 bg-indigo-50 rounded-xl">
+                    <Icon size={24} className="text-indigo-600" />
                   </div>
                   <div>
-                    <p className="text-gray-600 text-sm">{stat.label}</p>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">{stat.label}</p>
+                    <p className="text-2xl font-black text-slate-800 leading-none">{stat.value}</p>
                   </div>
                 </div>
               </div>
@@ -113,98 +233,98 @@ export default function InspectorDashboard() {
           })}
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 mb-8">
-          <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">Xe Cần Kiểm Duyệt</h2>
-            <a href="#" className="text-green-600 hover:text-green-700 text-sm font-medium">Xem tất cả</a>
+        {/* Pending Queue */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-8">
+          <div className="border-b border-slate-50 bg-gradient-to-r from-amber-50 to-white px-6 py-5 flex items-center justify-between">
+            <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+              <span className="text-amber-500">⏳</span> Hàng Chờ (Chưa Phân Công)
+            </h2>
+            <span className="text-xs font-bold text-amber-700 bg-amber-100 px-3 py-1 rounded-full">{pendingTasks.length} đơn</span>
           </div>
-
-          <div className="divide-y divide-gray-200">
-            {bikesForInspection.map(bike => (
-              <div key={bike.id} className="p-6 flex items-center justify-between hover:bg-gray-50 transition">
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-2xl">
-                    {bike.image}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">{bike.title}</h3>
-                    <p className="text-green-600 font-medium">{bike.price.toLocaleString('vi-VN')} ₫</p>
-                    <div className="text-sm text-gray-600 space-y-1 mt-1">
-                      <p>Bán bởi: {bike.seller}</p>
-                      <p>Gửi lúc: {bike.submittedAt}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    bike.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                    bike.status === 'inspecting' ? 'bg-blue-100 text-blue-800' :
-                    bike.status === 'approved' ? 'bg-green-100 text-green-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {getStatusColor(bike.status)}
-                  </span>
-                  {bike.status === 'pending' && (
-                    <button 
-                      onClick={() => navigate(`/inspector/inspect/${bike.id}`)}
-                      className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
-                    >
-                      <Camera size={18} />
-                      Kiểm Duyệt
-                    </button>
-                  )}
-                  {bike.status === 'inspecting' && (
-                    <button className="bg-blue-600 text-white px-4 py-2 rounded-lg cursor-default">
-                      Đang kiểm duyệt
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+          {renderTaskList(pendingTasks, isLoadingPending, 'Không có đơn yêu cầu mới nào trong hệ thống.', true)}
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="border-b border-gray-200 px-6 py-4">
-            <h2 className="text-xl font-semibold text-gray-900">Lịch Sử Kiểm Duyệt</h2>
+        {/* My Assigned Tasks */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-8">
+          <div className="border-b border-slate-50 bg-gradient-to-r from-indigo-50 to-white px-6 py-5 flex items-center justify-between">
+            <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+              <span className="text-indigo-500">📋</span> Việc Của Tôi
+            </h2>
+            <span className="text-xs font-bold text-indigo-700 bg-indigo-100 px-3 py-1 rounded-full">{myTasks.length} việc</span>
           </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Sản Phẩm</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Ngày Kiểm Duyệt</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Kết Quả</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Ghi Chú</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Hành Động</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {inspectionHistory.map(history => (
-                  <tr key={history.id} className="hover:bg-gray-50 transition">
-                    <td className="px-6 py-4 font-semibold text-gray-900">{history.title}</td>
-                    <td className="px-6 py-4 text-gray-600">{history.inspectedDate}</td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        history.result === 'approved' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {history.result === 'approved' ? '✓ Phê Duyệt' : '✕ Từ Chối'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-gray-600">{history.notes}</td>
-                    <td className="px-6 py-4">
-                      <button className="text-green-600 hover:text-green-700 font-medium text-sm">Chi tiết</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {renderTaskList(myTasks, isLoadingMy, 'Bạn chưa có đơn kiểm tra nào đang xử lý.', false)}
         </div>
       </div>
+
+      {/* Scoring Modal */}
+      {isScoring && currentTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <div>
+                <h3 className="text-lg font-black text-slate-800">Bảng Chấm Điểm Linh Kiện</h3>
+                <p className="text-xs font-medium text-slate-500 mt-1">Mã đơn: {currentTask.inspectionId}</p>
+              </div>
+              <button
+                onClick={closeScoreModal}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 text-slate-500 hover:bg-slate-300 transition"
+              >
+                <XCircle size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1">
+              <div className="bg-indigo-50 text-indigo-800 text-xs font-medium p-4 rounded-xl mb-6">
+                Vui lòng đánh giá tình trạng từng bộ phận của xe theo thang điểm từ 1 đến 10 (10 = Hoàn hảo).
+              </div>
+
+              <div className="space-y-4">
+                {components.length === 0 ? (
+                  <div className="text-center py-8 text-slate-500 border-2 border-dashed border-slate-200 rounded-xl">Hệ thống chưa thiết lập danh sách linh kiện.</div>
+                ) : (
+                  components.map(comp => (
+                    <div key={comp.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-white border border-slate-200 p-4 rounded-xl hover:border-indigo-200 transition-colors">
+                      <div className="mb-3 sm:mb-0">
+                        <p className="font-bold text-slate-800">{comp.name}</p>
+                        {comp.description && <p className="text-[11px] text-slate-500 mt-1 leading-relaxed max-w-sm">{comp.description}</p>}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest shrink-0">Điểm:</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max="10"
+                          value={scores[comp.id] || ''}
+                          onChange={(e) => handleScoreChange(comp.id, parseInt(e.target.value))}
+                          placeholder="0-10"
+                          className="w-20 px-3 py-2 border-2 border-slate-200 rounded-lg text-center font-black text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition"
+                        />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+              <button
+                onClick={closeScoreModal}
+                disabled={isSubmitting}
+                className="px-6 py-2.5 rounded-xl font-bold text-sm text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 transition shadow-sm"
+              >
+                Trở lại
+              </button>
+              <button
+                onClick={handleSubmitScores}
+                disabled={isSubmitting || Object.keys(scores).length === 0}
+                className="px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-md shadow-indigo-600/20 flex items-center gap-2"
+              >
+                {isSubmitting ? 'Đang gửi...' : 'Xác nhận & Hoàn thành'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

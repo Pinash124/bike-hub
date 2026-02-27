@@ -1,91 +1,55 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProductSearch from '../components/buyer/Products/ProductSearch';
 import type { Product } from '../components/buyer/Products/ProductSearch';
-
-const MOCK_PRODUCTS: Product[] = [
-  {
-    id: '1',
-    name: 'Trek FX 3 Hybrid Bike',
-    price: 1500000,
-    condition: 'Like New (99%)',
-    image: '🚲',
-    seller: 'John Bike Store',
-    sellerId: 'seller_1',
-    rating: 4.8,
-    brand: 'Trek',
-    material: 'Aluminum',
-    size: 'M (52cm)',
-    reviews: 156,
-    description: 'Perfect hybrid bike for casual riding'
-  },
-  {
-    id: '2',
-    name: 'Giant Escape 3',
-    price: 1200000,
-    condition: 'Good (90%)',
-    image: '🚲',
-    seller: 'Bike World',
-    sellerId: 'seller_2',
-    rating: 4.6,
-    brand: 'Giant',
-    material: 'Aluminum',
-    size: 'L (54cm)',
-    reviews: 89,
-    description: 'Reliable hybrid bike for everyday use'
-  },
-  {
-    id: '3',
-    name: 'Specialized Rockhopper',
-    price: 2500000,
-    condition: 'New',
-    image: '🚲',
-    seller: 'Specialized Shop',
-    sellerId: 'seller_3',
-    rating: 4.9,
-    brand: 'Specialized',
-    material: 'Aluminum',
-    size: 'M (52cm)',
-    reviews: 245,
-    description: 'Mountain bike for off-road adventures'
-  },
-  {
-    id: '4',
-    name: 'Cannondale Quick 5',
-    price: 1800000,
-    condition: 'Like New (99%)',
-    image: '🚲',
-    seller: 'Pro Cycles',
-    sellerId: 'seller_4',
-    rating: 4.7,
-    brand: 'Cannondale',
-    material: 'Aluminum',
-    size: 'S (50cm)',
-    reviews: 112,
-    description: 'Quick and responsive hybrid bike'
-  },
-  {
-    id: '5',
-    name: 'Scott Aspect 40',
-    price: 2000000,
-    condition: 'Fair (75%)',
-    image: '🚲',
-    seller: 'Scott Authorized',
-    sellerId: 'seller_5',
-    rating: 4.5,
-    brand: 'Scott',
-    material: 'Aluminum',
-    size: 'L (54cm)',
-    reviews: 67,
-    description: 'Versatile mountain bike for trails'
-  }
-];
+import { listingService, type Listing } from '../services/listing.service';
 
 export default function SearchPage() {
   const navigate = useNavigate();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchListings();
+  }, []);
+
+  const fetchListings = async () => {
+    try {
+      const data = await listingService.getListings();
+      // Map API data to UI Product format
+      const mappedProducts: Product[] = data.map((listing: Listing) => ({
+        id: listing.id,
+        name: listing.title,
+        price: listing.price,
+        condition: listing.condition || 'Used',
+        image: listing.images?.[0]?.secureUrl || '🚲',
+        seller: 'Seller Info', // Info might need to be fetched or included in listing
+        sellerId: 'unknown',
+        rating: 5.0,
+        brand: listing.brand?.name || 'Unknown',
+        material: 'N/A',
+        size: 'N/A',
+        reviews: 0,
+        description: listing.description
+      }));
+      setProducts(mappedProducts);
+    } catch (error) {
+      console.error('Failed to fetch listings', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSelectProduct = (product: Product) => {
+    // Note: We might want to pass the full Listing object if possible, 
+    // but the UI expects Product. For now, we pass the mapped product.
+    // Ideally, ProductDetailPage should fetch fresh data by ID.
     navigate(`/product/${product.id}`, { state: { product } });
   };
 
-  return <ProductSearch products={MOCK_PRODUCTS} onSelectProduct={handleSelectProduct} />;
+  if (isLoading) {
+    return <div className="p-10 text-center">Loading...</div>;
+  }
+
+  return <ProductSearch products={products} onSelectProduct={handleSelectProduct} />;
 }

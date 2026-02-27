@@ -1,17 +1,13 @@
 // src/components/auth/KYC.tsx
 import { useState, useEffect } from 'react'
-import { 
-  MapPin, Calendar, Hash, User, Phone, 
-  ArrowLeft, Upload, ShieldCheck, ChevronRight, Loader2
+import {
+  ArrowLeft, Upload, ShieldCheck, ChevronRight, Loader2, CheckCircle, FileText
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { AuthCard } from './AuthLayout'
-import axios from 'axios'
-import { API_ENDPOINTS } from '../../config/api'
+import { useAuth } from '../../contexts/AuthContext'
 
-// 1. Định nghĩa Interface cho dữ liệu KYC
 interface KYCData {
-  id: string;
   idNumber: string;
   fullName: string;
   dateOfBirth: string;
@@ -20,82 +16,90 @@ interface KYCData {
   placeOfOrigin: string;
   placeOfResidence: string;
   expiryDate: string;
-  status: string;
-  submittedAt: string;
-  user: {
-    username: string;
-  };
 }
 
 export default function KYC() {
   const navigate = useNavigate()
-  
-  // States quản lý dữ liệu và trạng thái tải
-  const [isLoading, setIsLoading] = useState(true)
+  const { uploadKYC, confirmKYC } = useAuth()
+
+  // States
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [currentStep, setCurrentStep] = useState(1)
   const [isCompleted, setIsCompleted] = useState(false)
 
-  // State quản lý dữ liệu form
-  const [formData, setFormData] = useState({
-    fullName: '',
-    phone: '',
-    idNumber: '',
-    dob: '',
-    address: ''
-  })
+  // File States
+  const [frontImage, setFrontImage] = useState<File | null>(null)
+  const [backImage, setBackImage] = useState<File | null>(null)
 
-  // 2. Kiểm tra trạng thái xác thực khi truy cập
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const token = localStorage.getItem('token')
-        if (!token) {
-          setError('Vui lòng đăng nhập để thực hiện xác minh.')
-          return
-        }
-        // Có thể gọi API GET_MY_INFO tại đây để kiểm tra token còn hạn không
-      } catch (err) {
-        setError('Không thể kết nối đến máy chủ.')
-      } finally {
-        setIsLoading(false)
-      }
+  // Draft Data States
+  const [draftId, setDraftId] = useState<string | null>(null)
+  const [kycData, setKycData] = useState<KYCData | null>(null)
+
+  // Handlers
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'front' | 'back') => {
+    if (e.target.files && e.target.files[0]) {
+      if (type === 'front') setFrontImage(e.target.files[0])
+      else setBackImage(e.target.files[0])
+      setError('') // Clear error on new selection
     }
-    checkAuth()
-  }, [])
-
-  // 3. Xử lý logic điều hướng Form
-  const handleNext = () => setCurrentStep(prev => Math.min(prev + 1, 4))
-  const handleBack = () => setCurrentStep(prev => Math.max(prev - 1, 1))
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  // 4. Render Loading/Error
-  if (isLoading) return (
-    <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
-      <Loader2 className="animate-spin h-8 w-8 text-green-600" />
-    </div>
-  )
+  const handleUpload = async () => {
+    if (!frontImage || !backImage) {
+      setError('Vui lòng tải lên cả hai mặt của CMND/CCCD.')
+      return
+    }
+
+    setIsLoading(true)
+    setError('')
+    try {
+      const result = await uploadKYC(frontImage, backImage)
+      setDraftId(result.draftId)
+      setKycData(result.kyc as KYCData)
+      setCurrentStep(2) // Move to review step
+    } catch (err: any) {
+      console.error('Upload failed:', err)
+      setError(err.message || 'Tải lên thất bại. Vui lòng thử lại.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleConfirm = async () => {
+    if (!draftId) return
+
+    setIsLoading(true)
+    setError('')
+    try {
+      await confirmKYC(draftId)
+      setIsCompleted(true)
+    } catch (err: any) {
+      console.error('Confirm failed:', err)
+      setError(err.message || 'Xác nhận thất bại. Vui lòng thử lại.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   if (isCompleted) return (
     <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4">
       <AuthCard>
         <div className="text-center py-12">
-          <ShieldCheck size={48} className="text-green-600 mx-auto mb-4" />
-          <h2 className="text-xl font-bold uppercase mb-2">Đã gửi yêu cầu</h2>
-          <button onClick={() => navigate('/')} className="text-green-600 font-bold text-sm">Về trang chủ</button>
+          <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+            <ShieldCheck size={44} className="text-green-600" />
+          </div>
+          <h2 className="text-xl font-bold uppercase mb-2 text-slate-800">Đã gửi yêu cầu</h2>
+          <p className="text-sm text-slate-500 mb-6 px-8">Thông tin xác minh của bạn đã được gửi thành công và đang chờ duyệt.</p>
+          <button onClick={() => navigate('/')} className="text-green-600 font-bold text-xs uppercase tracking-widest hover:text-green-700">Về trang chủ</button>
         </div>
       </AuthCard>
     </div>
   )
 
-  // 5. Render Giao diện chính (Kết hợp tất cả logic vào một return duy nhất)
   return (
     <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4 font-sans antialiased">
-      <button 
+      <button
         onClick={() => navigate('/')}
         className="fixed top-8 left-8 flex items-center gap-2 text-slate-400 hover:text-green-600 transition-all font-bold text-[10px] uppercase tracking-[0.3em]"
       >
@@ -103,77 +107,134 @@ export default function KYC() {
       </button>
 
       <AuthCard>
-        <div className="flex flex-col w-full">
-          {/* Progress Bar */}
-          <div className="flex items-center justify-between mb-8 px-2">
-            {[1, 2, 3, 4].map((step) => (
-              <div key={step} className="flex items-center flex-1 last:flex-none">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
-                  step <= currentStep ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-400'
-                }`}>
-                  {step < currentStep ? '✓' : step}
-                </div>
-                {step < 4 && <div className={`flex-1 h-[2px] mx-2 ${step < currentStep ? 'bg-green-600' : 'bg-slate-100'}`} />}
-              </div>
-            ))}
+        <div className="flex flex-col w-full min-h-[500px]">
+          {/* Progress Indicator */}
+          <div className="flex items-center justify-center mb-8 gap-3">
+            <div className={`flex items-center gap-2 ${currentStep >= 1 ? 'text-green-600' : 'text-slate-300'}`}>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border ${currentStep >= 1 ? 'border-green-600 bg-green-50' : 'border-slate-200'}`}>1</div>
+              <span className="text-[10px] font-bold uppercase">Tải ảnh</span>
+            </div>
+            <div className={`w-8 h-px ${currentStep >= 2 ? 'bg-green-600' : 'bg-slate-200'}`} />
+            <div className={`flex items-center gap-2 ${currentStep >= 2 ? 'text-green-600' : 'text-slate-300'}`}>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border ${currentStep >= 2 ? 'border-green-600 bg-green-50' : 'border-slate-200'}`}>2</div>
+              <span className="text-[10px] font-bold uppercase">Kiểm tra</span>
+            </div>
           </div>
 
-          <div className="mb-6">
-            <h2 className="text-lg font-bold text-slate-900 uppercase">
-              {currentStep === 1 && 'Thông tin cá nhân'}
-              {currentStep === 2 && 'Giấy tờ tùy thân'}
-              {currentStep === 3 && 'Địa chỉ cư trú'}
-              {currentStep === 4 && 'Kiểm tra lại'}
+          <div className="text-center mb-8">
+            <h2 className="text-xl font-bold text-slate-900 uppercase tracking-tight mb-1">
+              {currentStep === 1 ? 'Xác thực định danh' : 'Kiểm tra thông tin'}
             </h2>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Bước {currentStep} của 4</p>
+            <p className="text-xs text-slate-400">
+              {currentStep === 1 ? 'Vui lòng tải lên ảnh CMND/CCCD rõ nét' : 'Vui lòng kiểm tra kỹ thông tin được trích xuất'}
+            </p>
           </div>
 
-          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+          <div className="flex-1">
             {currentStep === 1 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-                <div className="space-y-1.5">
-                  <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-5">Họ và Tên</label>
-                  <div className="flex items-center gap-3 bg-slate-50 border border-slate-100 px-5 py-3 rounded-full">
-                    <User size={16} className="text-slate-300" />
-                    <input 
-                      name="fullName" 
-                      value={formData.fullName} 
-                      onChange={handleInputChange} 
-                      className="flex-1 bg-transparent outline-none text-xs font-medium" 
-                      placeholder="Nguyễn Văn A" 
-                    />
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Front Side */}
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Mặt trước</p>
+                    <label className={`block border-2 border-dashed rounded-2xl h-40 flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-slate-50 ${frontImage ? 'border-green-500 bg-green-50/10' : 'border-slate-200'}`}>
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'front')} />
+                      {frontImage ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <CheckCircle size={32} className="text-green-500" />
+                          <span className="text-[10px] text-green-600 font-bold truncate max-w-[120px]">{frontImage.name}</span>
+                          <span className="text-[9px] text-slate-400 underline">Thay đổi</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-slate-300">
+                          <Upload size={32} />
+                          <span className="text-[10px] font-bold">Tải ảnh lên</span>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+
+                  {/* Back Side */}
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Mặt sau</p>
+                    <label className={`block border-2 border-dashed rounded-2xl h-40 flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-slate-50 ${backImage ? 'border-green-500 bg-green-50/10' : 'border-slate-200'}`}>
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'back')} />
+                      {backImage ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <CheckCircle size={32} className="text-green-500" />
+                          <span className="text-[10px] text-green-600 font-bold truncate max-w-[120px]">{backImage.name}</span>
+                          <span className="text-[9px] text-slate-400 underline">Thay đổi</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-slate-300">
+                          <Upload size={32} />
+                          <span className="text-[10px] font-bold">Tải ảnh lên</span>
+                        </div>
+                      )}
+                    </label>
                   </div>
                 </div>
+
+                {error && <p className="text-red-500 text-xs text-center font-medium bg-red-50 py-2 rounded-lg">{error}</p>}
+
+                <button
+                  onClick={handleUpload}
+                  disabled={isLoading || !frontImage || !backImage}
+                  className="w-full bg-slate-900 text-white py-4 rounded-full font-bold text-[11px] uppercase tracking-[0.2em] shadow-xl hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isLoading ? <Loader2 className="animate-spin" size={16} /> : <><Upload size={16} /> Trích xuất thông tin</>}
+                </button>
               </div>
             )}
 
-            {/* Thêm các bước 2 và 3 tương tự tại đây... */}
+            {currentStep === 2 && kycData && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-500">
+                <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">Họ tên</p>
+                      <p className="text-sm font-bold text-slate-800">{kycData.fullName}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">Số giấy tờ</p>
+                      <p className="text-sm font-bold text-slate-800">{kycData.idNumber}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">Ngày sinh</p>
+                      <p className="text-sm font-bold text-slate-800">{kycData.dateOfBirth}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">Giới tính</p>
+                      <p className="text-sm font-bold text-slate-800">{kycData.gender}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mb-1">Địa chỉ thường trú</p>
+                      <p className="text-sm font-bold text-slate-800">{kycData.placeOfResidence}</p>
+                    </div>
+                  </div>
+                </div>
 
-            {currentStep === 4 && (
-              <div className="bg-slate-50/50 rounded-3xl p-5 space-y-3">
-                <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase">Họ tên</span>
-                  <span className="text-[11px] font-bold text-slate-800">{formData.fullName || 'Chưa nhập'}</span>
+                {error && <p className="text-red-500 text-xs text-center font-medium bg-red-50 py-2 rounded-lg">{error}</p>}
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setCurrentStep(1)}
+                    disabled={isLoading}
+                    className="flex-1 py-4 rounded-full border border-slate-200 font-bold text-[10px] uppercase tracking-[0.2em] text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all"
+                  >
+                    Chụp lại
+                  </button>
+                  <button
+                    onClick={handleConfirm}
+                    disabled={isLoading}
+                    className="flex-1 bg-green-600 text-white py-4 rounded-full font-bold text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isLoading ? <Loader2 className="animate-spin" size={16} /> : 'Xác nhận đúng'}
+                  </button>
                 </div>
               </div>
             )}
-
-            <div className="flex gap-3 pt-4">
-              {currentStep > 1 && (
-                <button type="button" onClick={handleBack} className="px-6 py-3.5 rounded-full border border-slate-100 font-bold text-[10px] uppercase text-slate-400">
-                  Quay lại
-                </button>
-              )}
-              <button 
-                type="button" 
-                onClick={currentStep === 4 ? () => setIsCompleted(true) : handleNext}
-                className="flex-1 bg-green-600 text-white py-3.5 rounded-full font-bold text-[10px] uppercase tracking-[0.2em] shadow-lg flex items-center justify-center gap-2"
-              >
-                {currentStep === 4 ? 'Hoàn tất xác minh' : 'Tiếp theo'}
-                <ChevronRight size={14} />
-              </button>
-            </div>
-          </form>
+          </div>
         </div>
       </AuthCard>
     </div>

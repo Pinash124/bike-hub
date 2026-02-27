@@ -22,7 +22,11 @@ export interface AuthContextType {
   isLoggingOut: boolean;
   role: UserRole;
   login: (email: string, password: string) => Promise<void>;
-  register: (data: Omit<UserProfile, 'id' | 'createdAt' | 'role'> & { password: string }) => Promise<void>;
+  sendOTP: (email: string) => Promise<void>;
+  verifyOTP: (email: string, otp: string) => Promise<string>;
+  register: (data: { password: string; verificationToken: string; fullName: string; role: 'buyer' | 'seller' }) => Promise<void>;
+  uploadKYC: (front: File, back: File) => Promise<{ draftId: string; kyc: any }>;
+  confirmKYC: (draftId: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<string>;
   updateProfile: (profile: Partial<UserProfile>) => void;
@@ -43,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     const storedRole = localStorage.getItem('role') as UserRole;
-    
+
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
@@ -59,36 +63,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
-    try {
-      setIsLoading(true);
-      
-      const response = await axios.post(API_ENDPOINTS.LOGIN, {
-        username: email, 
-        password: password,
-      });
+    // NOTE: Do NOT touch global isLoading here — it's only for initial auth init.
+    // Touching it here causes ProtectedRoute to flash/redirect mid-login.
+    const response = await axios.post(API_ENDPOINTS.LOGIN, {
+      username: email,
+      password: password,
+    });
 
+    const { code, message, result } = response.data;
+
+    if (code !== 1000) {
+      throw new Error(message || 'Login failed');
+    }
+
+    const { token, authenticated } = result;
+
+    if (!authenticated || !token) {
+      throw new Error('Authentication failed');
+    }
+
+    // Store token
+    localStorage.setItem('token', token);
+
+    // Fetch user info after successful login
+    await getMyInfo();
+  };
+
+  const sendOTP = async (email: string) => {
+    try {
+      const response = await axios.post(API_ENDPOINTS.SEND_OTP, { email });
+      const { code, message } = response.data;
+      if (code !== 1000) {
+        throw new Error(message || 'Failed to send OTP');
+      }
+    } catch (error: any) {
+      console.error('Send OTP failed:', error);
+      throw new Error(error.response?.data?.message || 'Failed to send OTP');
+    }
+  };
+
+  const verifyOTP = async (email: string, otp: string): Promise<string> => {
+    try {
+      const response = await axios.post(API_ENDPOINTS.VERIFY_OTP, { email, otp });
       const { code, message, result } = response.data;
 
       if (code !== 1000) {
-        throw new Error(message || 'Login failed');
+        throw new Error(message || 'Invalid OTP');
       }
 
-      const { token, authenticated } = result;
-
-      if (!authenticated || !token) {
-        throw new Error('Authentication failed');
-      }
-
-      // Store token
-      localStorage.setItem('token', token);
-
-      // Fetch user info after successful login
-      await getMyInfo();
-    } catch (error) {
-      console.error('Login failed:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
+      return result.verificationToken;
+    } catch (error: any) {
+      console.error('Verify OTP failed:', error);
+      throw new Error(error.response?.data?.message || 'Invalid OTP');
     }
   };
 
@@ -114,11 +140,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Assuming result is the user object
       const userData: UserProfile = {
         id: result.id,
-        email: result.username, 
-        name: result.name,
-        phone: '', 
-        role: result.roles?.[0]?.name?.toLowerCase() || 'buyer', 
-        createdAt: new Date().toISOString(),
+        email: result.username,
+        name: result.fullName || result.name || '',
+        phone: result.phone || '',
+        role: result.role?.toLowerCase() || result.roles?.[0]?.name?.toLowerCase() || 'buyer',
+        createdAt: result.createdAt || new Date().toISOString(),
         isKYCVerified: result.verified || false,
       };
 
@@ -132,33 +158,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (data: Omit<UserProfile, 'id' | 'createdAt' | 'role'> & { password: string }) => {
+  const register = async (data: { password: string; verificationToken: string; fullName: string; role: 'buyer' | 'seller' }) => {
     try {
-      setIsLoading(true);
-      
-      // Simulate API call - replace with actual backend call
-      const _newUser: UserProfile = {
-        id: 'user_' + Date.now(),
-        email: data.email,
-        name: data.name,
-        phone: data.phone,
-        role: 'buyer',
-        createdAt: new Date().toISOString(),
-        isKYCVerified: false,
+      const payload = {
+        verificationToken: data.verificationToken,
+        password: data.password,
+        fullName: data.fullName,
+        role: data.role === 'buyer' ? 'BUYER' : 'SELLER'
       };
 
-      // Store registration data but don't auto-login
-      // User must go to login page with their credentials
-      localStorage.setItem('registeredUser', JSON.stringify({
-        email: _newUser.email,
-        // Note: Never store passwords in localStorage in production
-        // This is for demo only
-      }));
+      const response = await axios.post(API_ENDPOINTS.REGISTRATION, payload);
+      const { code, message, result } = response.data;
+      if (code !== 1000) {
+        throw new Error(message || 'Registration failed');
+      }
+
+      // Registration successful: backend handled creation. Do not auto-login.
+      console.log('Registration successful', result);
     } catch (error) {
       console.error('Registration failed:', error);
       throw error;
-    } finally {
-      setIsLoading(false);
+    }
+  };
+
+  const uploadKYC = async (front: File, back: File): Promise<{ draftId: string; kyc: any }> => {
+    try {
+      const formData = new FormData();
+      formData.append('front', front);
+      formData.append('back', back);
+
+      const token = localStorage.getItem('token');
+      const response = await axios.post(API_ENDPOINTS.UPLOAD_KYC, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const { code, message, result } = response.data;
+      if (code !== 1000) {
+        throw new Error(message || 'Upload KYC failed');
+      }
+
+      return result; // Expected to contain { draftId, kyc: {...} }
+    } catch (error: any) {
+      console.error('Upload KYC failed:', error);
+      throw new Error(error.response?.data?.message || 'Upload KYC failed');
+    }
+  };
+
+  const confirmKYC = async (draftId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(API_ENDPOINTS.CONFIRM_KYC, { draftId }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const { code, message } = response.data;
+      if (code !== 1000) {
+        throw new Error(message || 'Confirm KYC failed');
+      }
+
+      // Update local user state if successful
+      setKYCVerified(false); // Likely pending approval, or true if auto-approved. Safest to assume pending or re-fetch my-info.
+      await getMyInfo();
+
+    } catch (error: any) {
+      console.error('Confirm KYC failed:', error);
+      throw new Error(error.response?.data?.message || 'Confirm KYC failed');
     }
   };
 
@@ -197,7 +266,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const { code, message, result } = response.data;
 
-      if (code !== 0) {
+      if (code !== 1000) {
         throw new Error(message || 'Token refresh failed');
       }
 
@@ -251,6 +320,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     role,
     login,
     register,
+    sendOTP,
+    verifyOTP,
+    uploadKYC,
+    confirmKYC,
     logout,
     refreshToken,
     updateProfile,

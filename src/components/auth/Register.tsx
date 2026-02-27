@@ -1,21 +1,21 @@
 // src/pages/UnifiedAuth.tsx
 import { useState } from 'react'
-import { 
-  Mail, Lock, User, Eye, EyeOff, Phone, 
-  ShieldCheck, ArrowLeft, ChevronRight, Hash, 
-  Calendar, MapPin, Upload, CheckCircle, 
-  ShoppingBag, Store 
+import {
+  Mail, Lock, User, Eye, EyeOff, Phone,
+  ShieldCheck, ArrowLeft, ChevronRight, Hash,
+  Calendar, MapPin, Upload, CheckCircle,
+  ShoppingBag, Store
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { AuthCard, AuthOverlay } from '../auth/AuthLayout'
-import { API_ENDPOINTS } from '../../config/api'
+import { useAuth } from '../../contexts/AuthContext'
 
 export default function UnifiedAuth() {
   const navigate = useNavigate()
   const [currentStep, setCurrentStep] = useState(1)
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  
+
   // Thêm state role vào formData
   const [role, setRole] = useState<'buyer' | 'seller'>('buyer')
   const [formData, setFormData] = useState({
@@ -35,6 +35,8 @@ export default function UnifiedAuth() {
     }
   }
 
+  const { register: contextRegister, sendOTP: contextSendOTP, verifyOTP: contextVerifyOTP } = useAuth()
+
   const sendOTP = async () => {
     if (!formData.email) {
       setErrors({ email: 'Vui lòng nhập email' })
@@ -42,18 +44,11 @@ export default function UnifiedAuth() {
     }
     setIsLoading(true)
     try {
-      const response = await fetch(API_ENDPOINTS.SEND_OTP, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email })
-      })
-      if (response.ok) {
-        nextStep()
-      } else {
-        setErrors({ email: 'Gửi OTP thất bại' })
-      }
-    } catch (error) {
-      setErrors({ email: 'Lỗi kết nối' })
+      await contextSendOTP(formData.email)
+      nextStep()
+    } catch (error: any) {
+      console.error('sendOTP error', error)
+      setErrors({ email: error.message || 'Lỗi gửi OTP' })
     } finally {
       setIsLoading(false)
     }
@@ -66,28 +61,20 @@ export default function UnifiedAuth() {
     }
     setIsLoading(true)
     try {
-      const response = await fetch(API_ENDPOINTS.VERIFY_OTP, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ otp: formData.otp })
-      })
-      const data = await response.json()
-      if (response.ok && data.result?.verificationToken) {
-        setVerificationToken(data.result.verificationToken)
-        nextStep()
-      } else {
-        setErrors({ otp: 'OTP không hợp lệ' })
-      }
-    } catch (error) {
-      setErrors({ otp: 'Lỗi kết nối' })
+      const token = await contextVerifyOTP(formData.email, formData.otp)
+      setVerificationToken(token)
+      nextStep()
+    } catch (error: any) {
+      setErrors({ otp: error.message || 'Lỗi xác thực OTP' })
     } finally {
       setIsLoading(false)
     }
   }
 
+
   const register = async () => {
     if (!formData.fullName || !formData.password || formData.password !== formData.confirmPassword) {
-      setErrors({ 
+      setErrors({
         fullName: !formData.fullName ? 'Vui lòng nhập họ tên' : '',
         password: !formData.password || formData.password !== formData.confirmPassword ? 'Mật khẩu không khớp' : ''
       })
@@ -95,23 +82,15 @@ export default function UnifiedAuth() {
     }
     setIsLoading(true)
     try {
-      const response = await fetch(API_ENDPOINTS.REGISTRATION, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          verificationToken,
-          password: formData.password,
-          fullName: formData.fullName,
-          role: role === 'buyer' ? 'BUYER' : 'SELLER'
-        })
+      await contextRegister({
+        fullName: formData.fullName,
+        password: formData.password,
+        verificationToken: verificationToken!, // Token should available at this step
+        role: role,
       })
-      if (response.ok) {
-        nextStep()
-      } else {
-        setErrors({ general: 'Đăng ký thất bại' })
-      }
+      nextStep()
     } catch (error) {
-      setErrors({ general: 'Lỗi kết nối' })
+      setErrors({ general: 'Đăng ký thất bại' })
     } finally {
       setIsLoading(false)
     }
@@ -123,7 +102,7 @@ export default function UnifiedAuth() {
   return (
     <AuthOverlay>
       {currentStep < 4 && (
-        <button 
+        <button
           onClick={() => navigate('/')}
           className="fixed top-10 left-10 flex items-center gap-3 text-slate-400 hover:text-green-600 transition-all font-bold text-[9px] uppercase tracking-[0.3em]"
         >
@@ -133,16 +112,15 @@ export default function UnifiedAuth() {
 
       <AuthCard>
         <div className="flex flex-col min-h-[560px] w-full antialiased justify-between">
-          
+
           <div>
             {/* 1. PROGRESS BAR */}
             {currentStep < 5 && (
               <div className="flex items-center justify-between mb-10 px-4">
                 {[1, 2, 3].map((s) => (
                   <div key={s} className="flex items-center flex-1 last:flex-none">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-500 ${
-                      s <= currentStep ? 'bg-green-600 text-white shadow-lg shadow-green-100' : 'bg-slate-50 text-slate-300'
-                    }`}>
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-500 ${s <= currentStep ? 'bg-green-600 text-white shadow-lg shadow-green-100' : 'bg-slate-50 text-slate-300'
+                      }`}>
                       {s < currentStep ? '✓' : s}
                     </div>
                     {s < 3 && (
@@ -177,11 +155,10 @@ export default function UnifiedAuth() {
                     <button
                       type="button"
                       onClick={() => setRole('buyer')}
-                      className={`flex flex-col items-center justify-center p-4 rounded-[2rem] border-2 transition-all duration-300 gap-2 ${
-                        role === 'buyer' 
-                        ? 'border-green-500 bg-green-50/50 shadow-lg shadow-green-100' 
+                      className={`flex flex-col items-center justify-center p-4 rounded-[2rem] border-2 transition-all duration-300 gap-2 ${role === 'buyer'
+                        ? 'border-green-500 bg-green-50/50 shadow-lg shadow-green-100'
                         : 'border-slate-100 bg-slate-50/50 opacity-60'
-                      }`}
+                        }`}
                     >
                       <div className={`p-2 rounded-full ${role === 'buyer' ? 'bg-green-600 text-white' : 'bg-slate-200 text-slate-400'}`}>
                         <ShoppingBag size={18} />
@@ -192,11 +169,10 @@ export default function UnifiedAuth() {
                     <button
                       type="button"
                       onClick={() => setRole('seller')}
-                      className={`flex flex-col items-center justify-center p-4 rounded-[2rem] border-2 transition-all duration-300 gap-2 ${
-                        role === 'seller' 
-                        ? 'border-green-500 bg-green-50/50 shadow-lg shadow-green-100' 
+                      className={`flex flex-col items-center justify-center p-4 rounded-[2rem] border-2 transition-all duration-300 gap-2 ${role === 'seller'
+                        ? 'border-green-500 bg-green-50/50 shadow-lg shadow-green-100'
                         : 'border-slate-100 bg-slate-50/50 opacity-60'
-                      }`}
+                        }`}
                     >
                       <div className={`p-2 rounded-full ${role === 'seller' ? 'bg-green-600 text-white' : 'bg-slate-200 text-slate-400'}`}>
                         <Store size={18} />
@@ -208,9 +184,9 @@ export default function UnifiedAuth() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-4 bg-slate-50 border border-slate-100 px-6 py-4 rounded-full focus-within:bg-white focus-within:border-green-500 transition-all group">
                       <Mail size={16} className="text-slate-300 group-focus-within:text-green-500" />
-                      <input 
-                        className="flex-1 bg-transparent outline-none text-xs font-medium" 
-                        placeholder="Địa chỉ Email" 
+                      <input
+                        className="flex-1 bg-transparent outline-none text-xs font-medium"
+                        placeholder="Địa chỉ Email"
                         type="email"
                         value={formData.email}
                         onChange={(e) => handleInputChange('email', e.target.value)}
@@ -228,9 +204,9 @@ export default function UnifiedAuth() {
                   </div>
                   <div className="flex items-center gap-4 bg-slate-50 border border-slate-100 px-6 py-4 rounded-full focus-within:bg-white focus-within:border-green-500 transition-all group">
                     <Hash size={16} className="text-slate-300 group-focus-within:text-green-500" />
-                    <input 
-                      className="flex-1 bg-transparent outline-none text-xs font-medium" 
-                      placeholder="Nhập mã OTP" 
+                    <input
+                      className="flex-1 bg-transparent outline-none text-xs font-medium"
+                      placeholder="Nhập mã OTP"
                       value={formData.otp}
                       onChange={(e) => handleInputChange('otp', e.target.value)}
                     />
@@ -244,9 +220,9 @@ export default function UnifiedAuth() {
                   <div className="space-y-4">
                     <div className="flex items-center gap-4 bg-slate-50 border border-slate-100 px-6 py-4 rounded-full focus-within:bg-white focus-within:border-green-500 transition-all group">
                       <User size={16} className="text-slate-300 group-focus-within:text-green-500" />
-                      <input 
-                        className="flex-1 bg-transparent outline-none text-xs font-medium" 
-                        placeholder="Họ và tên của bạn" 
+                      <input
+                        className="flex-1 bg-transparent outline-none text-xs font-medium"
+                        placeholder="Họ và tên của bạn"
                         value={formData.fullName}
                         onChange={(e) => handleInputChange('fullName', e.target.value)}
                       />
@@ -254,10 +230,10 @@ export default function UnifiedAuth() {
                     {errors.fullName && <p className="text-red-500 text-xs px-6">{errors.fullName}</p>}
                     <div className="flex items-center gap-4 bg-slate-50 border border-slate-100 px-6 py-4 rounded-full focus-within:bg-white focus-within:border-green-500 transition-all group">
                       <Lock size={16} className="text-slate-300 group-focus-within:text-green-500" />
-                      <input 
-                        className="flex-1 bg-transparent outline-none text-xs font-medium" 
-                        type={showPassword ? 'text' : 'password'} 
-                        placeholder="Mật khẩu mới" 
+                      <input
+                        className="flex-1 bg-transparent outline-none text-xs font-medium"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Mật khẩu mới"
                         value={formData.password}
                         onChange={(e) => handleInputChange('password', e.target.value)}
                       />
@@ -265,10 +241,10 @@ export default function UnifiedAuth() {
                     </div>
                     <div className="flex items-center gap-4 bg-slate-50 border border-slate-100 px-6 py-4 rounded-full focus-within:bg-white focus-within:border-green-500 transition-all group">
                       <ShieldCheck size={16} className="text-slate-300 group-focus-within:text-green-500" />
-                      <input 
-                        className="flex-1 bg-transparent outline-none text-xs font-medium" 
-                        type={showPassword ? 'text' : 'password'} 
-                        placeholder="Xác nhận mật khẩu" 
+                      <input
+                        className="flex-1 bg-transparent outline-none text-xs font-medium"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Xác nhận mật khẩu"
                         value={formData.confirmPassword}
                         onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                       />
@@ -298,16 +274,16 @@ export default function UnifiedAuth() {
           <div className="pt-8">
             <div className="flex gap-3">
               {currentStep > 1 && currentStep < 4 && (
-                <button 
+                <button
                   onClick={prevStep}
                   className="px-8 py-4 rounded-full border border-slate-100 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300 hover:text-slate-500 hover:bg-slate-50 transition-all"
                 >
                   Back
                 </button>
               )}
-              
+
               {currentStep === 1 ? (
-                <button 
+                <button
                   onClick={sendOTP}
                   disabled={isLoading}
                   className="flex-1 bg-green-600 hover:bg-green-700 text-white py-4 rounded-full font-bold text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-green-900/10 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
@@ -315,7 +291,7 @@ export default function UnifiedAuth() {
                   {isLoading ? 'Đang gửi...' : 'Gửi OTP'} <ChevronRight size={16} />
                 </button>
               ) : currentStep === 2 ? (
-                <button 
+                <button
                   onClick={verifyOTP}
                   disabled={isLoading}
                   className="flex-1 bg-green-600 hover:bg-green-700 text-white py-4 rounded-full font-bold text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-green-900/10 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
@@ -323,7 +299,7 @@ export default function UnifiedAuth() {
                   {isLoading ? 'Đang xác minh...' : 'Xác minh OTP'} <ChevronRight size={16} />
                 </button>
               ) : currentStep === 3 ? (
-                <button 
+                <button
                   onClick={register}
                   disabled={isLoading}
                   className="flex-1 bg-slate-900 hover:bg-black text-white py-4 rounded-full font-bold text-[11px] uppercase tracking-[0.2em] shadow-2xl active:scale-95 transition-all disabled:opacity-50"
@@ -331,7 +307,7 @@ export default function UnifiedAuth() {
                   {isLoading ? 'Đang đăng ký...' : 'Hoàn tất đăng ký'}
                 </button>
               ) : (
-                <button 
+                <button
                   onClick={() => navigate('/')}
                   className="flex-1 bg-green-600 text-white py-4 rounded-full font-bold text-[11px] uppercase tracking-[0.2em] active:scale-95 transition-all"
                 >

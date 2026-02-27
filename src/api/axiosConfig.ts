@@ -1,46 +1,43 @@
-import axios from "axios";
+import axios from 'axios';
+import { API_BASE_URL } from '../config/api';
 
-// Khởi tạo instance axios
+// Khởi tạo instance axios với base URL chính xác
 const api = axios.create({
-  baseURL: "https://bikehub-production-978c.up.railway.app.",
+  baseURL: API_BASE_URL,
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   },
 });
 
-// Interceptor để tự động thêm Token vào Header nếu có
+// Interceptor: Tự động thêm Bearer token vào mỗi request nếu có
 api.interceptors.request.use(
   (config) => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        const token = parsedUser.token; // Giả định backend trả về trường token
-        if (token && config.headers) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-      } catch (error) {
-        console.error("Lỗi lấy token từ localStorage:", error);
-      }
+    // Lấy token trực tiếp từ localStorage (cách AuthContext lưu)
+    const token = localStorage.getItem('token');
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  },
+  (error) => Promise.reject(error)
 );
 
-// Interceptor để xử lý lỗi hệ thống (ví dụ: Token hết hạn)
+// Interceptor: Xử lý lỗi response
+// QUAN TRỌNG: KHÔNG dùng window.location.href = '/login' ở đây vì sẽ
+// gây reload cả trang và tạo vòng lặp redirect vô tận.
+// Thay vào đó, chỉ xóa token và để React Router tự xử lý.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Xử lý khi token hết hạn: xóa user và redirect về login
-      localStorage.removeItem("user");
-      window.location.href = "/login";
+      // Token hết hạn: xóa khỏi storage, để ProtectedRoute tự redirect
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('role');
+      // KHÔNG dùng window.location.href - sẽ gây reload loop!
     }
     return Promise.reject(error);
-  },
+  }
 );
 
 export default api;
