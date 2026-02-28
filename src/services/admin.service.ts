@@ -26,6 +26,7 @@ export function getPrimaryRole(user: AdminUser): string {
 }
 
 export interface KYCRequest {
+    // id = user.id (backend KycResponse has no own id field)
     id: string;
     idNumber?: string;
     fullName?: string;
@@ -35,15 +36,16 @@ export interface KYCRequest {
     placeOfOrigin?: string;
     placeOfResidence?: string;
     expiryDate?: string;
-    // status theo Swagger: PENDING | VERIFIED | REJECTED
+    // status: derived from user.kyc boolean since KycResponse has no status field
     status: 'PENDING' | 'VERIFIED' | 'REJECTED';
     submittedAt?: string;
     verifiedAt?: string;
-    // nested user info
+    // nested user info (from the parent user object that contains the kycProfile)
     user?: {
         id: string;
         username: string;
         name?: string;
+        kyc?: boolean;
     };
 }
 
@@ -76,43 +78,76 @@ export const adminService = {
      */
     getAllKYCRequests: async (): Promise<KYCRequest[]> => {
         try {
+            // GET /kyc/getall — returns list of users that have a kycProfile.
+            // Per Swagger, each item in the result is a UserResponse with nested kycProfile.
+            // KycResponse itself has: idNumber, fullName, dateOfBirth, gender, nationality,
+            // placeOfOrigin, placeOfResidence, expiryDate — NO id, NO status, NO user fields.
             const response = await api.get(API_ENDPOINTS.KYC_GET_ALL);
             if (response.data?.code === 1000) {
                 const raw: any[] = response.data.result ?? [];
-                // Backend trả về JSON có circular reference (user→kycProfile→user→...)
-                // Chỉ lấy các fields cần thiết, tránh spread toàn bộ object
-                const normalized: KYCRequest[] = raw.map(k => {
-                    // Trích xuất user an toàn (tránh circular kycProfile)
-                    const user = k.user ? {
-                        id: k.user.id ?? '',
-                        username: k.user.username ?? '',
-                        name: k.user.name ?? '',
-                    } : undefined;
+                const normalized: KYCRequest[] = raw.map((item: any) => {
+                    // Backend may return either:
+                    //  (a) UserResponse (with kycProfile nested) — user is the root
+                    //  (b) KycResponse directly with nested user
+                    // Detect which shape we have:
+                    const isUserShape = !!item.username && !!item.kycProfile;
+                    const isKycShape  = !!item.user || (item.idNumber !== undefined && !item.username);
 
-                    // Nếu backend không trả status: dùng kycProfile.status nếu có,
-                    // hoặc suy từ user.kyc boolean
+                    let user: KYCRequest['user'];
+                    let kyc: any;
+
+                    if (isUserShape) {
+                        // Shape (a): item IS the user, kyc data is in item.kycProfile
+                        user = {
+                            id: item.id ?? '',
+                            username: item.username ?? '',
+                            name: item.name ?? '',
+                            kyc: item.kyc === true,
+                        };
+                        kyc = item.kycProfile ?? {};
+                    } else {
+                        // Shape (b): item IS the kyc record, user nested inside
+                        user = item.user ? {
+                            id: item.user.id ?? '',
+                            username: item.user.username ?? '',
+                            name: item.user.name ?? '',
+                            kyc: item.user.kyc === true,
+                        } : undefined;
+                        kyc = item;
+                    }
+
+                    // Status: derive from user.kyc boolean (backend KycResponse has no status field)
                     const status: 'PENDING' | 'VERIFIED' | 'REJECTED' =
-                        k.status
-                        ?? k.kycProfile?.status
-                        ?? (k.user?.kyc === true ? 'VERIFIED' : 'PENDING');
+                        kyc.status
+                        ?? item.status
+                        ?? (user?.kyc === true ? 'VERIFIED' : 'PENDING');
+
+                    // Use user.id as the record id (needed for POST /kyc/verify { id, approved })
+                    const id = user?.id || item.id || '';
 
                     return {
-                        id: k.id ?? '',
-                        idNumber: k.idNumber,
-                        fullName: k.fullName || user?.name || user?.username || '',
-                        dateOfBirth: k.dateOfBirth,
-                        gender: k.gender,
-                        nationality: k.nationality,
-                        placeOfOrigin: k.placeOfOrigin,
-                        placeOfResidence: k.placeOfResidence,
-                        expiryDate: k.expiryDate,
-                        submittedAt: k.submittedAt,
-                        verifiedAt: k.verifiedAt,
+                        id,
+                        idNumber: kyc.idNumber,
+                        fullName: kyc.fullName || user?.name || user?.username || '',
+                        dateOfBirth: kyc.dateOfBirth,
+                        gender: kyc.gender,
+                        nationality: kyc.nationality,
+                        placeOfOrigin: kyc.placeOfOrigin,
+                        placeOfResidence: kyc.placeOfResidence,
+                        expiryDate: kyc.expiryDate,
+                        submittedAt: kyc.submittedAt,
+                        verifiedAt: kyc.verifiedAt,
                         status,
                         user,
                     };
                 });
-                return normalized;
+                // Deduplicate by id (in case backend returns duplicates)
+                const seen = new Set<string>();
+                return normalized.filter(k => {
+                    if (!k.id || seen.has(k.id)) return false;
+                    seen.add(k.id);
+                    return true;
+                });
             }
             return [];
         } catch (error: any) {

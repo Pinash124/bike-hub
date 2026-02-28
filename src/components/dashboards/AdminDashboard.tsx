@@ -4,7 +4,7 @@ import {
   Users, FileCheck, MapPin, Plus, Edit, Trash2,
   LayoutDashboard, Tag, Wrench, ClipboardList,
   CheckCircle, XCircle, Clock, ChevronRight,
-  UserCheck, Bike, AlertTriangle, RefreshCw, X
+  UserCheck, Bike, AlertTriangle, RefreshCw, X, Image
 } from 'lucide-react'
 import { useEffect, useState, useCallback } from 'react'
 import { adminService, getPrimaryRole, type AdminUser, type KYCRequest } from '../../services/admin.service'
@@ -12,10 +12,11 @@ import { locationService, type InspectionLocation } from '../../services/locatio
 import { brandService, type Brand } from '../../services/brand.service'
 import { componentService, type InspectionComponent } from '../../services/component.service'
 import { inspectionService, type InspectionTask } from '../../services/inspection.service'
+import { listingService, type Listing } from '../../services/listing.service'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'users' | 'kyc' | 'inspections' | 'catalog' | 'locations'
+type Tab = 'overview' | 'users' | 'kyc' | 'inspections' | 'catalog' | 'locations' | 'listings'
 
 const ROLE_LABEL: Record<string, string> = {
   BUYER: 'Người mua', SELLER: 'Người bán', INSPECTOR: 'Kiểm định viên', ADMIN: 'Quản trị viên',
@@ -34,6 +35,15 @@ const KYC_STATUS_MAP: Record<string, { label: string; color: string; icon: React
   PENDING: { label: 'Chờ duyệt', color: 'bg-amber-100 text-amber-700', icon: Clock },
   VERIFIED: { label: 'Đã xác minh', color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle },
   REJECTED: { label: 'Từ chối', color: 'bg-red-100 text-red-700', icon: XCircle },
+}
+const LISTING_STATUS_MAP: Record<string, { label: string; color: string }> = {
+  DRAFT: { label: 'Nháp', color: 'bg-slate-100 text-slate-600' },
+  PENDING: { label: 'Chờ duyệt', color: 'bg-amber-100 text-amber-700' },
+  APPROVED: { label: 'Đã duyệt', color: 'bg-emerald-100 text-emerald-700' },
+  LIVE: { label: 'Đang bán', color: 'bg-blue-100 text-blue-700' },
+  REJECTED: { label: 'Từ chối', color: 'bg-red-100 text-red-700' },
+  RESERVED: { label: 'Đặt cọc', color: 'bg-purple-100 text-purple-700' },
+  SOLD: { label: 'Đã bán', color: 'bg-teal-100 text-teal-700' },
 }
 
 // ─── Reusable UI ─────────────────────────────────────────────────────────────
@@ -302,12 +312,12 @@ function KycTab({ kycList, loading, onRefresh }: { kycList: KYCRequest[]; loadin
 
       {loading ? <Spinner /> : filtered.length === 0 ? <EmptyState message="Không có yêu cầu KYC nào." /> : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filtered.map(kyc => {
+          {filtered.map((kyc, i) => {
             const st = KYC_STATUS_MAP[kyc.status] ?? { label: kyc.status, color: 'bg-slate-100 text-slate-600', icon: Clock }
             const Icon = st.icon
             const isProc = processing === kyc.id
             return (
-              <div key={kyc.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition">
+              <div key={kyc.id || String(i)} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition">
                 {/* Header */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -791,6 +801,143 @@ function LocationsTab({ locations, loading, onRefresh }: { locations: Inspection
   )
 }
 
+// ─── Listings Moderation Tab ──────────────────────────────────────────────────
+
+function ListingsTab({ listings, loading, onRefresh }: { listings: Listing[]; loading: boolean; onRefresh: () => void }) {
+  type ListFilter = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'LIVE' | 'DRAFT'
+  const [filter, setFilter] = useState<ListFilter>('ALL')
+  const [processing, setProcessing] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+
+  const filtered = listings.filter(l => {
+    const matchStatus = filter === 'ALL' || l.status === filter
+    const matchSearch = !search || l.title.toLowerCase().includes(search.toLowerCase()) || l.brand?.name?.toLowerCase().includes(search.toLowerCase())
+    return matchStatus && matchSearch
+  })
+
+  const pendingCount = listings.filter(l => l.status === 'PENDING').length
+
+  const handleApprove = async (id: string) => {
+    setProcessing(id)
+    const ok = await listingService.approveListing(id)
+    if (ok) { alert('Đã duyệt bài đăng!'); onRefresh() }
+    else alert('Thao tác thất bại, vui lòng thử lại.')
+    setProcessing(null)
+  }
+
+  const handleReject = async (id: string) => {
+    setProcessing(id)
+    const ok = await listingService.rejectListing(id)
+    if (ok) { alert('Đã từ chối bài đăng!'); onRefresh() }
+    else alert('Thao tác thất bại, vui lòng thử lại.')
+    setProcessing(null)
+  }
+
+  const filterTabs: { key: ListFilter; label: string }[] = [
+    { key: 'ALL', label: 'Tất cả' },
+    { key: 'PENDING', label: 'Chờ duyệt' },
+    { key: 'APPROVED', label: 'Đã duyệt' },
+    { key: 'LIVE', label: 'Đang bán' },
+    { key: 'REJECTED', label: 'Từ chối' },
+    { key: 'DRAFT', label: 'Nháp' },
+  ]
+
+  return (
+    <div className="space-y-4">
+      {/* Filter bar */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {filterTabs.map(({ key, label }) => (
+          <button key={key} onClick={() => setFilter(key)}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 ${filter === key ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-slate-400'
+              }`}>
+            {label}
+            {key === 'PENDING' && pendingCount > 0 && (
+              <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded-full">{pendingCount}</span>
+            )}
+          </button>
+        ))}
+        <input value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Tìm tiêu đề / thương hiệu..."
+          className="ml-auto px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-400 w-52" />
+        <button onClick={onRefresh} className="p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 transition">
+          <RefreshCw size={15} />
+        </button>
+      </div>
+
+      {loading ? <Spinner /> : filtered.length === 0 ? <EmptyState message="Không có bài đăng nào." /> : (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-slate-50 text-slate-500 text-[11px] font-bold uppercase tracking-wider border-b border-slate-100">
+                  <th className="px-5 py-3.5">Ảnh</th>
+                  <th className="px-5 py-3.5">Tiêu đề</th>
+                  <th className="px-5 py-3.5">Thương hiệu</th>
+                  <th className="px-5 py-3.5">Giá</th>
+                  <th className="px-5 py-3.5">Trạng thái</th>
+                  <th className="px-5 py-3.5">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {filtered.map((listing, i) => {
+                  const st = LISTING_STATUS_MAP[listing.status] ?? { label: listing.status, color: 'bg-slate-100 text-slate-600' }
+                  const isProc = processing === listing.id
+                  const thumb = listing.images?.[0]?.secureUrl
+                  return (
+                    <tr key={listing.id || String(i)} className="hover:bg-slate-50/60 transition">
+                      {/* Thumbnail */}
+                      <td className="px-5 py-3">
+                        {thumb
+                          ? <img src={thumb} alt="thumb" className="w-14 h-10 object-cover rounded-xl border border-slate-100" />
+                          : <div className="w-14 h-10 rounded-xl bg-slate-100 flex items-center justify-center"><Image size={16} className="text-slate-300" /></div>
+                        }
+                      </td>
+                      {/* Title */}
+                      <td className="px-5 py-3 max-w-[220px]">
+                        <p className="text-sm font-semibold text-slate-800 line-clamp-2 leading-snug">{listing.title || '—'}</p>
+                        {listing.frameNumber && <p className="text-[10px] text-slate-400 mt-0.5">Frame: {listing.frameNumber}</p>}
+                      </td>
+                      {/* Brand */}
+                      <td className="px-5 py-3">
+                        <span className="text-sm text-slate-600 font-medium">{listing.brand?.name ?? '—'}</span>
+                      </td>
+                      {/* Price */}
+                      <td className="px-5 py-3">
+                        <span className="text-sm font-bold text-slate-800">
+                          {listing.price != null ? listing.price.toLocaleString('vi-VN') + ' ₫' : '—'}
+                        </span>
+                      </td>
+                      {/* Status badge */}
+                      <td className="px-5 py-3">
+                        <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${st.color}`}>{st.label}</span>
+                      </td>
+                      {/* Actions */}
+                      <td className="px-5 py-3">
+                        {listing.status === 'PENDING' && (
+                          <div className="flex gap-2">
+                            <button onClick={() => handleReject(listing.id)} disabled={isProc}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition disabled:opacity-50">
+                              <XCircle size={13} /> Từ chối
+                            </button>
+                            <button onClick={() => handleApprove(listing.id)} disabled={isProc}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold transition disabled:opacity-50 shadow-sm">
+                              {isProc ? <RefreshCw size={13} className="animate-spin" /> : <CheckCircle size={13} />} Duyệt
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 export default function AdminDashboard() {
@@ -802,11 +949,13 @@ export default function AdminDashboard() {
   const [locations, setLocations] = useState<InspectionLocation[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
   const [components, setComponents] = useState<InspectionComponent[]>([])
+  const [listings, setListings] = useState<Listing[]>([])
 
   const [usersLoading, setUsersLoading] = useState(true)
   const [kycLoading, setKycLoading] = useState(true)
   const [inspLoading, setInspLoading] = useState(true)
   const [locLoading, setLocLoading] = useState(true)
+  const [listingsLoading, setListingsLoading] = useState(true)
   const [catalogLoading] = useState(false) // CatalogTab has its own state
 
   const overviewLoading = usersLoading || kycLoading || inspLoading || locLoading
@@ -840,23 +989,32 @@ export default function AdminDashboard() {
     setBrands(b); setComponents(c)
   }, [])
 
+  const fetchListings = useCallback(async () => {
+    setListingsLoading(true)
+    const data = await listingService.getAllListings()
+    setListings(data); setListingsLoading(false)
+  }, [])
+
   useEffect(() => {
     fetchUsers()
     fetchKYC()
     fetchInspections()
     fetchLocations()
     fetchOverviewCatalog()
-  }, [fetchUsers, fetchKYC, fetchInspections, fetchLocations, fetchOverviewCatalog])
+    fetchListings()
+  }, [fetchUsers, fetchKYC, fetchInspections, fetchLocations, fetchOverviewCatalog, fetchListings])
 
   const pendingKYC = kycList.filter(k => k.status === 'PENDING').length
   const pendingInsp = inspections.filter(i => i.status === 'PENDING_ASSIGNED').length
+  const pendingListings = listings.filter(l => l.status === 'PENDING').length
 
   const navItems: { tab: Tab; label: string; icon: React.ElementType; badge?: number }[] = [
     { tab: 'overview', label: 'Tổng Quan', icon: LayoutDashboard },
     { tab: 'users', label: 'Người Dùng', icon: Users },
     { tab: 'kyc', label: 'Xác Minh KYC', icon: FileCheck, badge: pendingKYC },
+    { tab: 'listings', label: 'Duyệt Bài Đăng', icon: Tag, badge: pendingListings },
     { tab: 'inspections', label: 'Kiểm Định', icon: ClipboardList, badge: pendingInsp },
-    { tab: 'catalog', label: 'Thương Hiệu & Hạng Mục', icon: Tag },
+    { tab: 'catalog', label: 'Thương Hiệu & Hạng Mục', icon: Wrench },
     { tab: 'locations', label: 'Cơ Sở Kiểm Định', icon: MapPin },
   ]
 
@@ -910,6 +1068,9 @@ export default function AdminDashboard() {
             )}
             {activeTab === 'users' && <UsersTab users={users} loading={usersLoading} />}
             {activeTab === 'kyc' && <KycTab kycList={kycList} loading={kycLoading} onRefresh={fetchKYC} />}
+            {activeTab === 'listings' && (
+              <ListingsTab listings={listings} loading={listingsLoading} onRefresh={fetchListings} />
+            )}
             {activeTab === 'inspections' && (
               <InspectionsTab inspections={inspections} users={users} loading={inspLoading} onRefresh={fetchInspections} />
             )}

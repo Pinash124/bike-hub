@@ -20,25 +20,18 @@ export interface Listing {
     brand: Brand;
     images: ListingImage[];
     createdAt: string;
-    // properties matching UI needs
-    location?: string; // Additional field if available
+    bikeType?: string;
+    location?: string;
     condition?: string;
 }
 
 export const listingService = {
     createListing: async (formData: FormData): Promise<Listing | null> => {
         try {
-            // Content-Type header is set automatically by axios when data is FormData
-            // but we need to ensure the token is attached (handled by interceptor)
             const response = await api.post(API_ENDPOINTS.LISTING, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                }
+                headers: { 'Content-Type': 'multipart/form-data' }
             });
-
-            if (response.data?.code === 1000) {
-                return response.data.result;
-            }
+            if (response.data?.code === 1000) return response.data.result;
             throw new Error(response.data?.message || 'Create listing failed');
         } catch (error) {
             console.error('Error creating listing:', error);
@@ -49,9 +42,7 @@ export const listingService = {
     getMyListings: async (): Promise<Listing[]> => {
         try {
             const response = await api.get(API_ENDPOINTS.MY_LISTING);
-            if (response.data?.code === 1000) {
-                return response.data.result;
-            }
+            if (response.data?.code === 1000) return response.data.result ?? [];
             return [];
         } catch (error) {
             console.error('Error fetching my listings:', error);
@@ -59,22 +50,40 @@ export const listingService = {
         }
     },
 
-    // Public/Search listings (Note: Endpoint path might need adjustment based on backend)
-    // Currently guessing GET /listing or GET /listing/search
+    /** Admin & public: GET /listing — all listings */
     getListings: async (): Promise<Listing[]> => {
         try {
-            // FALLBACK: If there is no specific search endpoint document, 
-            // we might try accessing the general listing endpoint if it exists.
-            // For now, I'll use the base listing endpoint.
-            // If this 404s, we will need to ask backend team.
-            const response = await api.get(API_ENDPOINTS.LISTING); // Assuming GET /listing returns all?
-            if (response.data?.code === 1000) {
-                return response.data.result;
-            }
+            const response = await api.get(API_ENDPOINTS.LISTING);
+            if (response.data?.code === 1000) return response.data.result ?? [];
             return [];
         } catch (error) {
             console.error('Error fetching listings:', error);
             return [];
         }
-    }
+    },
+
+    /** Alias used by admin listing tab */
+    getAllListings: async (): Promise<Listing[]> => listingService.getListings(),
+
+    /** [ADMIN] POST /listing/{id}/approve */
+    approveListing: async (id: string): Promise<boolean> => {
+        try {
+            const response = await api.post(API_ENDPOINTS.LISTING_APPROVE(id));
+            return response.data?.code === 1000;
+        } catch (error) {
+            console.error('Error approving listing:', error);
+            return false;
+        }
+    },
+
+    /** [ADMIN] POST /listing/{id}/reject */
+    rejectListing: async (id: string): Promise<boolean> => {
+        try {
+            const response = await api.post(API_ENDPOINTS.LISTING_REJECT(id));
+            return response.data?.code === 1000;
+        } catch (error) {
+            console.error('Error rejecting listing:', error);
+            return false;
+        }
+    },
 };
