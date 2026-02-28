@@ -4,9 +4,9 @@ import {
   Users, FileCheck, MapPin, Plus, Edit, Trash2,
   LayoutDashboard, Tag, Wrench, ClipboardList,
   CheckCircle, XCircle, Clock, ChevronRight,
-  UserCheck, Bike, AlertTriangle, RefreshCw, X, Image
+  UserCheck, Bike, AlertTriangle, RefreshCw, X
 } from 'lucide-react'
-import { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { adminService, getPrimaryRole, type AdminUser, type KYCRequest } from '../../services/admin.service'
 import { locationService, type InspectionLocation } from '../../services/location.service'
 import { brandService, type Brand } from '../../services/brand.service'
@@ -17,6 +17,36 @@ import { listingService, type Listing } from '../../services/listing.service'
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type Tab = 'overview' | 'users' | 'kyc' | 'inspections' | 'catalog' | 'locations' | 'listings'
+
+// ─── Error boundary ───────────────────────────────────────────────────────────
+
+// React error boundary to catch any runtime exceptions inside the dashboard
+class DashboardErrorBoundary extends React.Component<Record<string, unknown>, { hasError: boolean }> {
+  constructor(props: Record<string, unknown>) {
+    super(props as any)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError(_: unknown) {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error: unknown, info: unknown) {
+    console.error('AdminDashboard caught error:', error, info)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen">
+          <h2 className="text-xl font-bold text-red-600">Đã có lỗi xảy ra trong bảng điều khiển</h2>
+          <p className="text-slate-500">Vui lòng thử làm mới trang hoặc liên hệ quản trị viên.</p>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 const ROLE_LABEL: Record<string, string> = {
   BUYER: 'Người mua', SELLER: 'Người bán', INSPECTOR: 'Kiểm định viên', ADMIN: 'Quản trị viên',
@@ -567,7 +597,13 @@ function CatalogTab() {
 
   const deleteBrand = async (id: number) => {
     if (!confirm('Bạn có chắc muốn xóa thương hiệu này?')) return
-    await brandService.deleteBrand(id) ? (alert('Đã xóa!'), fetch()) : alert('Xóa thất bại!')
+    const ok = await brandService.deleteBrand(id)
+    if (ok) {
+      alert('Đã xóa!')
+      fetch()
+    } else {
+      alert('Xóa thất bại!')
+    }
   }
 
   const saveComp = async (e: React.FormEvent) => {
@@ -587,7 +623,13 @@ function CatalogTab() {
 
   const deleteComp = async (id: number) => {
     if (!confirm('Bạn có chắc muốn xóa hạng mục này?')) return
-    await componentService.deleteComponent(id) ? (alert('Đã xóa!'), fetch()) : alert('Xóa thất bại!')
+    const ok = await componentService.deleteComponent(id)
+    if (ok) {
+      alert('Đã xóa!')
+      fetch()
+    } else {
+      alert('Xóa thất bại!')
+    }
   }
 
   if (loading) return <Spinner />
@@ -724,14 +766,24 @@ function LocationsTab({ locations, loading, onRefresh }: { locations: Inspection
         alert('Tạo mới thành công!')
       }
       setModal(false); onRefresh()
-    } catch (err: any) {
-      alert(err.message || 'Có lỗi xảy ra.')
+    } catch (error: unknown) {
+      // unknown may not have message property
+      const msg = (error && typeof error === 'object' && 'message' in error)
+        ? (error as any).message
+        : undefined
+      alert(msg || 'Có lỗi xảy ra.')
     } finally { setSaving(false) }
   }
 
   const remove = async (id: number) => {
     if (!confirm('Bạn có chắc muốn xóa địa điểm này?')) return
-    await locationService.deleteLocation(id) ? (alert('Đã xóa!'), onRefresh()) : alert('Xóa thất bại!')
+    const ok = await locationService.deleteLocation(id)
+    if (ok) {
+      alert('Đã xóa!')
+      onRefresh()
+    } else {
+      alert('Xóa thất bại!')
+    }
   }
 
   return (
@@ -811,7 +863,11 @@ function ListingsTab({ listings, loading, onRefresh }: { listings: Listing[]; lo
 
   const filtered = listings.filter(l => {
     const matchStatus = filter === 'ALL' || l.status === filter
-    const matchSearch = !search || l.title.toLowerCase().includes(search.toLowerCase()) || l.brand?.name?.toLowerCase().includes(search.toLowerCase())
+    // defensive: title may be undefined/null if backend returns malformed data
+    const title = l.title || ''
+    const matchSearch = !search ||
+      title.toLowerCase().includes(search.toLowerCase()) ||
+      (l.brand?.name ?? '').toLowerCase().includes(search.toLowerCase())
     return matchStatus && matchSearch
   })
 
@@ -956,43 +1012,84 @@ export default function AdminDashboard() {
   const [inspLoading, setInspLoading] = useState(true)
   const [locLoading, setLocLoading] = useState(true)
   const [listingsLoading, setListingsLoading] = useState(true)
-  const [catalogLoading] = useState(false) // CatalogTab has its own state
+  // catalogLoading was unused; each tab manages its own loading state
 
   const overviewLoading = usersLoading || kycLoading || inspLoading || locLoading
 
   const fetchUsers = useCallback(async () => {
     setUsersLoading(true)
-    const data = await adminService.getAllUsers()
-    setUsers(data); setUsersLoading(false)
+    try {
+      const data = await adminService.getAllUsers()
+      setUsers(data)
+    } catch (err) {
+      console.error('[Admin] fetchUsers failed', err)
+    } finally {
+      setUsersLoading(false)
+    }
   }, [])
 
   const fetchKYC = useCallback(async () => {
     setKycLoading(true)
-    const data = await adminService.getAllKYCRequests()
-    setKycList(data); setKycLoading(false)
+    try {
+      const data = await adminService.getAllKYCRequests()
+      setKycList(data)
+    } catch (err) {
+      console.error('[Admin] fetchKYC failed', err)
+    } finally {
+      setKycLoading(false)
+    }
   }, [])
 
   const fetchInspections = useCallback(async () => {
     setInspLoading(true)
-    const data = await inspectionService.getAllInspections()
-    setInspections(data); setInspLoading(false)
+    try {
+      const data = await inspectionService.getAllInspections()
+      setInspections(data)
+    } catch (err) {
+      console.error('[Admin] fetchInspections failed', err)
+    } finally {
+      setInspLoading(false)
+    }
   }, [])
 
   const fetchLocations = useCallback(async () => {
     setLocLoading(true)
-    const data = await locationService.getAllLocations()
-    setLocations(data); setLocLoading(false)
+    try {
+      const data = await locationService.getAllLocations()
+      setLocations(data)
+    } catch (err) {
+      console.error('[Admin] fetchLocations failed', err)
+    } finally {
+      setLocLoading(false)
+    }
   }, [])
 
   const fetchOverviewCatalog = useCallback(async () => {
-    const [b, c] = await Promise.all([brandService.getAllBrands(), componentService.getAllComponents()])
-    setBrands(b); setComponents(c)
+    try {
+      const [b, c] = await Promise.all([brandService.getAllBrands(), componentService.getAllComponents()])
+      setBrands(Array.isArray(b) ? b : [])
+      setComponents(Array.isArray(c) ? c : [])
+    } catch (err) {
+      console.error('[Admin] fetchOverviewCatalog failed', err)
+    }
   }, [])
 
   const fetchListings = useCallback(async () => {
     setListingsLoading(true)
-    const data = await listingService.getAllListings()
-    setListings(data); setListingsLoading(false)
+    try {
+      const data = await listingService.getAllListings()
+      if (Array.isArray(data)) {
+        setListings(data)
+      } else {
+        console.warn('[Admin] unexpected listings response', data)
+        setListings([])
+      }
+    } catch (err) {
+      console.error('[Admin] fetchListings failed', err)
+      setListings([])
+    } finally {
+      setListingsLoading(false)
+    }
   }, [])
 
   useEffect(() => {
@@ -1006,7 +1103,7 @@ export default function AdminDashboard() {
 
   const pendingKYC = kycList.filter(k => k.status === 'PENDING').length
   const pendingInsp = inspections.filter(i => i.status === 'PENDING_ASSIGNED').length
-  const pendingListings = listings.filter(l => l.status === 'PENDING').length
+  const pendingListings = Array.isArray(listings) ? listings.filter(l => l.status === 'PENDING').length : 0
 
   const navItems: { tab: Tab; label: string; icon: React.ElementType; badge?: number }[] = [
     { tab: 'overview', label: 'Tổng Quan', icon: LayoutDashboard },
@@ -1019,7 +1116,8 @@ export default function AdminDashboard() {
   ]
 
   return (
-    <div className="min-h-[calc(100vh-80px)] bg-slate-50 font-sans">
+    <DashboardErrorBoundary>
+      <div className="min-h-[calc(100vh-80px)] bg-slate-50 font-sans">
       <div className="max-w-[1400px] mx-auto px-4 py-6">
 
         {/* Page header */}
@@ -1082,5 +1180,6 @@ export default function AdminDashboard() {
         </div>
       </div>
     </div>
+    </DashboardErrorBoundary>
   )
 }
