@@ -20,6 +20,9 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  // do not render header when logged in as admin
+  if (user?.role === 'admin') return null
+
   return (
     <>
       <header

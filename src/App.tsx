@@ -54,6 +54,15 @@ function Unauthorized() {
 import { Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 
+// guard wrapper for profile route to prevent admins from accessing
+function ProfileGuard() {
+  const { role } = useAuth()
+  if (role === 'admin') {
+    return <Navigate to="/unauthorized" replace />
+  }
+  return <><Header /><ProfilePage /><Footer /></>
+}
+
 function Home() {
   const [selectedCategory, setSelectedCategory] = useState('Tất cả')
   const { role } = useAuth()
@@ -116,7 +125,7 @@ function App() {
             {/* --- Profile Route (All Authenticated Users) --- */}
             <Route path="/profile" element={
               <ProtectedRoute>
-                <><Header /><ProfilePage /><Footer /></>
+                <ProfileGuard />
               </ProtectedRoute>
             } />
 
@@ -158,7 +167,7 @@ function App() {
             {/* --- Protected Routes - Admin & Inspector --- */}
             <Route path="/admin/dashboard" element={
               <ProtectedRoute requiredRole="admin">
-                <><Header /><AdminDashboard /><Footer /></>
+                <AdminDashboard />
               </ProtectedRoute>
             } />
 

@@ -7,6 +7,8 @@ import {
   UserCheck, Bike, AlertTriangle, RefreshCw, X
 } from 'lucide-react'
 import React, { useEffect, useState, useCallback } from 'react'
+import { useAuth } from '../../contexts/AuthContext'
+import { useNavigate } from 'react-router-dom'
 import { adminService, getPrimaryRole, type AdminUser, type KYCRequest } from '../../services/admin.service'
 import { locationService, type InspectionLocation } from '../../services/location.service'
 import { brandService, type Brand } from '../../services/brand.service'
@@ -997,7 +999,18 @@ function ListingsTab({ listings, loading, onRefresh }: { listings: Listing[]; lo
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 export default function AdminDashboard() {
+  const { logout } = useAuth()
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<Tab>('overview')
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+    } catch (err) {
+      console.error('Logout failed', err)
+    }
+    navigate('/')
+  }
 
   const [users, setUsers] = useState<AdminUser[]>([])
   const [kycList, setKycList] = useState<KYCRequest[]>([])
@@ -1121,9 +1134,14 @@ export default function AdminDashboard() {
       <div className="max-w-[1400px] mx-auto px-4 py-6">
 
         {/* Page header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Bảng Điều Khiển Quản Trị</h1>
-          <p className="text-slate-500 text-sm mt-0.5">BikeHub Admin Panel — Quản lý toàn bộ hoạt động hệ thống</p>
+        <div className="mb-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Bảng Điều Khiển Quản Trị</h1>
+            <p className="text-slate-500 text-sm mt-0.5">BikeHub Admin Panel — Quản lý toàn bộ hoạt động hệ thống</p>
+          </div>
+          <button onClick={handleLogout} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition">
+            Đăng xuất
+          </button>
         </div>
 
         <div className="flex gap-6 items-start">

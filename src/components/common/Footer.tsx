@@ -1,7 +1,11 @@
 import { Facebook, Bike, ShieldCheck, PlusCircle, Instagram, Youtube, Linkedin, ArrowRight } from 'lucide-react'
 import { Container } from './Container' // Đảm bảo đường dẫn này đúng với project của bạn
+import { useAuth } from '../../contexts/AuthContext'
 
 export default function Footer() {
+  const { user } = useAuth()
+  if (user?.role === 'admin') return null
+
   return (
     <footer className="bg-[#0f172a] text-white mt-40 border-t border-white/5 w-full font-sans">
       
