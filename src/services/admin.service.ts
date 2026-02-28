@@ -225,4 +225,59 @@ export const adminService = {
             return false;
         }
     },
+
+    /**
+     * [ADMIN] Gửi OTP tới email để tạo tài khoản inspector
+     * POST /auth/send-otp
+     */
+    sendInspectorOTP: async (email: string): Promise<boolean> => {
+        try {
+            const response = await api.post(API_ENDPOINTS.SEND_OTP, { email });
+            return response.data?.code === 1000;
+        } catch (error) {
+            console.error('Error sending OTP for inspector:', error);
+            return false;
+        }
+    },
+
+    /**
+     * [ADMIN] Xác thực OTP để lấy verification token cho tài khoản inspector
+     * POST /auth/verify-otp
+     */
+    verifyInspectorOTP: async (email: string, otp: string): Promise<string> => {
+        try {
+            const response = await api.post(API_ENDPOINTS.VERIFY_OTP, { email, otp });
+            if (response.data?.code === 1000) {
+                return response.data.result?.verificationToken || '';
+            }
+            throw new Error(response.data?.message || 'OTP verification failed');
+        } catch (error) {
+            console.error('Error verifying OTP for inspector:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * [ADMIN] Tạo tài khoản inspector không yêu cầu KYC
+     * POST /auth/registration
+     */
+    createInspectorAccount: async (payload: {
+        fullName: string;
+        email: string;
+        password: string;
+        verificationToken: string;
+    }): Promise<boolean> => {
+        try {
+            const response = await api.post(API_ENDPOINTS.REGISTRATION, {
+                fullName: payload.fullName,
+                password: payload.password,
+                verificationToken: payload.verificationToken,
+                role: 'inspector',
+            });
+            return response.data?.code === 1000;
+        } catch (error) {
+            console.error('Error creating inspector account:', error);
+            return false;
+        }
+    },
 };

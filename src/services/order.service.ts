@@ -55,6 +55,23 @@ export const orderService = {
     },
 
     /**
+     * [ADMIN] Lấy tất cả đơn hàng trong hệ thống
+     * GET /order
+     */
+    getAllOrders: async (): Promise<Order[]> => {
+        try {
+            const response = await api.get(API_ENDPOINTS.ORDER);
+            if (response.data?.code === 1000) {
+                return Array.isArray(response.data.result) ? response.data.result : [];
+            }
+            return [];
+        } catch (error) {
+            console.error('Error fetching all orders:', error);
+            return [];
+        }
+    },
+
+    /**
      * [BUYER] Hủy đơn hàng
      * DELETE or POST /order/{id}/cancel
      */

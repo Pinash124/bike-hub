@@ -4,7 +4,7 @@ import {
   Users, FileCheck, MapPin, Plus, Edit, Trash2,
   LayoutDashboard, Tag, Wrench, ClipboardList,
   CheckCircle, XCircle, Clock, ChevronRight,
-  UserCheck, Bike, AlertTriangle, RefreshCw, X
+  UserCheck, Bike, AlertTriangle, RefreshCw, X, ShoppingCart, CreditCard, UserPlus
 } from 'lucide-react'
 import React, { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
@@ -15,10 +15,12 @@ import { brandService, type Brand } from '../../services/brand.service'
 import { componentService, type InspectionComponent } from '../../services/component.service'
 import { inspectionService, type InspectionTask } from '../../services/inspection.service'
 import { listingService, type Listing } from '../../services/listing.service'
+import { orderService, type Order } from '../../services/order.service'
+import { paymentService, type PaymentResult } from '../../services/payment.service'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'users' | 'kyc' | 'inspections' | 'catalog' | 'locations' | 'listings'
+type Tab = 'overview' | 'users' | 'kyc' | 'inspections' | 'catalog' | 'locations' | 'listings' | 'orders' | 'payments' | 'company-locations' | 'create-inspector'
 
 // ─── Error boundary ───────────────────────────────────────────────────────────
 
@@ -552,6 +554,192 @@ function InspectionsTab({
   )
 }
 
+// ─── Orders Tab ──────────────────────────────────────────────────────────────
+
+function OrdersTab({ orders, loading, onRefresh }: { orders: Order[]; loading: boolean; onRefresh: () => void }) {
+  const [filter, setFilter] = useState<Order['status'] | 'ALL'>('ALL')
+
+  const filtered = filter === 'ALL' ? orders : orders.filter(o => o.status === filter)
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 flex-wrap">
+        {(['ALL', 'PENDING', 'CONFIRMED', 'SHIPPING', 'COMPLETED', 'CANCELLED'] as const).map(f => (
+          <button key={f} onClick={() => setFilter(f)}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
+              filter === f ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-slate-400'
+            }`}>
+            {f === 'ALL' ? 'Tất cả' : f}
+          </button>
+        ))}
+        <button onClick={onRefresh} className="ml-auto p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 transition">
+          <RefreshCw size={15} />
+        </button>
+      </div>
+
+      {loading ? <Spinner /> : filtered.length === 0 ? <EmptyState message="Không có đơn hàng nào." /> : (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-slate-50 text-slate-500 text-[11px] font-bold uppercase tracking-wider border-b border-slate-100">
+                  <th className="px-6 py-3.5">Mã Đơn</th>
+                  <th className="px-6 py-3.5">Người Mua</th>
+                  <th className="px-6 py-3.5">Bài Đăng</th>
+                  <th className="px-6 py-3.5">Giá</th>
+                  <th className="px-6 py-3.5">Trạng Thái</th>
+                  <th className="px-6 py-3.5">Ngày Tạo</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {filtered.map(order => (
+                  <tr key={order.id} className="hover:bg-slate-50/60 transition">
+                    <td className="px-6 py-3.5 text-sm font-semibold text-slate-800">{order.id.slice(0, 8)}</td>
+                    <td className="px-6 py-3.5 text-sm text-slate-600">{order.buyerId}</td>
+                    <td className="px-6 py-3.5 text-sm text-slate-600">{order.listingId.slice(0, 8)}</td>
+                    <td className="px-6 py-3.5 text-sm font-bold text-slate-800">{order.totalPrice.toLocaleString('vi-VN')} ₫</td>
+                    <td className="px-6 py-3.5">
+                      <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
+                        order.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                        order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
+                        order.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
+                        'bg-blue-100 text-blue-700'
+                      }`}>
+                        {order.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3.5 text-sm text-slate-500">{new Date(order.createdAt).toLocaleDateString('vi-VN')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Payments Tab ────────────────────────────────────────────────────────────
+
+function PaymentsTab({ payments, loading, onRefresh }: { payments: PaymentResult[]; loading: boolean; onRefresh: () => void }) {
+  const [filter, setFilter] = useState<PaymentResult['status'] | 'ALL'>('ALL')
+
+  const filtered = filter === 'ALL' ? payments : payments.filter(p => p.status === filter)
+  const totalRevenue = payments.reduce((sum, p) => sum + (p.status === 'SUCCESS' ? p.amount : 0), 0)
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div className="bg-white rounded-xl border border-slate-100 p-4">
+          <p className="text-xs text-slate-500 font-bold uppercase mb-1">Tổng Doanh Thu</p>
+          <p className="text-2xl font-black text-green-600">{totalRevenue.toLocaleString('vi-VN')} ₫</p>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-100 p-4">
+          <p className="text-xs text-slate-500 font-bold uppercase mb-1">Tổng Giao Dịch</p>
+          <p className="text-2xl font-black text-slate-800">{payments.length}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-100 p-4">
+          <p className="text-xs text-slate-500 font-bold uppercase mb-1">Thành Công</p>
+          <p className="text-2xl font-black text-emerald-600">{payments.filter(p => p.status === 'SUCCESS').length}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-100 p-4">
+          <p className="text-xs text-slate-500 font-bold uppercase mb-1">Thất Bại</p>
+          <p className="text-2xl font-black text-red-600">{payments.filter(p => p.status === 'FAILED').length}</p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        {(['ALL', 'PENDING', 'SUCCESS', 'FAILED', 'REFUNDED'] as const).map(f => (
+          <button key={f} onClick={() => setFilter(f)}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
+              filter === f ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-slate-400'
+            }`}>
+            {f === 'ALL' ? 'Tất cả' : f}
+          </button>
+        ))}
+        <button onClick={onRefresh} className="ml-auto p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 transition">
+          <RefreshCw size={15} />
+        </button>
+      </div>
+
+      {loading ? <Spinner /> : filtered.length === 0 ? <EmptyState message="Không có giao dịch nào." /> : (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-slate-50 text-slate-500 text-[11px] font-bold uppercase tracking-wider border-b border-slate-100">
+                  <th className="px-6 py-3.5">Mã Giao Dịch</th>
+                  <th className="px-6 py-3.5">Mã Đơn</th>
+                  <th className="px-6 py-3.5">Số Tiền</th>
+                  <th className="px-6 py-3.5">Trạng Thái</th>
+                  <th className="px-6 py-3.5">Ngày</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {filtered.map(payment => (
+                  <tr key={payment.paymentId} className="hover:bg-slate-50/60 transition">
+                    <td className="px-6 py-3.5 text-sm font-semibold text-slate-800">{payment.paymentId.slice(0, 8)}</td>
+                    <td className="px-6 py-3.5 text-sm text-slate-600">{payment.orderId.slice(0, 8)}</td>
+                    <td className="px-6 py-3.5 text-sm font-bold text-slate-800">{payment.amount.toLocaleString('vi-VN')} ₫</td>
+                    <td className="px-6 py-3.5">
+                      <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
+                        payment.status === 'SUCCESS' ? 'bg-green-100 text-green-700' :
+                        payment.status === 'FAILED' ? 'bg-red-100 text-red-700' :
+                        payment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-slate-100 text-slate-700'
+                      }`}>
+                        {payment.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3.5 text-sm text-slate-500">{new Date(payment.createdAt).toLocaleDateString('vi-VN')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Company Locations Tab ───────────────────────────────────────────────────
+
+function CompanyLocationsTab({ locations, loading }: { locations: InspectionLocation[]; loading: boolean }) {
+  const companyLocs = locations.filter(l => l.type === 'COMPANY')
+
+  return (
+    <div>
+      <div className="mb-4">
+        <h2 className="font-bold text-slate-800">Cơ Sở Kiểm Định Công Ty <span className="text-slate-400 font-normal text-sm">({companyLocs.length})</span></h2>
+      </div>
+
+      {loading ? <Spinner /> : companyLocs.length === 0 ? <EmptyState message="Không có cơ sở công ty nào." /> : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {companyLocs.map(loc => (
+            <div key={loc.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 hover:shadow-md transition">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="p-2 rounded-xl bg-emerald-50">
+                  <MapPin size={16} className="text-emerald-600" />
+                </div>
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                  Công ty
+                </span>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-bold text-slate-800">{loc.contactName || 'Chưa đặt tên'}</p>
+                <p className="text-xs text-slate-500">📞 {loc.contactPhone || 'Không có SĐT'}</p>
+                <p className="text-xs text-slate-500 line-clamp-2">📍 {loc.addressLine || 'Chưa có địa chỉ'}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Catalog Tab (Brands + Components) ───────────────────────────────────────
 
 function CatalogTab() {
@@ -996,6 +1184,168 @@ function ListingsTab({ listings, loading, onRefresh }: { listings: Listing[]; lo
   )
 }
 
+// ─── Create Inspector Tab ─────────────────────────────────────────────────────
+
+function CreateInspectorTab({
+  form,
+  otp,
+  otpSent,
+  verificationToken,
+  message,
+  verifyingOTP,
+  creatingInspector,
+  onFormChange,
+  onOTPChange,
+  onSendOTP,
+  onVerifyOTP,
+  onCreate,
+}: {
+  form: { fullName: string; email: string; password: string; confirmPassword: string }
+  otp: string
+  otpSent: boolean
+  verificationToken: string
+  message: { type: 'success' | 'error'; text: string } | null
+  verifyingOTP: boolean
+  creatingInspector: boolean
+  onFormChange: (field: string, value: string) => void
+  onOTPChange: (value: string) => void
+  onSendOTP: () => Promise<void>
+  onVerifyOTP: () => Promise<void>
+  onCreate: () => Promise<void>
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="max-w-2xl">
+        <h2 className="text-lg font-bold text-slate-800 mb-2">Tạo Tài Khoản Kiểm Định Viên</h2>
+        <p className="text-sm text-slate-500">Tạo tài khoản mới cho kiểm định viên. Tài khoản này sẽ không yêu cầu xác minh KYC.</p>
+      </div>
+
+      {/* Message display */}
+      {message && (
+        <div className={`p-4 rounded-lg ${message.type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
+          <p className="text-sm font-medium">{message.text}</p>
+        </div>
+      )}
+
+      {/* Form section */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+        <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wider mb-4">Thông Tin Kiểm Định Viên</h3>
+
+        {/* Full Name */}
+        <FormField label="Họ Tên">
+          <input
+            type="text"
+            value={form.fullName}
+            onChange={e => onFormChange('fullName', e.target.value)}
+            placeholder="Nhập họ tên đầy đủ"
+            className={inputCls}
+            disabled={otpSent && !verificationToken}
+          />
+        </FormField>
+
+        {/* Email */}
+        <FormField label="Email">
+          <input
+            type="email"
+            value={form.email}
+            onChange={e => onFormChange('email', e.target.value)}
+            placeholder="Nhập email"
+            className={inputCls}
+            disabled={otpSent && !verificationToken}
+          />
+        </FormField>
+
+        {/* Password */}
+        <FormField label="Mật Khẩu">
+          <input
+            type="password"
+            value={form.password}
+            onChange={e => onFormChange('password', e.target.value)}
+            placeholder="Nhập mật khẩu"
+            className={inputCls}
+            disabled={otpSent && !verificationToken}
+          />
+        </FormField>
+
+        {/* Confirm Password */}
+        <FormField label="Xác Nhận Mật Khẩu">
+          <input
+            type="password"
+            value={form.confirmPassword}
+            onChange={e => onFormChange('confirmPassword', e.target.value)}
+            placeholder="Xác nhận mật khẩu"
+            className={inputCls}
+            disabled={otpSent && !verificationToken}
+          />
+        </FormField>
+
+        {/* Send OTP button */}
+        {!otpSent && (
+          <button
+            onClick={onSendOTP}
+            disabled={verifyingOTP || !form.email}
+            className="w-full mt-6 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-300 text-white rounded-lg font-bold text-sm transition flex items-center justify-center gap-2"
+          >
+            {verifyingOTP && <RefreshCw size={16} className="animate-spin" />}
+            Gửi OTP tới Email
+          </button>
+        )}
+
+        {/* OTP verification section */}
+        {otpSent && !verificationToken && (
+          <div className="mt-6 pt-6 border-t border-slate-200 space-y-4">
+            <h4 className="font-bold text-slate-700 text-sm">Xác Minh OTP</h4>
+            <FormField label="Mã OTP">
+              <input
+                type="text"
+                value={otp}
+                onChange={e => onOTPChange(e.target.value)}
+                placeholder="Nhập mã OTP từ email"
+                className={inputCls}
+              />
+            </FormField>
+            <button
+              onClick={onVerifyOTP}
+              disabled={verifyingOTP || !otp}
+              className="w-full px-4 py-2.5 bg-purple-500 hover:bg-purple-600 disabled:bg-slate-300 text-white rounded-lg font-bold text-sm transition flex items-center justify-center gap-2"
+            >
+              {verifyingOTP && <RefreshCw size={16} className="animate-spin" />}
+              Xác Minh OTP
+            </button>
+          </div>
+        )}
+
+        {/* Create account button */}
+        {verificationToken && (
+          <div className="mt-6 pt-6 border-t border-emerald-200 bg-emerald-50 rounded-lg p-4">
+            <p className="text-sm text-emerald-700 font-medium mb-4">✓ OTP đã xác minh. Bạn có thể tạo tài khoản.</p>
+            <button
+              onClick={onCreate}
+              disabled={creatingInspector}
+              className="w-full px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white rounded-lg font-bold text-sm transition flex items-center justify-center gap-2"
+            >
+              {creatingInspector && <RefreshCw size={16} className="animate-spin" />}
+              Tạo Tài Khoản Kiểm Định Viên
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Instructions */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h4 className="font-bold text-blue-900 text-sm mb-2">Hướng dẫn:</h4>
+        <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+          <li>Nhập thông tin đầy đủ của kiểm định viên</li>
+          <li>Nhấn "Gửi OTP tới Email" để gửi mã xác minh</li>
+          <li>Kiểm định viên sẽ nhận được mã OTP trong email</li>
+          <li>Nhập mã OTP để xác minh</li>
+          <li>Nhấn "Tạo Tài Khoản" để hoàn tất</li>
+        </ul>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 export default function AdminDashboard() {
@@ -1019,12 +1369,27 @@ export default function AdminDashboard() {
   const [brands, setBrands] = useState<Brand[]>([])
   const [components, setComponents] = useState<InspectionComponent[]>([])
   const [listings, setListings] = useState<Listing[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
+  const [payments, setPayments] = useState<PaymentResult[]>([])
+  const [companyLocations, setCompanyLocations] = useState<InspectionLocation[]>([])
+
+  // Inspector account creation form state
+  const [inspectorForm, setInspectorForm] = useState({ fullName: '', email: '', password: '', confirmPassword: '' })
+  const [inspectorOTP, setInspectorOTP] = useState('')
+  const [otpSent, setOtpSent] = useState(false)
+  const [verificationToken, setVerificationToken] = useState('')
+  const [creatingInspector, setCreatingInspector] = useState(false)
+  const [verifyingOTP, setVerifyingOTP] = useState(false)
+  const [inspectorMessage, setInspectorMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   const [usersLoading, setUsersLoading] = useState(true)
   const [kycLoading, setKycLoading] = useState(true)
   const [inspLoading, setInspLoading] = useState(true)
   const [locLoading, setLocLoading] = useState(true)
   const [listingsLoading, setListingsLoading] = useState(true)
+  const [ordersLoading, setOrdersLoading] = useState(true)
+  const [paymentsLoading, setPaymentsLoading] = useState(true)
+  const [companyLocLoading, setCompanyLocLoading] = useState(true)
   // catalogLoading was unused; each tab manages its own loading state
 
   const overviewLoading = usersLoading || kycLoading || inspLoading || locLoading
@@ -1105,6 +1470,139 @@ export default function AdminDashboard() {
     }
   }, [])
 
+  const fetchOrders = useCallback(async () => {
+    setOrdersLoading(true)
+    try {
+      const data = await orderService.getAllOrders()
+      setOrders(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('[Admin] fetchOrders failed', err)
+      setOrders([])
+    } finally {
+      setOrdersLoading(false)
+    }
+  }, [])
+
+  const fetchPayments = useCallback(async () => {
+    setPaymentsLoading(true)
+    try {
+      const data = await paymentService.getAllPayments()
+      setPayments(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('[Admin] fetchPayments failed', err)
+      setPayments([])
+    } finally {
+      setPaymentsLoading(false)
+    }
+  }, [])
+
+  const fetchCompanyLocations = useCallback(async () => {
+    setCompanyLocLoading(true)
+    try {
+      const data = await locationService.getMyCompanyLocation()
+      setCompanyLocations(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('[Admin] fetchCompanyLocations failed', err)
+      setCompanyLocations([])
+    } finally {
+      setCompanyLocLoading(false)
+    }
+  }, [])
+
+  const handleSendInspectorOTP = useCallback(async () => {
+    if (!inspectorForm.email) {
+      setInspectorMessage({ type: 'error', text: 'Vui lòng nhập email' })
+      return
+    }
+    setVerifyingOTP(true)
+    try {
+      const success = await adminService.sendInspectorOTP(inspectorForm.email)
+      if (success) {
+        setOtpSent(true)
+        setInspectorMessage({ type: 'success', text: 'OTP đã được gửi tới email. Vui lòng kiểm tra email để lấy mã OTP.' })
+      } else {
+        setInspectorMessage({ type: 'error', text: 'Không thể gửi OTP. Vui lòng thử lại.' })
+      }
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Lỗi khi gửi OTP'
+      console.error('Error sending OTP:', err)
+      setInspectorMessage({ type: 'error', text: errorMessage })
+    } finally {
+      setVerifyingOTP(false)
+    }
+  }, [inspectorForm.email])
+
+  const handleVerifyInspectorOTP = useCallback(async () => {
+    if (!inspectorOTP) {
+      setInspectorMessage({ type: 'error', text: 'Vui lòng nhập OTP' })
+      return
+    }
+    setVerifyingOTP(true)
+    try {
+      const token = await adminService.verifyInspectorOTP(inspectorForm.email, inspectorOTP)
+      setVerificationToken(token)
+      setInspectorMessage({ type: 'success', text: 'OTP đã xác minh thành công. Bạn có thể tạo tài khoản inspector.' })
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'OTP không hợp lệ'
+      console.error('Error verifying OTP:', err)
+      setInspectorMessage({ type: 'error', text: errorMessage })
+    } finally {
+      setVerifyingOTP(false)
+    }
+  }, [inspectorForm.email, inspectorOTP])
+
+  const handleCreateInspector = useCallback(async () => {
+    // Validation
+    if (!inspectorForm.fullName) {
+      setInspectorMessage({ type: 'error', text: 'Vui lòng nhập họ tên' })
+      return
+    }
+    if (!inspectorForm.email) {
+      setInspectorMessage({ type: 'error', text: 'Vui lòng nhập email' })
+      return
+    }
+    if (!inspectorForm.password || !inspectorForm.confirmPassword) {
+      setInspectorMessage({ type: 'error', text: 'Vui lòng nhập mật khẩu' })
+      return
+    }
+    if (inspectorForm.password !== inspectorForm.confirmPassword) {
+      setInspectorMessage({ type: 'error', text: 'Mật khẩu không khớp' })
+      return
+    }
+    if (!verificationToken) {
+      setInspectorMessage({ type: 'error', text: 'Vui lòng xác minh OTP trước khi tạo tài khoản' })
+      return
+    }
+
+    setCreatingInspector(true)
+    try {
+      const success = await adminService.createInspectorAccount({
+        fullName: inspectorForm.fullName,
+        email: inspectorForm.email,
+        password: inspectorForm.password,
+        verificationToken: verificationToken,
+      })
+      if (success) {
+        setInspectorMessage({ type: 'success', text: 'Tài khoản inspector đã được tạo thành công!' })
+        // Reset form
+        setInspectorForm({ fullName: '', email: '', password: '', confirmPassword: '' })
+        setInspectorOTP('')
+        setOtpSent(false)
+        setVerificationToken('')
+        // Refresh users list
+        fetchUsers()
+      } else {
+        setInspectorMessage({ type: 'error', text: 'Không thể tạo tài khoản. Vui lòng thử lại.' })
+      }
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Lỗi khi tạo tài khoản'
+      console.error('Error creating inspector:', err)
+      setInspectorMessage({ type: 'error', text: errorMessage })
+    } finally {
+      setCreatingInspector(false)
+    }
+  }, [inspectorForm, verificationToken, fetchUsers])
+
   useEffect(() => {
     fetchUsers()
     fetchKYC()
@@ -1112,7 +1610,10 @@ export default function AdminDashboard() {
     fetchLocations()
     fetchOverviewCatalog()
     fetchListings()
-  }, [fetchUsers, fetchKYC, fetchInspections, fetchLocations, fetchOverviewCatalog, fetchListings])
+    fetchOrders()
+    fetchPayments()
+    fetchCompanyLocations()
+  }, [fetchUsers, fetchKYC, fetchInspections, fetchLocations, fetchOverviewCatalog, fetchListings, fetchOrders, fetchPayments, fetchCompanyLocations])
 
   const pendingKYC = kycList.filter(k => k.status === 'PENDING').length
   const pendingInsp = inspections.filter(i => i.status === 'PENDING_ASSIGNED').length
@@ -1124,6 +1625,10 @@ export default function AdminDashboard() {
     { tab: 'kyc', label: 'Xác Minh KYC', icon: FileCheck, badge: pendingKYC },
     { tab: 'listings', label: 'Duyệt Bài Đăng', icon: Tag, badge: pendingListings },
     { tab: 'inspections', label: 'Kiểm Định', icon: ClipboardList, badge: pendingInsp },
+    { tab: 'orders', label: 'Đơn Hàng', icon: ShoppingCart, badge: undefined },
+    { tab: 'payments', label: 'Thanh Toán', icon: CreditCard, badge: undefined },
+    { tab: 'create-inspector', label: 'Tạo Kiểm Định Viên', icon: UserPlus },
+    { tab: 'company-locations', label: 'Cơ Sở Công Ty', icon: MapPin },
     { tab: 'catalog', label: 'Thương Hiệu & Hạng Mục', icon: Wrench },
     { tab: 'locations', label: 'Cơ Sở Kiểm Định', icon: MapPin },
   ]
@@ -1189,6 +1694,31 @@ export default function AdminDashboard() {
             )}
             {activeTab === 'inspections' && (
               <InspectionsTab inspections={inspections} users={users} loading={inspLoading} onRefresh={fetchInspections} />
+            )}
+            {activeTab === 'orders' && (
+              <OrdersTab orders={orders} loading={ordersLoading} onRefresh={fetchOrders} />
+            )}
+            {activeTab === 'payments' && (
+              <PaymentsTab payments={payments} loading={paymentsLoading} onRefresh={fetchPayments} />
+            )}
+            {activeTab === 'create-inspector' && (
+              <CreateInspectorTab
+                form={inspectorForm}
+                otp={inspectorOTP}
+                otpSent={otpSent}
+                verificationToken={verificationToken}
+                message={inspectorMessage}
+                verifyingOTP={verifyingOTP}
+                creatingInspector={creatingInspector}
+                onFormChange={(field, value) => setInspectorForm(prev => ({ ...prev, [field]: value }))}
+                onOTPChange={setInspectorOTP}
+                onSendOTP={handleSendInspectorOTP}
+                onVerifyOTP={handleVerifyInspectorOTP}
+                onCreate={handleCreateInspector}
+              />
+            )}
+            {activeTab === 'company-locations' && (
+              <CompanyLocationsTab locations={companyLocations} loading={companyLocLoading} />
             )}
             {activeTab === 'catalog' && <CatalogTab />}
             {activeTab === 'locations' && (

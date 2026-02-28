@@ -20,6 +20,23 @@ export interface PaymentResult {
 
 export const paymentService = {
     /**
+     * [BATCH] Lấy tất cả giao dịch thanh toán trong hệ thống
+     * GET /payment
+     */
+    getAllPayments: async (): Promise<PaymentResult[]> => {
+        try {
+            const response = await api.get('/payment'); // Điều chỉnh đường dẫn nếu cần
+            if (response.data?.code === 1000) {
+                return Array.isArray(response.data.result) ? response.data.result : [];
+            }
+            return [];
+        } catch (error) {
+            console.error('Error fetching all payments:', error);
+            return [];
+        }
+    },
+
+    /**
      * [BUYER] Khởi tạo giao dịch thanh toán
      * POST /payment/create
      */
