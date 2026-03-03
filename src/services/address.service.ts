@@ -67,4 +67,18 @@ export const addressService = {
             throw error;
         }
     },
+
+    /**
+     * [BUYER/SELLER] Xóa địa chỉ
+     * DELETE /address/{id}
+     */
+    deleteAddress: async (id: number): Promise<boolean> => {
+        try {
+            const response = await api.delete(API_ENDPOINTS.ADDRESS_BY_ID(id));
+            return response.data?.code === 1000;
+        } catch (error) {
+            console.error('Error deleting address:', error);
+            return false;
+        }
+    },
 };

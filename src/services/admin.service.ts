@@ -91,7 +91,6 @@ export const adminService = {
                     //  (b) KycResponse directly with nested user
                     // Detect which shape we have:
                     const isUserShape = !!item.username && !!item.kycProfile;
-                    const isKycShape  = !!item.user || (item.idNumber !== undefined && !item.username);
 
                     let user: KYCRequest['user'];
                     let kyc: any;

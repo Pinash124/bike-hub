@@ -4,7 +4,7 @@ import {
   Users, FileCheck, MapPin, Plus, Edit, Trash2,
   LayoutDashboard, Tag, Wrench, ClipboardList,
   CheckCircle, XCircle, Clock, ChevronRight,
-  UserCheck, Bike, AlertTriangle, RefreshCw, X, ShoppingCart, CreditCard, UserPlus
+  UserCheck, Bike, AlertTriangle, RefreshCw, X, ShoppingCart, CreditCard, UserPlus, Image as ImageIcon
 } from 'lucide-react'
 import React, { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
@@ -25,9 +25,9 @@ type Tab = 'overview' | 'users' | 'kyc' | 'inspections' | 'catalog' | 'locations
 // ─── Error boundary ───────────────────────────────────────────────────────────
 
 // React error boundary to catch any runtime exceptions inside the dashboard
-class DashboardErrorBoundary extends React.Component<Record<string, unknown>, { hasError: boolean }> {
-  constructor(props: Record<string, unknown>) {
-    super(props as any)
+class DashboardErrorBoundary extends React.Component<{ children?: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: { children?: React.ReactNode }) {
+    super(props)
     this.state = { hasError: false }
   }
 
@@ -566,9 +566,8 @@ function OrdersTab({ orders, loading, onRefresh }: { orders: Order[]; loading: b
       <div className="flex items-center gap-2 flex-wrap">
         {(['ALL', 'PENDING', 'CONFIRMED', 'SHIPPING', 'COMPLETED', 'CANCELLED'] as const).map(f => (
           <button key={f} onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
-              filter === f ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-slate-400'
-            }`}>
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${filter === f ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-slate-400'
+              }`}>
             {f === 'ALL' ? 'Tất cả' : f}
           </button>
         ))}
@@ -599,12 +598,11 @@ function OrdersTab({ orders, loading, onRefresh }: { orders: Order[]; loading: b
                     <td className="px-6 py-3.5 text-sm text-slate-600">{order.listingId.slice(0, 8)}</td>
                     <td className="px-6 py-3.5 text-sm font-bold text-slate-800">{order.totalPrice.toLocaleString('vi-VN')} ₫</td>
                     <td className="px-6 py-3.5">
-                      <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
-                        order.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
-                        order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
-                        order.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
-                        'bg-blue-100 text-blue-700'
-                      }`}>
+                      <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${order.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                          order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
+                            order.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
+                              'bg-blue-100 text-blue-700'
+                        }`}>
                         {order.status}
                       </span>
                     </td>
@@ -652,9 +650,8 @@ function PaymentsTab({ payments, loading, onRefresh }: { payments: PaymentResult
       <div className="flex items-center gap-2 flex-wrap">
         {(['ALL', 'PENDING', 'SUCCESS', 'FAILED', 'REFUNDED'] as const).map(f => (
           <button key={f} onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
-              filter === f ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-slate-400'
-            }`}>
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${filter === f ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-slate-400'
+              }`}>
             {f === 'ALL' ? 'Tất cả' : f}
           </button>
         ))}
@@ -683,12 +680,11 @@ function PaymentsTab({ payments, loading, onRefresh }: { payments: PaymentResult
                     <td className="px-6 py-3.5 text-sm text-slate-600">{payment.orderId.slice(0, 8)}</td>
                     <td className="px-6 py-3.5 text-sm font-bold text-slate-800">{payment.amount.toLocaleString('vi-VN')} ₫</td>
                     <td className="px-6 py-3.5">
-                      <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
-                        payment.status === 'SUCCESS' ? 'bg-green-100 text-green-700' :
-                        payment.status === 'FAILED' ? 'bg-red-100 text-red-700' :
-                        payment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-slate-100 text-slate-700'
-                      }`}>
+                      <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${payment.status === 'SUCCESS' ? 'bg-green-100 text-green-700' :
+                          payment.status === 'FAILED' ? 'bg-red-100 text-red-700' :
+                            payment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-slate-100 text-slate-700'
+                        }`}>
                         {payment.status}
                       </span>
                     </td>
@@ -1135,7 +1131,7 @@ function ListingsTab({ listings, loading, onRefresh }: { listings: Listing[]; lo
                       <td className="px-5 py-3">
                         {thumb
                           ? <img src={thumb} alt="thumb" className="w-14 h-10 object-cover rounded-xl border border-slate-100" />
-                          : <div className="w-14 h-10 rounded-xl bg-slate-100 flex items-center justify-center"><Image size={16} className="text-slate-300" /></div>
+                          : <div className="w-14 h-10 rounded-xl bg-slate-100 flex items-center justify-center"><ImageIcon size={16} className="text-slate-300" /></div>
                         }
                       </td>
                       {/* Title */}
@@ -1636,98 +1632,98 @@ export default function AdminDashboard() {
   return (
     <DashboardErrorBoundary>
       <div className="min-h-[calc(100vh-80px)] bg-slate-50 font-sans">
-      <div className="max-w-[1400px] mx-auto px-4 py-6">
+        <div className="max-w-[1400px] mx-auto px-4 py-6">
 
-        {/* Page header */}
-        <div className="mb-6 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Bảng Điều Khiển Quản Trị</h1>
-            <p className="text-slate-500 text-sm mt-0.5">BikeHub Admin Panel — Quản lý toàn bộ hoạt động hệ thống</p>
-          </div>
-          <button onClick={handleLogout} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition">
-            Đăng xuất
-          </button>
-        </div>
-
-        <div className="flex gap-6 items-start">
-
-          {/* ── Sidebar ── */}
-          <nav className="w-56 shrink-0 sticky top-6">
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-              {navItems.map(item => {
-                const Icon = item.icon
-                const isActive = activeTab === item.tab
-                return (
-                  <button key={item.tab} onClick={() => setActiveTab(item.tab)}
-                    className={`w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition group ${isActive ? 'bg-amber-500 text-white' : 'text-slate-600 hover:bg-slate-50'}`}>
-                    <span className="flex items-center gap-2.5">
-                      <Icon size={17} className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600'} />
-                      {item.label}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      {item.badge != null && item.badge > 0 && (
-                        <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/30 text-white' : 'bg-red-500 text-white'}`}>
-                          {item.badge}
-                        </span>
-                      )}
-                      {isActive && <ChevronRight size={14} className="text-white/70" />}
-                    </span>
-                  </button>
-                )
-              })}
+          {/* Page header */}
+          <div className="mb-6 flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight">Bảng Điều Khiển Quản Trị</h1>
+              <p className="text-slate-500 text-sm mt-0.5">BikeHub Admin Panel — Quản lý toàn bộ hoạt động hệ thống</p>
             </div>
-          </nav>
+            <button onClick={handleLogout} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition">
+              Đăng xuất
+            </button>
+          </div>
 
-          {/* ── Content ── */}
-          <div className="flex-1 min-w-0">
-            {activeTab === 'overview' && (
-              <OverviewTab
-                users={users} kyc={kycList} inspections={inspections}
-                brands={brands} components={components} locations={locations}
-                loading={overviewLoading}
-              />
-            )}
-            {activeTab === 'users' && <UsersTab users={users} loading={usersLoading} />}
-            {activeTab === 'kyc' && <KycTab kycList={kycList} loading={kycLoading} onRefresh={fetchKYC} />}
-            {activeTab === 'listings' && (
-              <ListingsTab listings={listings} loading={listingsLoading} onRefresh={fetchListings} />
-            )}
-            {activeTab === 'inspections' && (
-              <InspectionsTab inspections={inspections} users={users} loading={inspLoading} onRefresh={fetchInspections} />
-            )}
-            {activeTab === 'orders' && (
-              <OrdersTab orders={orders} loading={ordersLoading} onRefresh={fetchOrders} />
-            )}
-            {activeTab === 'payments' && (
-              <PaymentsTab payments={payments} loading={paymentsLoading} onRefresh={fetchPayments} />
-            )}
-            {activeTab === 'create-inspector' && (
-              <CreateInspectorTab
-                form={inspectorForm}
-                otp={inspectorOTP}
-                otpSent={otpSent}
-                verificationToken={verificationToken}
-                message={inspectorMessage}
-                verifyingOTP={verifyingOTP}
-                creatingInspector={creatingInspector}
-                onFormChange={(field, value) => setInspectorForm(prev => ({ ...prev, [field]: value }))}
-                onOTPChange={setInspectorOTP}
-                onSendOTP={handleSendInspectorOTP}
-                onVerifyOTP={handleVerifyInspectorOTP}
-                onCreate={handleCreateInspector}
-              />
-            )}
-            {activeTab === 'company-locations' && (
-              <CompanyLocationsTab locations={companyLocations} loading={companyLocLoading} />
-            )}
-            {activeTab === 'catalog' && <CatalogTab />}
-            {activeTab === 'locations' && (
-              <LocationsTab locations={locations} loading={locLoading} onRefresh={fetchLocations} />
-            )}
+          <div className="flex gap-6 items-start">
+
+            {/* ── Sidebar ── */}
+            <nav className="w-56 shrink-0 sticky top-6">
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                {navItems.map(item => {
+                  const Icon = item.icon
+                  const isActive = activeTab === item.tab
+                  return (
+                    <button key={item.tab} onClick={() => setActiveTab(item.tab)}
+                      className={`w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition group ${isActive ? 'bg-amber-500 text-white' : 'text-slate-600 hover:bg-slate-50'}`}>
+                      <span className="flex items-center gap-2.5">
+                        <Icon size={17} className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600'} />
+                        {item.label}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        {item.badge != null && item.badge > 0 && (
+                          <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/30 text-white' : 'bg-red-500 text-white'}`}>
+                            {item.badge}
+                          </span>
+                        )}
+                        {isActive && <ChevronRight size={14} className="text-white/70" />}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </nav>
+
+            {/* ── Content ── */}
+            <div className="flex-1 min-w-0">
+              {activeTab === 'overview' && (
+                <OverviewTab
+                  users={users} kyc={kycList} inspections={inspections}
+                  brands={brands} components={components} locations={locations}
+                  loading={overviewLoading}
+                />
+              )}
+              {activeTab === 'users' && <UsersTab users={users} loading={usersLoading} />}
+              {activeTab === 'kyc' && <KycTab kycList={kycList} loading={kycLoading} onRefresh={fetchKYC} />}
+              {activeTab === 'listings' && (
+                <ListingsTab listings={listings} loading={listingsLoading} onRefresh={fetchListings} />
+              )}
+              {activeTab === 'inspections' && (
+                <InspectionsTab inspections={inspections} users={users} loading={inspLoading} onRefresh={fetchInspections} />
+              )}
+              {activeTab === 'orders' && (
+                <OrdersTab orders={orders} loading={ordersLoading} onRefresh={fetchOrders} />
+              )}
+              {activeTab === 'payments' && (
+                <PaymentsTab payments={payments} loading={paymentsLoading} onRefresh={fetchPayments} />
+              )}
+              {activeTab === 'create-inspector' && (
+                <CreateInspectorTab
+                  form={inspectorForm}
+                  otp={inspectorOTP}
+                  otpSent={otpSent}
+                  verificationToken={verificationToken}
+                  message={inspectorMessage}
+                  verifyingOTP={verifyingOTP}
+                  creatingInspector={creatingInspector}
+                  onFormChange={(field, value) => setInspectorForm(prev => ({ ...prev, [field]: value }))}
+                  onOTPChange={setInspectorOTP}
+                  onSendOTP={handleSendInspectorOTP}
+                  onVerifyOTP={handleVerifyInspectorOTP}
+                  onCreate={handleCreateInspector}
+                />
+              )}
+              {activeTab === 'company-locations' && (
+                <CompanyLocationsTab locations={companyLocations} loading={companyLocLoading} />
+              )}
+              {activeTab === 'catalog' && <CatalogTab />}
+              {activeTab === 'locations' && (
+                <LocationsTab locations={locations} loading={locLoading} onRefresh={fetchLocations} />
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
     </DashboardErrorBoundary>
   )
 }

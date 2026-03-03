@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Package, Truck, CheckCircle, XCircle, Clock, MapPin, ChevronRight, ChevronDown } from 'lucide-react';
+import { Package, Truck, CheckCircle, XCircle, Clock, MapPin, ChevronRight, ChevronDown, Bike } from 'lucide-react';
 
 export type OrderStatus = 'processing' | 'shipping' | 'pending_confirmation' | 'completed' | 'cancelled' | 'refunded';
 
@@ -9,6 +9,7 @@ export interface Order {
     productName: string;
     price: number;
     quantity: number;
+    image?: string;
   }>;
   status: OrderStatus;
   totalAmount: number;
@@ -65,14 +66,13 @@ export const OrderTracking: React.FC<OrderTrackingProps> = ({
             const isExpanded = expandedOrderId === order.id;
 
             return (
-              <div 
+              <div
                 key={order.id}
-                className={`group border-2 rounded-2xl overflow-hidden transition-all duration-300 ${
-                  isExpanded ? 'border-green-500 shadow-xl ring-4 ring-green-50' : 'border-gray-50 hover:border-green-200'
-                }`}
+                className={`group border-2 rounded-2xl overflow-hidden transition-all duration-300 ${isExpanded ? 'border-green-500 shadow-xl ring-4 ring-green-50' : 'border-gray-50 hover:border-green-200'
+                  }`}
               >
                 {/* Header đơn hàng */}
-                <div 
+                <div
                   onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
                   className="flex flex-wrap items-center justify-between p-5 bg-white cursor-pointer"
                 >
@@ -98,7 +98,7 @@ export const OrderTracking: React.FC<OrderTrackingProps> = ({
                 {/* Chi tiết đơn hàng khi mở rộng */}
                 {isExpanded && (
                   <div className="p-6 bg-gray-50/50 border-t border-gray-100 space-y-8 animate-in slide-in-from-top-2 duration-300">
-                    
+
                     {/* Timeline Trạng Thái */}
                     <div className="relative flex justify-between">
                       <div className="absolute top-5 left-0 w-full h-1 bg-gray-200 -z-0 rounded-full"></div>
@@ -107,16 +107,15 @@ export const OrderTracking: React.FC<OrderTrackingProps> = ({
                         { s: 'shipping', label: 'Đang giao', icon: Truck },
                         { s: 'pending_confirmation', label: 'Xác nhận', icon: MapPin },
                         { s: 'completed', label: 'Hoàn tất', icon: CheckCircle },
-                      ].map((step, idx, arr) => {
+                      ].map((step, idx) => {
                         const orderStepIdx = ['processing', 'shipping', 'pending_confirmation', 'completed'].indexOf(order.status);
                         const isDone = orderStepIdx >= idx || order.status === 'completed';
                         const isCurrent = order.status === step.s;
 
                         return (
                           <div key={step.s} className="relative z-10 flex flex-col items-center gap-2 group/step">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-4 transition-all duration-500 ${
-                              isDone ? 'bg-green-600 border-green-100 text-white' : 'bg-white border-gray-100 text-gray-300'
-                            } ${isCurrent ? 'ring-4 ring-green-500/20 scale-110' : ''}`}>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-4 transition-all duration-500 ${isDone ? 'bg-green-600 border-green-100 text-white' : 'bg-white border-gray-100 text-gray-300'
+                              } ${isCurrent ? 'ring-4 ring-green-500/20 scale-110' : ''}`}>
                               <step.icon size={18} />
                             </div>
                             <span className={`text-[10px] font-bold uppercase tracking-wider ${isDone ? 'text-green-600' : 'text-gray-400'}`}>
@@ -133,10 +132,19 @@ export const OrderTracking: React.FC<OrderTrackingProps> = ({
                         <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Sản phẩm</h4>
                         <div className="divide-y divide-gray-50">
                           {order.items.map((item, idx) => (
-                            <div key={idx} className="py-3 flex justify-between items-center">
-                              <div>
-                                <p className="font-bold text-gray-800 text-sm">{item.productName}</p>
-                                <p className="text-xs text-gray-400">Số lượng: {item.quantity}</p>
+                            <div key={idx} className="py-3 flex justify-between items-center gap-4">
+                              <div className="flex items-center gap-3">
+                                {item.image ? (
+                                  <img src={item.image} alt={item.productName} className="w-12 h-12 rounded-lg object-cover border border-gray-100" />
+                                ) : (
+                                  <div className="w-12 h-12 rounded-lg bg-gray-50 flex items-center justify-center text-gray-300 border border-gray-100">
+                                    <Bike size={20} />
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="font-bold text-gray-800 text-sm">{item.productName}</p>
+                                  <p className="text-xs text-gray-400">Số lượng: {item.quantity}</p>
+                                </div>
                               </div>
                               <span className="font-bold text-green-600">{((item.price * item.quantity) / 1000000).toFixed(1)}M</span>
                             </div>
@@ -161,7 +169,7 @@ export const OrderTracking: React.FC<OrderTrackingProps> = ({
                     <div className="flex flex-wrap gap-3 pt-2">
                       {order.status === 'shipping' && (
                         <>
-                          <button 
+                          <button
                             onClick={(e) => { e.stopPropagation(); onConfirmReceipt?.(order.id); }}
                             className="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-green-700 shadow-lg shadow-green-200 transition-all"
                           >
@@ -175,13 +183,13 @@ export const OrderTracking: React.FC<OrderTrackingProps> = ({
 
                       {order.status === 'pending_confirmation' && (
                         <>
-                          <button 
+                          <button
                             onClick={(e) => { e.stopPropagation(); onConfirmReceipt?.(order.id); }}
                             className="flex-1 bg-green-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-green-700 shadow-lg shadow-green-200 transition-all"
                           >
                             Xác nhận hàng đúng mô tả
                           </button>
-                          <button 
+                          <button
                             onClick={(e) => { e.stopPropagation(); onRequestReturn?.(order.id); }}
                             className="flex-1 bg-white text-red-500 border-2 border-red-500 py-3 rounded-xl font-bold text-sm hover:bg-red-50 transition-all"
                           >
@@ -191,7 +199,7 @@ export const OrderTracking: React.FC<OrderTrackingProps> = ({
                       )}
 
                       {order.status === 'completed' && (
-                        <button 
+                        <button
                           onClick={(e) => { e.stopPropagation(); onLeaveReview?.(order.id); }}
                           className="w-full bg-green-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-green-700 shadow-lg shadow-green-200 transition-all"
                         >

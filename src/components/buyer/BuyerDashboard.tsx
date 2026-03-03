@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ShoppingCart, Package, MapPin, LogOut, Trash2, Bike, ChevronRight } from 'lucide-react';
-import { addressService } from '../../services/address.service';
+import { addressService, type Address } from '../../services/address.service';
+import { listingService } from '../../services/listing.service';
 import { useCart } from '../../contexts/CartContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -29,6 +30,8 @@ export const BuyerDashboard: React.FC = () => {
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
     navigate(`/buyer/dashboard?tab=${tabId}`, { replace: true });
+    // Scroll to top for better UX when switching tabs
+    window.scrollTo(0, 0);
   };
 
   const tabs: Tab[] = [
@@ -86,7 +89,7 @@ export const BuyerDashboard: React.FC = () => {
 
       {/* Content Area */}
       <div>
-        {activeTab === 'home' && <HomeTab />}
+        {activeTab === 'home' && <HomeTab onTabChange={handleTabChange} />}
         {activeTab === 'cart' && <CartTab />}
         {activeTab === 'orders' && <OrdersTab />}
         {activeTab === 'addresses' && <AddressesTab />}
@@ -96,26 +99,52 @@ export const BuyerDashboard: React.FC = () => {
   );
 };
 
+interface HomeTabProps {
+  onTabChange: (tabId: string) => void;
+}
+
 // Home Tab Component
-const HomeTab: React.FC = () => {
+const HomeTab: React.FC<HomeTabProps> = ({ onTabChange }) => {
+  const { items } = useCart();
+  const [orderStats, setOrderStats] = useState({ active: 0, completed: 0 });
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const orders = await orderService.getMyOrders();
+        // Filter based on API status
+        const active = orders.filter(o => ['PENDING', 'CONFIRMED', 'SHIPPING'].includes(o.status)).length;
+        const completed = orders.filter(o => o.status === 'COMPLETED').length;
+        setOrderStats({ active, completed });
+      } catch (error) {
+        console.error('Error fetching order stats:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
   return (
     <div>
       <h2 className="text-lg font-semibold mb-4">Dashboard Overview</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 bg-white rounded shadow text-center">
+        <div className="p-4 bg-white rounded shadow text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => onTabChange('cart')}>
           <div className="text-3xl">🛒</div>
           <h3 className="mt-2 font-medium">Items in Cart</h3>
-          <p className="text-xl font-bold">0</p>
+          <p className="text-xl font-bold">{items.length}</p>
         </div>
-        <div className="p-4 bg-white rounded shadow text-center">
+        <div className="p-4 bg-white rounded shadow text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => onTabChange('orders')}>
           <div className="text-3xl">📦</div>
           <h3 className="mt-2 font-medium">Active Orders</h3>
-          <p className="text-xl font-bold">0</p>
+          <p className="text-xl font-bold">{isLoading ? '...' : orderStats.active}</p>
         </div>
-        <div className="p-4 bg-white rounded shadow text-center">
+        <div className="p-4 bg-white rounded shadow text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => onTabChange('orders')}>
           <div className="text-3xl">✅</div>
           <h3 className="mt-2 font-medium">Completed Orders</h3>
-          <p className="text-xl font-bold">0</p>
+          <p className="text-xl font-bold">{isLoading ? '...' : orderStats.completed}</p>
         </div>
         <div className="p-4 bg-white rounded shadow text-center">
           <div className="text-3xl">⭐</div>
@@ -127,10 +156,10 @@ const HomeTab: React.FC = () => {
       <div className="mt-6">
         <h3 className="text-lg font-semibold mb-3">Quick Links</h3>
         <div className="grid grid-cols-2 gap-3">
-          <a href="/marketplace" className="p-3 bg-gray-100 rounded text-center">🔍 Browse Bikes</a>
-          <a href="#" className="p-3 bg-gray-100 rounded text-center">🛒 View Cart</a>
-          <a href="#" className="p-3 bg-gray-100 rounded text-center">📦 Track Orders</a>
-          <a href="#" className="p-3 bg-gray-100 rounded text-center">📍 Manage Addresses</a>
+          <button onClick={() => navigate('/search')} className="p-3 bg-gray-100 rounded text-center hover:bg-gray-200 transition-colors font-medium">🔍 Browse Bikes</button>
+          <button onClick={() => onTabChange('cart')} className="p-3 bg-gray-100 rounded text-center hover:bg-gray-200 transition-colors font-medium">🛒 View Cart</button>
+          <button onClick={() => onTabChange('orders')} className="p-3 bg-gray-100 rounded text-center hover:bg-gray-200 transition-colors font-medium">📦 Track Orders</button>
+          <button onClick={() => onTabChange('addresses')} className="p-3 bg-gray-100 rounded text-center hover:bg-gray-200 transition-colors font-medium">📍 Manage Addresses</button>
         </div>
       </div>
     </div>
@@ -292,15 +321,84 @@ const CartTab: React.FC = () => {
 };
 
 // Orders Tab Component
+import { orderService } from '../../services/order.service';
+import { OrderTracking, type Order as UIOder } from './Orders/OrderTracking';
+import type { Order as APIOrder } from '../../services/order.service';
+
 const OrdersTab: React.FC = () => {
+  const [orders, setOrders] = useState<UIOder[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    setIsLoading(true);
+    try {
+      const data = await orderService.getMyOrders();
+
+      // Fetch listing details for each order to get real names and images
+      const mappedOrders: UIOder[] = await Promise.all(data.map(async (apiOrder: APIOrder) => {
+        let productName = `Order #${apiOrder.id.substring(0, 8).toUpperCase()}`;
+        let productImage = '';
+
+        if (apiOrder.listingId) {
+          try {
+            const listing = await listingService.getListingById(apiOrder.listingId);
+            if (listing) {
+              productName = listing.title;
+              productImage = listing.images?.[0]?.secureUrl || '';
+            }
+          } catch (err) {
+            console.error(`Failed to fetch listing ${apiOrder.listingId}`, err);
+          }
+        }
+
+        return {
+          id: apiOrder.id,
+          items: [
+            {
+              productName,
+              price: apiOrder.totalPrice,
+              quantity: 1,
+              image: productImage
+            }
+          ],
+          status: statusMap(apiOrder.status),
+          totalAmount: apiOrder.totalPrice,
+          deliveryAddress: apiOrder.note || 'Delivery Address',
+          createdAt: apiOrder.createdAt,
+          estimatedDelivery: new Date(new Date(apiOrder.createdAt).getTime() + 5 * 24 * 60 * 60 * 1000).toISOString()
+        };
+      }));
+
+      setOrders(mappedOrders);
+    } catch (error) {
+      console.error('Failed to fetch user orders', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const statusMap = (apiStatus: string): UIOder['status'] => {
+    switch (apiStatus) {
+      case 'PENDING': return 'processing';
+      case 'CONFIRMED': return 'pending_confirmation';
+      case 'SHIPPING': return 'shipping';
+      case 'COMPLETED': return 'completed';
+      case 'CANCELLED': return 'cancelled';
+      default: return 'processing';
+    }
+  };
+
+  if (isLoading) {
+    return <div className="text-center p-8">Loading your orders...</div>;
+  }
+
   return (
     <div>
-      <h2 className="text-lg font-semibold mb-4">Your Orders</h2>
-      <div className="flex flex-col items-center justify-center py-6 text-gray-600">
-        <div className="text-4xl">📦</div>
-        <p className="mt-2">No orders yet</p>
-        <a href="/marketplace" className="mt-3 bg-green-600 text-white px-4 py-2 rounded">Start Shopping</a>
-      </div>
+      <OrderTracking orders={orders} />
     </div>
   );
 };
@@ -308,7 +406,7 @@ const OrdersTab: React.FC = () => {
 // Addresses Tab Component
 const AddressesTab: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
-  const [addresses, setAddresses] = useState<any[]>([]);
+  const [addresses, setAddresses] = useState<Address[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // Form State
@@ -349,9 +447,32 @@ const AddressesTab: React.FC = () => {
     try {
       await addressService.addAddress(formData as any);
       setShowForm(false);
+      setFormData({
+        fullName: '',
+        phone: '',
+        province: '',
+        district: '',
+        ward: '',
+        detail: '',
+      });
       fetchAddresses(); // Refresh list
     } catch (error) {
       alert('Failed to add address');
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this address?')) return;
+    try {
+      const success = await addressService.deleteAddress(id);
+      if (success) {
+        fetchAddresses(); // Refresh list
+      } else {
+        alert('Failed to delete address');
+      }
+    } catch (error) {
+      console.error('Delete address error:', error);
+      alert('Failed to delete address');
     }
   };
 
@@ -407,7 +528,12 @@ const AddressesTab: React.FC = () => {
                 <p className="text-sm text-gray-600">{addr.detail}, {addr.ward}</p>
                 <p className="text-sm text-gray-600">{addr.district}, {addr.province}</p>
               </div>
-              <button className="text-red-500 text-sm hover:underline">Delete</button>
+              <button
+                onClick={() => handleDelete(addr.id)}
+                className="text-red-500 text-sm hover:underline"
+              >
+                Delete
+              </button>
             </div>
           ))
         )}

@@ -1,18 +1,8 @@
 import React, { useState } from 'react';
 import { MapPin, CreditCard, Package, AlertCircle, Check } from 'lucide-react';
 import { useCart } from '../../../contexts/CartContext';
+import { type Address } from '../../../services/address.service';
 
-
-export interface Address {
-  id: string;
-  fullName: string;
-  phone: string;
-  province: string;
-  district: string;
-  ward: string;
-  detailedAddress: string;
-  isDefault: boolean;
-}
 
 interface CheckoutProps {
   addresses: Address[];
@@ -20,7 +10,7 @@ interface CheckoutProps {
 }
 
 export interface CheckoutData {
-  selectedAddressId: string;
+  selectedAddressId: number;
   items: any[];
   totalAmount: number;
   shippingCost: number;
@@ -28,7 +18,7 @@ export interface CheckoutData {
 
 export const Checkout: React.FC<CheckoutProps> = ({ addresses, onPayment }) => {
   const { selectedItems, totalPrice } = useCart();
-  const [selectedAddressId, setSelectedAddressId] = useState(
+  const [selectedAddressId, setSelectedAddressId] = useState<number | ''>(
     addresses.find((a) => a.isDefault)?.id || addresses[0]?.id || ''
   );
   const [shippingMethod, setShippingMethod] = useState<'standard' | 'express'>('standard');
@@ -53,7 +43,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ addresses, onPayment }) => {
     try {
       // Simulate VNPAY API call
       const checkoutData: CheckoutData = {
-        selectedAddressId,
+        selectedAddressId: selectedAddressId as number, // Cast to number as it can be ''
         items: selectedItems,
         totalAmount: totalPrice + shippingCost,
         shippingCost,
@@ -102,13 +92,13 @@ export const Checkout: React.FC<CheckoutProps> = ({ addresses, onPayment }) => {
                       name="address"
                       value={address.id}
                       checked={selectedAddressId === address.id}
-                      onChange={(e) => setSelectedAddressId(e.target.value)}
+                      onChange={(e) => setSelectedAddressId(Number(e.target.value))}
                       className="mt-1 h-4 w-4"
                     />
                     <div>
                       <h4 className="font-semibold">{address.fullName}</h4>
                       <p className="text-sm text-gray-500">{address.phone}</p>
-                      <p className="text-sm text-gray-500">{address.detailedAddress}, {address.ward}, {address.district}, {address.province}</p>
+                      <p className="text-sm text-gray-500">{address.detail}, {address.ward}, {address.district}, {address.province}</p>
                       {address.isDefault && <span className="inline-block mt-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Default</span>}
                     </div>
                   </label>

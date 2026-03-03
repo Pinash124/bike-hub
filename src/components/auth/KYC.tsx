@@ -1,7 +1,7 @@
 // src/components/auth/KYC.tsx
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import {
-  ArrowLeft, Upload, ShieldCheck, ChevronRight, Loader2, CheckCircle, FileText
+  ArrowLeft, Upload, ShieldCheck, Loader2, CheckCircle
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { AuthCard } from './AuthLayout'

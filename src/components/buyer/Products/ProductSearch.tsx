@@ -24,86 +24,9 @@ interface ProductSearchProps {
   onSelectProduct: (product: Product) => void;
 }
 
-const MOCK_PRODUCTS: Product[] = [
-  {
-    id: '1',
-    name: 'Trek FX 3 Hybrid Bike',
-    price: 1500000,
-    condition: 'Like New (99%)',
-    image: '🚲',
-    seller: 'John Bike Store',
-    sellerId: 'seller_1',
-    rating: 4.8,
-    brand: 'Trek',
-    material: 'Aluminum',
-    size: 'M (52cm)',
-    reviews: 45,
-    description: 'Excellent condition, barely used hybrid bike perfect for commuting.',
-  },
-  {
-    id: '2',
-    name: 'Giant Contend Road Bike',
-    price: 2000000,
-    condition: 'Good (90%)',
-    image: '🚴',
-    seller: 'Sports Store Vietnam',
-    sellerId: 'seller_2',
-    rating: 4.5,
-    brand: 'Giant',
-    material: 'Carbon',
-    size: 'L (54cm)',
-    reviews: 32,
-    description: 'Road bike in good condition, ready for long rides.',
-  },
-  {
-    id: '3',
-    name: 'Specialized Hardrock MTB',
-    price: 1200000,
-    condition: 'Used',
-    image: '🚵',
-    seller: 'Mountain Trail Club',
-    sellerId: 'seller_3',
-    rating: 4.7,
-    brand: 'Specialized',
-    material: 'Aluminum',
-    size: 'M (52cm)',
-    reviews: 28,
-    description: 'Mountain bike perfect for trails and off-road adventures.',
-  },
-  {
-    id: '4',
-    name: 'Cannondale Quick Commuter',
-    price: 1100000,
-    condition: 'Like New (99%)',
-    image: '🚲',
-    seller: 'Urban Bikes',
-    sellerId: 'seller_4',
-    rating: 4.9,
-    brand: 'Cannondale',
-    material: 'Steel',
-    size: 'S (49cm)',
-    reviews: 18,
-    description: 'Perfect city commuter bike, lightweight and durable.',
-  },
-  {
-    id: '5',
-    name: 'Scott Spark Carbon MTB',
-    price: 3500000,
-    condition: 'New',
-    image: '🚵',
-    seller: 'Premium Bikes',
-    sellerId: 'seller_5',
-    rating: 5.0,
-    brand: 'Scott',
-    material: 'Carbon',
-    size: 'L (54cm)',
-    reviews: 12,
-    description: 'High-end carbon MTB for serious riders.',
-  },
-];
 
 export const ProductSearch: React.FC<ProductSearchProps> = ({
-  products = MOCK_PRODUCTS,
+  products,
   onSelectProduct,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -265,8 +188,15 @@ export const ProductSearch: React.FC<ProductSearchProps> = ({
                   className="bg-white border-2 border-gray-200 rounded-lg overflow-hidden cursor-pointer transition-all duration-300 flex flex-col hover:border-green-300 hover:shadow-2xl hover:shadow-green-500/15 hover:-translate-y-1"
                 >
                   {/* Product Image */}
-                  <div className="relative w-full aspect-square bg-gray-100 flex items-center justify-center border-b-2 border-gray-200">
-                    <span className="text-5xl">{product.image}</span>
+                  <div className="relative w-full aspect-square bg-gray-100 flex items-center justify-center border-b-2 border-gray-200 overflow-hidden">
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1532298229144-0ee050c99d2b?q=80&w=800';
+                      }}
+                    />
                     <span className="absolute top-3 right-3 bg-green-500 text-white px-3 py-1 rounded text-xs font-semibold">
                       {product.condition}
                     </span>

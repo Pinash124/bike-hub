@@ -40,6 +40,31 @@ export default defineConfig({
         changeOrigin: true,
         secure: true,
       },
+      '/component': {
+        target: RAILWAY_API,
+        changeOrigin: true,
+        secure: true,
+      },
+      '/location': {
+        target: RAILWAY_API,
+        changeOrigin: true,
+        secure: true,
+      },
+      '/order': {
+        target: RAILWAY_API,
+        changeOrigin: true,
+        secure: true,
+      },
+      '/payment': {
+        target: RAILWAY_API,
+        changeOrigin: true,
+        secure: true,
+      },
+      '/address': {
+        target: RAILWAY_API,
+        changeOrigin: true,
+        secure: true,
+      },
     },
   },
 })

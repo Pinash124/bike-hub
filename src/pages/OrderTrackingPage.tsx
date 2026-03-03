@@ -1,69 +1,87 @@
+import { useState, useEffect } from 'react';
 import OrderTracking from '../components/buyer/Orders/OrderTracking';
-import type { Order } from '../components/buyer/Orders/OrderTracking';
-
-// Mock orders for demo
-const MOCK_ORDERS: Order[] = [
-  {
-    id: 'ORD-20240120-001',
-    items: [
-      {
-        productName: 'Trek FX 3 Hybrid Bike',
-        price: 1500000,
-        quantity: 1
-      }
-    ],
-    status: 'shipping',
-    totalAmount: 1530000,
-    deliveryAddress: '123 Đường Nguyễn Huệ, Quận 1, TP HCM',
-    createdAt: '2024-01-20',
-    estimatedDelivery: '2024-01-25'
-  },
-  {
-    id: 'ORD-20240118-002',
-    items: [
-      {
-        productName: 'Giant Escape 3',
-        price: 1200000,
-        quantity: 2
-      }
-    ],
-    status: 'pending_confirmation',
-    totalAmount: 2430000,
-    deliveryAddress: '456 Phố Bà Triệu, Quận Ba Đình, Hà Nội',
-    createdAt: '2024-01-18',
-    estimatedDelivery: '2024-01-22'
-  },
-  {
-    id: 'ORD-20240115-003',
-    items: [
-      {
-        productName: 'Specialized Rockhopper',
-        price: 2500000,
-        quantity: 1
-      }
-    ],
-    status: 'completed',
-    totalAmount: 2530000,
-    deliveryAddress: '123 Đường Nguyễn Huệ, Quận 1, TP HCM',
-    createdAt: '2024-01-15',
-    estimatedDelivery: '2024-01-18'
-  }
-];
+import type { Order as TrackingOrder } from '../components/buyer/Orders/OrderTracking';
+import { orderService } from '../services/order.service';
+import { listingService } from '../services/listing.service';
 
 export default function OrderTrackingPage() {
-  const handleConfirmReceipt = (orderId: string) => {
+  const [orders, setOrders] = useState<TrackingOrder[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      setIsLoading(true);
+      try {
+        const myOrders = await orderService.getMyOrders();
+
+        // Enrich orders with product details for the tracking UI
+        const enrichedOrders = await Promise.all(myOrders.map(async (order) => {
+          let bikeTitle = `Order #${order.id.slice(0, 8).toUpperCase()}`;
+          let bikeImage = '';
+
+          if (order.listingId) {
+            try {
+              const listing = await listingService.getListingById(order.listingId);
+              if (listing) {
+                bikeTitle = listing.title;
+                bikeImage = listing.images?.[0]?.secureUrl || '';
+              }
+            } catch (err) {
+              console.error('Failed to enrich order:', order.id, err);
+            }
+          }
+
+          return {
+            id: order.id,
+            items: [
+              {
+                productName: bikeTitle,
+                price: order.totalPrice,
+                quantity: 1,
+                image: bikeImage
+              }
+            ],
+            status: order.status.toLowerCase() as any,
+            totalAmount: order.totalPrice,
+            deliveryAddress: 'Giao hàng tận nơi', // No address in order object, using placeholder
+            createdAt: new Date(order.createdAt).toLocaleDateString('vi-VN'),
+            estimatedDelivery: 'Đang cập nhật'
+          };
+        }));
+
+        setOrders(enrichedOrders);
+      } catch (error) {
+        console.error('Error fetching orders for tracking:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, []);
+
+  const handleConfirmReceipt = async (orderId: string) => {
     console.log('Confirming receipt for order:', orderId);
-    alert('Order confirmed!');
+    // Future implementation: await orderService.confirmOrder(orderId);
+    alert('Đã xác nhận nhận hàng thành công!');
   };
 
   const handleRequestReturn = (orderId: string) => {
     console.log('Requesting return for order:', orderId);
-    alert('Return request submitted. Admin will review.');
+    alert('Yêu cầu trả hàng đã được gửi. Quản trị viên sẽ xem xét.');
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="text-slate-400 font-bold animate-pulse">ĐANG TẢI ĐƠN HÀNG...</div>
+      </div>
+    );
+  }
+
   return (
-    <OrderTracking 
-      orders={MOCK_ORDERS}
+    <OrderTracking
+      orders={orders}
       onConfirmReceipt={handleConfirmReceipt}
       onRequestReturn={handleRequestReturn}
     />

@@ -16,13 +16,14 @@ export default function SearchPage() {
   const fetchListings = async () => {
     try {
       const data = await listingService.getListings();
-      // Map API data to UI Product format
-      const mappedProducts: Product[] = data.map((listing: Listing) => ({
+      // Map API data to UI Product format. Only show 'LIVE' listings.
+      const liveListings = data.filter((listing) => listing.status === 'LIVE');
+      const mappedProducts: Product[] = liveListings.map((listing: Listing) => ({
         id: listing.id,
         name: listing.title,
         price: listing.price,
         condition: listing.condition || 'Used',
-        image: listing.images?.[0]?.secureUrl || '🚲',
+        image: listing.images?.[0]?.secureUrl || 'https://images.unsplash.com/photo-1532298229144-0ee050c99d2b?q=80&w=800',
         seller: 'Seller Info', // Info might need to be fetched or included in listing
         sellerId: 'unknown',
         rating: 5.0,

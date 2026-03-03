@@ -1,9 +1,9 @@
 // src/pages/UnifiedAuth.tsx
 import { useState } from 'react'
 import {
-  Mail, Lock, User, Eye, EyeOff, Phone,
+  Mail, Lock, User, Eye,
   ShieldCheck, ArrowLeft, ChevronRight, Hash,
-  Calendar, MapPin, Upload, CheckCircle,
+  CheckCircle,
   ShoppingBag, Store
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'

@@ -82,6 +82,18 @@ export const listingService = {
         }
     },
 
+    /** [ADMIN/PUBLIC] GET /listing/{id} */
+    getListingById: async (id: string): Promise<Listing | null> => {
+        try {
+            const response = await api.get(API_ENDPOINTS.LISTING_DETAIL(id));
+            if (response.data?.code === 1000) return response.data.result;
+            return null;
+        } catch (error) {
+            console.error(`Error fetching listing ${id}:`, error);
+            return null;
+        }
+    },
+
     /** [ADMIN] POST /listing/{id}/reject */
     rejectListing: async (id: string): Promise<boolean> => {
         try {

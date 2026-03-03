@@ -11,25 +11,24 @@ interface BikeCardProps {
 }
 
 export default function BikeCard(props: BikeCardProps) {
-  const { id, image, title, price, originalPrice, year, location, mileage, size = 'M', condition = '99%' } = props;
+  const { id, image, title, price, year, location, mileage, size = 'M', condition = '99%' } = props;
   const navigate = useNavigate(); //
-  const discount = originalPrice ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
 
   // Hàm xử lý khi nhấn vào Card
   const handleCardClick = () => {
     // Chuyển hướng đến /product/:id và truyền toàn bộ dữ liệu qua state
-    navigate(`/product/${id}`, { 
-      state: { 
+    navigate(`/product/${id}`, {
+      state: {
         product: {
           ...props,
           name: title, // Chuyển title thành name để khớp với ProductDetail.tsx
-        } 
-      } 
+        }
+      }
     });
   };
 
   return (
-    <div 
+    <div
       onClick={handleCardClick} //
       className="group relative bg-white border border-gray-100 transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:-translate-y-2 overflow-hidden cursor-pointer"
     >
@@ -39,8 +38,8 @@ export default function BikeCard(props: BikeCardProps) {
           {image.startsWith('http') ? <img src={image} alt={title} className="w-full h-full object-cover" /> : image}
         </div>
 
-        <button 
-          onClick={(e) => { e.stopPropagation(); /* Ngăn chặn sự kiện click lan ra Card */ }} 
+        <button
+          onClick={(e) => { e.stopPropagation(); /* Ngăn chặn sự kiện click lan ra Card */ }}
           className="absolute top-4 right-4 p-2.5 bg-white/90 backdrop-blur-md rounded-full text-gray-400 hover:text-red-500 hover:bg-white shadow-sm transition-all active:scale-90"
         >
           <Heart size={20} />

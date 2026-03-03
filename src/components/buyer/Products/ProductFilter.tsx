@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Filter, X } from 'lucide-react';
+import { brandService, type Brand } from '../../../services/brand.service';
 
 export interface FilterCriteria {
   priceRange: [number, number];
@@ -15,7 +16,6 @@ interface ProductFilterProps {
   onClose?: () => void;
 }
 
-const BRANDS = ['Trek', 'Giant', 'Specialized', 'Cannondale', 'Scott', 'Cube', 'Other'];
 const CONDITIONS = ['New', 'Like New (99%)', 'Good (90%)', 'Fair (75%)', 'Used'];
 const MATERIALS = ['Aluminum', 'Carbon', 'Steel', 'Titanium'];
 const SIZES = ['S (49cm)', 'M (52cm)', 'L (54cm)', 'XL (56cm)', 'XXL (58cm+)'];
@@ -25,6 +25,7 @@ export const ProductFilter: React.FC<ProductFilterProps> = ({
   isOpen = true,
   onClose,
 }) => {
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [filters, setFilters] = useState<FilterCriteria>({
     priceRange: [0, 10000000],
     brands: [],
@@ -32,6 +33,10 @@ export const ProductFilter: React.FC<ProductFilterProps> = ({
     materials: [],
     sizes: [],
   });
+
+  useEffect(() => {
+    brandService.getAllBrands().then(setBrands);
+  }, []);
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newRange: [number, number] = [
@@ -42,7 +47,7 @@ export const ProductFilter: React.FC<ProductFilterProps> = ({
         ? parseInt(e.target.value)
         : filters.priceRange[1],
     ];
-    
+
     const newFilters = { ...filters, priceRange: newRange };
     setFilters(newFilters);
     onFilterChange(newFilters);
@@ -53,7 +58,7 @@ export const ProductFilter: React.FC<ProductFilterProps> = ({
     value: string
   ) => {
     const updated = filters[category].includes(value)
-      ? filters[category].filter((item) => item !== value)
+      ? filters[category].filter((item: string) => item !== value)
       : [...filters[category], value];
 
     const newFilters = { ...filters, [category]: updated };
@@ -125,18 +130,18 @@ export const ProductFilter: React.FC<ProductFilterProps> = ({
       <div className="mb-8 pb-6 border-b border-gray-200 last:border-b-0 last:mb-0 last:pb-0">
         <h4 className="m-0 mb-4 text-green-500 text-sm font-semibold uppercase">Brand</h4>
         <div className="flex flex-col gap-3">
-          {BRANDS.map((brand) => (
+          {Array.isArray(brands) && brands.map((brand: Brand) => (
             <label
-              key={brand}
+              key={brand.id}
               className="flex items-center gap-3 cursor-pointer select-none hover:text-green-500"
             >
               <input
                 type="checkbox"
-                checked={filters.brands.includes(brand)}
-                onChange={() => handleCheckboxChange('brands', brand)}
+                checked={filters.brands.includes(brand.name)}
+                onChange={() => handleCheckboxChange('brands', brand.name)}
                 className="w-4.5 h-4.5 cursor-pointer accent-green-500 flex-shrink-0"
               />
-              <span className="text-gray-900 text-sm">{brand}</span>
+              <span className="text-gray-900 text-sm">{brand.name}</span>
             </label>
           ))}
         </div>
