@@ -51,10 +51,16 @@ export const listingService = {
     },
 
     /** Admin & public: GET /listing — all listings */
-    getListings: async (): Promise<Listing[]> => {
+    getListings: async (page = 1, size = 1000): Promise<Listing[]> => {
         try {
-            const response = await api.get(API_ENDPOINTS.LISTING);
-            if (response.data?.code === 1000) return response.data.result ?? [];
+            const response = await api.get(API_ENDPOINTS.LISTING, { params: { page, size } });
+            if (response.data?.code === 1000) {
+                const result = response.data.result;
+                if (result) {
+                    if (Array.isArray(result.data)) return result.data;
+                    if (Array.isArray(result)) return result;
+                }
+            }
             return [];
         } catch (error) {
             console.error('Error fetching listings:', error);
