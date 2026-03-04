@@ -185,7 +185,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         email: result.username || result.email || "",
         name: result.fullName || result.name || "",
         phone: result.phone || "",
-        role: extractedRole as UserRole,
+        role: normalized,
         createdAt: result.createdAt || new Date().toISOString(),
         isKYCVerified: result.verified || false,
       };
