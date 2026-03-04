@@ -1,84 +1,168 @@
 // src/components/dashboards/AdminDashboard.tsx
 // Role: ADMIN — full management of users, KYC, inspections, brands, components, locations
 import {
-  Users, FileCheck, MapPin, Plus, Edit, Trash2,
-  LayoutDashboard, Tag, Wrench, ClipboardList,
-  CheckCircle, XCircle, Clock, ChevronRight,
-  UserCheck, Bike, AlertTriangle, RefreshCw, X, ShoppingCart, CreditCard, UserPlus, Image as ImageIcon
-} from 'lucide-react'
-import React, { useEffect, useState, useCallback } from 'react'
-import { useAuth } from '../../contexts/AuthContext'
-import { useNavigate } from 'react-router-dom'
-import { adminService, getPrimaryRole, type AdminUser, type KYCRequest } from '../../services/admin.service'
-import { locationService, type InspectionLocation } from '../../services/location.service'
-import { brandService, type Brand } from '../../services/brand.service'
-import { componentService, type InspectionComponent } from '../../services/component.service'
-import { inspectionService, type InspectionTask } from '../../services/inspection.service'
-import { listingService, type Listing } from '../../services/listing.service'
-import { orderService, type Order } from '../../services/order.service'
-import { paymentService, type PaymentResult } from '../../services/payment.service'
+  Users,
+  FileCheck,
+  MapPin,
+  Plus,
+  Edit,
+  Trash2,
+  LayoutDashboard,
+  Tag,
+  Wrench,
+  ClipboardList,
+  CheckCircle,
+  XCircle,
+  Clock,
+  ChevronRight,
+  UserCheck,
+  Bike,
+  AlertTriangle,
+  RefreshCw,
+  X,
+  ShoppingCart,
+  CreditCard,
+  UserPlus,
+  Image as ImageIcon,
+} from "lucide-react";
+import React, { useEffect, useState, useCallback } from "react";
+import { useAuth } from "../../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import {
+  adminService,
+  getPrimaryRole,
+  type AdminUser,
+  type KYCRequest,
+} from "../../services/admin.service";
+import {
+  locationService,
+  type InspectionLocation,
+} from "../../services/location.service";
+import { brandService, type Brand } from "../../services/brand.service";
+import {
+  componentService,
+  type InspectionComponent,
+} from "../../services/component.service";
+import {
+  inspectionService,
+  type InspectionTask,
+} from "../../services/inspection.service";
+import { listingService, type Listing } from "../../services/listing.service";
+import { orderService, type Order } from "../../services/order.service";
+import {
+  paymentService,
+  type PaymentResult,
+} from "../../services/payment.service";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'users' | 'kyc' | 'inspections' | 'catalog' | 'locations' | 'listings' | 'orders' | 'payments' | 'company-locations' | 'create-inspector'
+type Tab =
+  | "overview"
+  | "users"
+  | "kyc"
+  | "inspections"
+  | "catalog"
+  | "locations"
+  | "listings"
+  | "orders"
+  | "payments"
+  | "company-locations"
+  | "create-inspector";
 
 // ─── Error boundary ───────────────────────────────────────────────────────────
 
 // React error boundary to catch any runtime exceptions inside the dashboard
-class DashboardErrorBoundary extends React.Component<{ children?: React.ReactNode }, { hasError: boolean }> {
+class DashboardErrorBoundary extends React.Component<
+  { children?: React.ReactNode },
+  { hasError: boolean }
+> {
   constructor(props: { children?: React.ReactNode }) {
-    super(props)
-    this.state = { hasError: false }
+    super(props);
+    this.state = { hasError: false };
   }
 
   static getDerivedStateFromError(_: unknown) {
-    return { hasError: true }
+    return { hasError: true };
   }
 
   componentDidCatch(error: unknown, info: unknown) {
-    console.error('AdminDashboard caught error:', error, info)
+    console.error("AdminDashboard caught error:", error, info);
   }
 
   render() {
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center min-h-screen">
-          <h2 className="text-xl font-bold text-red-600">Đã có lỗi xảy ra trong bảng điều khiển</h2>
-          <p className="text-slate-500">Vui lòng thử làm mới trang hoặc liên hệ quản trị viên.</p>
+          <h2 className="text-xl font-bold text-red-600">
+            Đã có lỗi xảy ra trong bảng điều khiển
+          </h2>
+          <p className="text-slate-500">
+            Vui lòng thử làm mới trang hoặc liên hệ quản trị viên.
+          </p>
         </div>
-      )
+      );
     }
-    return this.props.children
+    return this.props.children;
   }
 }
 
 const ROLE_LABEL: Record<string, string> = {
-  BUYER: 'Người mua', SELLER: 'Người bán', INSPECTOR: 'Kiểm định viên', ADMIN: 'Quản trị viên',
-}
+  BUYER: "Người mua",
+  SELLER: "Người bán",
+  INSPECTOR: "Kiểm định viên",
+  ADMIN: "Quản trị viên",
+};
 const ROLE_COLOR: Record<string, string> = {
-  BUYER: 'bg-blue-100 text-blue-700', SELLER: 'bg-amber-100 text-amber-700',
-  INSPECTOR: 'bg-purple-100 text-purple-700', ADMIN: 'bg-rose-100 text-rose-700',
-}
-const INSPECTION_STATUS_MAP: Record<string, { label: string; color: string }> = {
-  PENDING_ASSIGNED: { label: 'Chờ gán', color: 'bg-amber-100 text-amber-700' },
-  ASSIGNED: { label: 'Đã gán', color: 'bg-blue-100 text-blue-700' },
-  IN_PROGRESS: { label: 'Đang thực hiện', color: 'bg-indigo-100 text-indigo-700' },
-  COMPLETED: { label: 'Hoàn thành', color: 'bg-emerald-100 text-emerald-700' },
-}
-const KYC_STATUS_MAP: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  PENDING: { label: 'Chờ duyệt', color: 'bg-amber-100 text-amber-700', icon: Clock },
-  VERIFIED: { label: 'Đã xác minh', color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle },
-  REJECTED: { label: 'Từ chối', color: 'bg-red-100 text-red-700', icon: XCircle },
-}
+  BUYER: "bg-blue-100 text-blue-700",
+  SELLER: "bg-amber-100 text-amber-700",
+  INSPECTOR: "bg-purple-100 text-purple-700",
+  ADMIN: "bg-rose-100 text-rose-700",
+};
+const INSPECTION_STATUS_MAP: Record<string, { label: string; color: string }> =
+  {
+    PENDING_ASSIGNED: {
+      label: "Chờ gán",
+      color: "bg-amber-100 text-amber-700",
+    },
+    ASSIGNED: { label: "Đã gán", color: "bg-blue-100 text-blue-700" },
+    IN_PROGRESS: {
+      label: "Đang thực hiện",
+      color: "bg-indigo-100 text-indigo-700",
+    },
+    COMPLETED: {
+      label: "Hoàn thành",
+      color: "bg-emerald-100 text-emerald-700",
+    },
+  };
+const KYC_STATUS_MAP: Record<
+  string,
+  { label: string; color: string; icon: React.ElementType }
+> = {
+  PENDING: {
+    label: "Chờ duyệt",
+    color: "bg-amber-100 text-amber-700",
+    icon: Clock,
+  },
+  VERIFIED: {
+    label: "Đã xác minh",
+    color: "bg-emerald-100 text-emerald-700",
+    icon: CheckCircle,
+  },
+  REJECTED: {
+    label: "Từ chối",
+    color: "bg-red-100 text-red-700",
+    icon: XCircle,
+  },
+};
 const LISTING_STATUS_MAP: Record<string, { label: string; color: string }> = {
-  DRAFT: { label: 'Nháp', color: 'bg-slate-100 text-slate-600' },
-  PENDING: { label: 'Chờ duyệt', color: 'bg-amber-100 text-amber-700' },
-  APPROVED: { label: 'Đã duyệt', color: 'bg-emerald-100 text-emerald-700' },
-  LIVE: { label: 'Đang bán', color: 'bg-blue-100 text-blue-700' },
-  REJECTED: { label: 'Từ chối', color: 'bg-red-100 text-red-700' },
-  RESERVED: { label: 'Đặt cọc', color: 'bg-purple-100 text-purple-700' },
-  SOLD: { label: 'Đã bán', color: 'bg-teal-100 text-teal-700' },
-}
+  DRAFT: { label: "Nháp", color: "bg-slate-100 text-slate-600" },
+  PENDING: { label: "Chờ duyệt", color: "bg-amber-100 text-amber-700" },
+  APPROVED: { label: "Đã duyệt", color: "bg-emerald-100 text-emerald-700" },
+  LIVE: { label: "Đang bán", color: "bg-blue-100 text-blue-700" },
+  REJECTED: { label: "Từ chối", color: "bg-red-100 text-red-700" },
+  RESERVED: { label: "Đặt cọc", color: "bg-purple-100 text-purple-700" },
+  SOLD: { label: "Đã bán", color: "bg-teal-100 text-teal-700" },
+};
 
 // ─── Reusable UI ─────────────────────────────────────────────────────────────
 
@@ -87,7 +171,7 @@ function Spinner() {
     <div className="flex items-center justify-center py-20">
       <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
     </div>
-  )
+  );
 }
 
 function EmptyState({ message }: { message: string }) {
@@ -96,106 +180,224 @@ function EmptyState({ message }: { message: string }) {
       <AlertTriangle size={36} className="mb-3 opacity-40" />
       <p className="text-sm font-medium">{message}</p>
     </div>
-  )
+  );
 }
 
-function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+function Modal({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <h3 className="text-base font-bold text-slate-800">{title}</h3>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition">
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition"
+          >
             <X size={16} className="text-slate-500" />
           </button>
         </div>
         <div className="p-6">{children}</div>
       </div>
     </div>
-  )
+  );
 }
 
-function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+function FormField({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div>
-      <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">{label}</label>
+      <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+        {label}
+      </label>
       {children}
     </div>
-  )
+  );
 }
 
-const inputCls = "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition placeholder:text-slate-300"
+const inputCls =
+  "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition placeholder:text-slate-300";
 
 // ─── Overview Tab ─────────────────────────────────────────────────────────────
 
 function OverviewTab({
-  users, kyc, inspections, brands, components, locations, loading
+  users,
+  kyc,
+  inspections,
+  brands,
+  components,
+  locations,
+  loading,
 }: {
-  users: AdminUser[]; kyc: KYCRequest[]; inspections: InspectionTask[];
-  brands: Brand[]; components: InspectionComponent[]; locations: InspectionLocation[];
+  users: AdminUser[];
+  kyc: KYCRequest[];
+  inspections: InspectionTask[];
+  brands: Brand[];
+  components: InspectionComponent[];
+  locations: InspectionLocation[];
   loading: boolean;
 }) {
-  const pendingKYC = kyc.filter(k => k.status === 'PENDING').length
-  const pendingInspections = inspections.filter(i => i.status === 'PENDING_ASSIGNED').length
+  const pendingKYC = kyc.filter((k) => k.status === "PENDING").length;
+  const pendingInspections = inspections.filter(
+    (i) => i.status === "PENDING_ASSIGNED",
+  ).length;
 
   const stats = [
-    { label: 'Tổng Người Dùng', value: users.length, icon: Users, color: 'from-blue-500 to-blue-600', bg: 'bg-blue-50', text: 'text-blue-600' },
-    { label: 'KYC Chờ Duyệt', value: pendingKYC, icon: FileCheck, color: 'from-amber-500 to-amber-600', bg: 'bg-amber-50', text: 'text-amber-600' },
-    { label: 'Kiểm Định Chờ Gán', value: pendingInspections, icon: ClipboardList, color: 'from-purple-500 to-purple-600', bg: 'bg-purple-50', text: 'text-purple-600' },
-    { label: 'Thương Hiệu', value: brands.length, icon: Bike, color: 'from-emerald-500 to-emerald-600', bg: 'bg-emerald-50', text: 'text-emerald-600' },
-    { label: 'Hạng Mục KĐ', value: components.length, icon: Wrench, color: 'from-indigo-500 to-indigo-600', bg: 'bg-indigo-50', text: 'text-indigo-600' },
-    { label: 'Địa Điểm KĐ', value: locations.length, icon: MapPin, color: 'from-rose-500 to-rose-600', bg: 'bg-rose-50', text: 'text-rose-600' },
-  ]
+    {
+      label: "Tổng Người Dùng",
+      value: users.length,
+      icon: Users,
+      color: "from-blue-500 to-blue-600",
+      bg: "bg-blue-50",
+      text: "text-blue-600",
+    },
+    {
+      label: "KYC Chờ Duyệt",
+      value: pendingKYC,
+      icon: FileCheck,
+      color: "from-amber-500 to-amber-600",
+      bg: "bg-amber-50",
+      text: "text-amber-600",
+    },
+    {
+      label: "Kiểm Định Chờ Gán",
+      value: pendingInspections,
+      icon: ClipboardList,
+      color: "from-purple-500 to-purple-600",
+      bg: "bg-purple-50",
+      text: "text-purple-600",
+    },
+    {
+      label: "Thương Hiệu",
+      value: brands.length,
+      icon: Bike,
+      color: "from-emerald-500 to-emerald-600",
+      bg: "bg-emerald-50",
+      text: "text-emerald-600",
+    },
+    {
+      label: "Hạng Mục KĐ",
+      value: components.length,
+      icon: Wrench,
+      color: "from-indigo-500 to-indigo-600",
+      bg: "bg-indigo-50",
+      text: "text-indigo-600",
+    },
+    {
+      label: "Địa Điểm KĐ",
+      value: locations.length,
+      icon: MapPin,
+      color: "from-rose-500 to-rose-600",
+      bg: "bg-rose-50",
+      text: "text-rose-600",
+    },
+  ];
 
-  const inspectors = users.filter(u => getPrimaryRole(u) === 'INSPECTOR')
-  const sellers = users.filter(u => getPrimaryRole(u) === 'SELLER')
-  const buyers = users.filter(u => getPrimaryRole(u) === 'BUYER')
+  const inspectors = users.filter((u) => getPrimaryRole(u) === "INSPECTOR");
+  const sellers = users.filter((u) => getPrimaryRole(u) === "SELLER");
+  const buyers = users.filter((u) => getPrimaryRole(u) === "BUYER");
 
   return (
     <div className="space-y-6">
       {/* Stats grid */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        {stats.map(s => {
-          const Icon = s.icon
+        {stats.map((s) => {
+          const Icon = s.icon;
           return (
-            <div key={s.label} className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition">
+            <div
+              key={s.label}
+              className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition"
+            >
               <div className="flex items-center gap-3 mb-3">
                 <div className={`p-2.5 rounded-xl ${s.bg}`}>
                   <Icon size={20} className={s.text} />
                 </div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider leading-tight">{s.label}</p>
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider leading-tight">
+                  {s.label}
+                </p>
               </div>
               <p className="text-3xl font-black text-slate-800">
-                {loading ? <span className="text-slate-300 text-xl">...</span> : s.value}
+                {loading ? (
+                  <span className="text-slate-300 text-xl">...</span>
+                ) : (
+                  s.value
+                )}
               </p>
             </div>
-          )
+          );
         })}
       </div>
 
       {/* User composition */}
       {!loading && (
         <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
-          <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wider mb-4">Thành Phần Người Dùng</h3>
+          <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wider mb-4">
+            Thành Phần Người Dùng
+          </h3>
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: 'Người Mua', count: buyers.length, color: 'bg-blue-500' },
-              { label: 'Người Bán', count: sellers.length, color: 'bg-amber-500' },
-              { label: 'Kiểm Định Viên', count: inspectors.length, color: 'bg-purple-500' },
-            ].map(item => (
+              {
+                label: "Người Mua",
+                count: buyers.length,
+                color: "bg-blue-500",
+              },
+              {
+                label: "Người Bán",
+                count: sellers.length,
+                color: "bg-amber-500",
+              },
+              {
+                label: "Kiểm Định Viên",
+                count: inspectors.length,
+                color: "bg-purple-500",
+              },
+            ].map((item) => (
               <div key={item.label} className="text-center">
-                <div className={`w-2 h-2 ${item.color} rounded-full mx-auto mb-2`} />
-                <p className="text-2xl font-black text-slate-800">{item.count}</p>
-                <p className="text-xs text-slate-500 font-medium">{item.label}</p>
+                <div
+                  className={`w-2 h-2 ${item.color} rounded-full mx-auto mb-2`}
+                />
+                <p className="text-2xl font-black text-slate-800">
+                  {item.count}
+                </p>
+                <p className="text-xs text-slate-500 font-medium">
+                  {item.label}
+                </p>
               </div>
             ))}
           </div>
 
           {users.length > 0 && (
             <div className="mt-4 flex h-2 rounded-full overflow-hidden gap-0.5">
-              {buyers.length > 0 && <div className="bg-blue-500 transition-all" style={{ flex: buyers.length }} />}
-              {sellers.length > 0 && <div className="bg-amber-500 transition-all" style={{ flex: sellers.length }} />}
-              {inspectors.length > 0 && <div className="bg-purple-500 transition-all" style={{ flex: inspectors.length }} />}
+              {buyers.length > 0 && (
+                <div
+                  className="bg-blue-500 transition-all"
+                  style={{ flex: buyers.length }}
+                />
+              )}
+              {sellers.length > 0 && (
+                <div
+                  className="bg-amber-500 transition-all"
+                  style={{ flex: sellers.length }}
+                />
+              )}
+              {inspectors.length > 0 && (
+                <div
+                  className="bg-purple-500 transition-all"
+                  style={{ flex: inspectors.length }}
+                />
+              )}
             </div>
           )}
         </div>
@@ -205,53 +407,91 @@ function OverviewTab({
       {!loading && inspections.length > 0 && (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-50">
-            <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wider">Đơn Kiểm Định Gần Đây</h3>
+            <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wider">
+              Đơn Kiểm Định Gần Đây
+            </h3>
           </div>
           <div className="divide-y divide-slate-50">
-            {inspections.slice(0, 5).map(ins => {
-              const st = INSPECTION_STATUS_MAP[ins.status] ?? { label: ins.status, color: 'bg-slate-100 text-slate-600' }
+            {inspections.slice(0, 5).map((ins) => {
+              const st = INSPECTION_STATUS_MAP[ins.status] ?? {
+                label: ins.status,
+                color: "bg-slate-100 text-slate-600",
+              };
               return (
-                <div key={ins.inspectionId} className="flex items-center justify-between px-6 py-3.5 hover:bg-slate-50/60 transition">
+                <div
+                  key={ins.inspectionId}
+                  className="flex items-center justify-between px-6 py-3.5 hover:bg-slate-50/60 transition"
+                >
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">{ins.inspectionType === 'COMPANY' ? 'Tại Công Ty' : 'Tại Chỗ'}</p>
-                    <p className="text-xs text-slate-400">{ins.scheduledAt ? new Date(ins.scheduledAt).toLocaleDateString('vi-VN') : '—'}</p>
+                    <p className="text-sm font-semibold text-slate-800">
+                      {ins.inspectionType === "COMPANY"
+                        ? "Tại Công Ty"
+                        : "Tại Chỗ"}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {ins.scheduledAt
+                        ? new Date(ins.scheduledAt).toLocaleDateString("vi-VN")
+                        : "—"}
+                    </p>
                   </div>
-                  <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${st.color}`}>{st.label}</span>
+                  <span
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${st.color}`}
+                  >
+                    {st.label}
+                  </span>
                 </div>
-              )
+              );
             })}
           </div>
         </div>
       )}
     </div>
-  )
+  );
 }
 
 // ─── Users Tab ───────────────────────────────────────────────────────────────
 
-function UsersTab({ users, loading }: { users: AdminUser[]; loading: boolean }) {
-  const [search, setSearch] = useState('')
-  const [roleFilter, setRoleFilter] = useState('ALL')
+function UsersTab({
+  users,
+  loading,
+}: {
+  users: AdminUser[];
+  loading: boolean;
+}) {
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("ALL");
 
-  const filtered = users.filter(u => {
-    const role = getPrimaryRole(u)
-    const matchRole = roleFilter === 'ALL' || role === roleFilter
-    const matchSearch = !search || (u.username?.toLowerCase().includes(search.toLowerCase()) || u.name?.toLowerCase().includes(search.toLowerCase()))
-    return matchRole && matchSearch
-  })
+  const filtered = users.filter((u) => {
+    const role = getPrimaryRole(u);
+    const matchRole = roleFilter === "ALL" || role === roleFilter;
+    const matchSearch =
+      !search ||
+      u.username?.toLowerCase().includes(search.toLowerCase()) ||
+      u.name?.toLowerCase().includes(search.toLowerCase());
+    return matchRole && matchSearch;
+  });
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
       <div className="px-6 py-4 border-b border-slate-100 flex flex-wrap gap-3 items-center justify-between">
-        <h2 className="font-bold text-slate-800">Danh Sách Người Dùng <span className="text-slate-400 font-normal text-sm ml-1">({users.length})</span></h2>
+        <h2 className="font-bold text-slate-800">
+          Danh Sách Người Dùng{" "}
+          <span className="text-slate-400 font-normal text-sm ml-1">
+            ({users.length})
+          </span>
+        </h2>
         <div className="flex gap-2 flex-wrap">
           <input
-            value={search} onChange={e => setSearch(e.target.value)}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             placeholder="Tìm tên / email..."
             className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-400 w-44"
           />
-          <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)}
-            className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-400">
+          <select
+            value={roleFilter}
+            onChange={(e) => setRoleFilter(e.target.value)}
+            className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-400"
+          >
             <option value="ALL">Tất cả</option>
             <option value="BUYER">Người mua</option>
             <option value="SELLER">Người bán</option>
@@ -260,7 +500,11 @@ function UsersTab({ users, loading }: { users: AdminUser[]; loading: boolean }) 
           </select>
         </div>
       </div>
-      {loading ? <Spinner /> : filtered.length === 0 ? <EmptyState message="Không có người dùng nào." /> : (
+      {loading ? (
+        <Spinner />
+      ) : filtered.length === 0 ? (
+        <EmptyState message="Không có người dùng nào." />
+      ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
@@ -271,32 +515,45 @@ function UsersTab({ users, loading }: { users: AdminUser[]; loading: boolean }) 
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filtered.map(u => (
+              {filtered.map((u) => (
                 <tr key={u.id} className="hover:bg-slate-50/60 transition">
                   <td className="px-6 py-3.5">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center shrink-0">
-                        <span className="text-xs font-bold text-slate-600">{(u.name || u.username || '?')[0].toUpperCase()}</span>
+                        <span className="text-xs font-bold text-slate-600">
+                          {(u.name || u.username || "?")[0].toUpperCase()}
+                        </span>
                       </div>
                       <div>
-                        <p className="font-semibold text-slate-800 text-sm">{u.name || 'Chưa cập nhật'}</p>
+                        <p className="font-semibold text-slate-800 text-sm">
+                          {u.name || "Chưa cập nhật"}
+                        </p>
                         <p className="text-xs text-slate-400">{u.username}</p>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-3.5">
                     {(() => {
-                      const r = getPrimaryRole(u); return (
-                        <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${ROLE_COLOR[r] ?? 'bg-slate-100 text-slate-600'}`}>
+                      const r = getPrimaryRole(u);
+                      return (
+                        <span
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${ROLE_COLOR[r] ?? "bg-slate-100 text-slate-600"}`}
+                        >
                           {ROLE_LABEL[r] ?? r}
                         </span>
-                      )
+                      );
                     })()}
                   </td>
                   <td className="px-6 py-3.5">
-                    {u.kyc
-                      ? <span className="inline-flex items-center gap-1 text-emerald-600 text-xs font-bold"><CheckCircle size={13} /> Đã xác minh</span>
-                      : <span className="inline-flex items-center gap-1 text-slate-400 text-xs font-medium"><Clock size={13} /> Chưa xác minh</span>}
+                    {u.kyc ? (
+                      <span className="inline-flex items-center gap-1 text-emerald-600 text-xs font-bold">
+                        <CheckCircle size={13} /> Đã xác minh
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-slate-400 text-xs font-medium">
+                        <Clock size={13} /> Chưa xác minh
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -305,62 +562,100 @@ function UsersTab({ users, loading }: { users: AdminUser[]; loading: boolean }) 
         </div>
       )}
     </div>
-  )
+  );
 }
 
 // ─── KYC Tab ─────────────────────────────────────────────────────────────────
 
-function KycTab({ kycList, loading, onRefresh }: { kycList: KYCRequest[]; loading: boolean; onRefresh: () => void }) {
-  const [processing, setProcessing] = useState<string | null>(null)
-  const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'VERIFIED' | 'REJECTED'>('ALL')
+function KycTab({
+  kycList,
+  loading,
+  onRefresh,
+}: {
+  kycList: KYCRequest[];
+  loading: boolean;
+  onRefresh: () => void;
+}) {
+  const [processing, setProcessing] = useState<string | null>(null);
+  const [filter, setFilter] = useState<
+    "ALL" | "PENDING" | "VERIFIED" | "REJECTED"
+  >("ALL");
 
-  const filtered = filter === 'ALL' ? kycList : kycList.filter(k => k.status === filter)
+  const filtered =
+    filter === "ALL" ? kycList : kycList.filter((k) => k.status === filter);
 
   const handleVerify = async (id: string, approved: boolean) => {
-    setProcessing(id)
-    const ok = await adminService.verifyKYC(id, approved)
+    setProcessing(id);
+    const ok = await adminService.verifyKYC(id, approved);
     if (ok) {
-      alert(approved ? 'Đã phê duyệt KYC!' : 'Đã từ chối KYC!')
-      onRefresh()
+      alert(approved ? "Đã phê duyệt KYC!" : "Đã từ chối KYC!");
+      onRefresh();
     } else {
-      alert('Thao tác thất bại, vui lòng thử lại.')
+      alert("Thao tác thất bại, vui lòng thử lại.");
     }
-    setProcessing(null)
-  }
+    setProcessing(null);
+  };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 flex-wrap">
-        {(['ALL', 'PENDING', 'VERIFIED', 'REJECTED'] as const).map(f => (
-          <button key={f} onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${filter === f ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-slate-400'}`}>
-            {f === 'ALL' ? 'Tất cả' : KYC_STATUS_MAP[f]?.label ?? f}
-            {f === 'PENDING' && kycList.filter(k => k.status === 'PENDING').length > 0 &&
-              <span className="ml-1.5 bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded-full">{kycList.filter(k => k.status === 'PENDING').length}</span>}
+        {(["ALL", "PENDING", "VERIFIED", "REJECTED"] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${filter === f ? "bg-slate-900 text-white" : "bg-white border border-slate-200 text-slate-500 hover:border-slate-400"}`}
+          >
+            {f === "ALL" ? "Tất cả" : (KYC_STATUS_MAP[f]?.label ?? f)}
+            {f === "PENDING" &&
+              kycList.filter((k) => k.status === "PENDING").length > 0 && (
+                <span className="ml-1.5 bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded-full">
+                  {kycList.filter((k) => k.status === "PENDING").length}
+                </span>
+              )}
           </button>
         ))}
-        <button onClick={onRefresh} className="ml-auto p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 transition">
+        <button
+          onClick={onRefresh}
+          className="ml-auto p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 transition"
+        >
           <RefreshCw size={15} />
         </button>
       </div>
 
-      {loading ? <Spinner /> : filtered.length === 0 ? <EmptyState message="Không có yêu cầu KYC nào." /> : (
+      {loading ? (
+        <Spinner />
+      ) : filtered.length === 0 ? (
+        <EmptyState message="Không có yêu cầu KYC nào." />
+      ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filtered.map((kyc, i) => {
-            const st = KYC_STATUS_MAP[kyc.status] ?? { label: kyc.status, color: 'bg-slate-100 text-slate-600', icon: Clock }
-            const Icon = st.icon
-            const isProc = processing === kyc.id
+            const st = KYC_STATUS_MAP[kyc.status] ?? {
+              label: kyc.status,
+              color: "bg-slate-100 text-slate-600",
+              icon: Clock,
+            };
+            const Icon = st.icon;
+            const isProc = processing === kyc.id;
             return (
-              <div key={kyc.id || String(i)} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition">
+              <div
+                key={kyc.id || String(i)}
+                className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition"
+              >
                 {/* Header */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <h3 className="font-bold text-slate-800 truncate">{kyc.fullName || 'Không rõ tên'}</h3>
+                    <h3 className="font-bold text-slate-800 truncate">
+                      {kyc.fullName || "Không rõ tên"}
+                    </h3>
                     {kyc.user?.username && (
-                      <p className="text-xs text-slate-400 mt-0.5">@{kyc.user.username}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        @{kyc.user.username}
+                      </p>
                     )}
                   </div>
-                  <span className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold ${st.color}`}>
+                  <span
+                    className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold ${st.color}`}
+                  >
                     <Icon size={12} /> {st.label}
                   </span>
                 </div>
@@ -369,111 +664,174 @@ function KycTab({ kycList, loading, onRefresh }: { kycList: KYCRequest[]; loadin
                 <div className="bg-slate-50 rounded-xl p-3 space-y-1.5 text-xs">
                   {kyc.idNumber && (
                     <div className="flex justify-between">
-                      <span className="text-slate-400 font-medium">CMND/CCCD</span>
-                      <span className="font-bold text-slate-700">{kyc.idNumber}</span>
+                      <span className="text-slate-400 font-medium">
+                        CMND/CCCD
+                      </span>
+                      <span className="font-bold text-slate-700">
+                        {kyc.idNumber}
+                      </span>
                     </div>
                   )}
                   {kyc.dateOfBirth && (
                     <div className="flex justify-between">
-                      <span className="text-slate-400 font-medium">Ngày sinh</span>
-                      <span className="font-bold text-slate-700">{kyc.dateOfBirth}</span>
+                      <span className="text-slate-400 font-medium">
+                        Ngày sinh
+                      </span>
+                      <span className="font-bold text-slate-700">
+                        {kyc.dateOfBirth}
+                      </span>
                     </div>
                   )}
                   {kyc.gender && (
                     <div className="flex justify-between">
-                      <span className="text-slate-400 font-medium">Giới tính</span>
-                      <span className="font-bold text-slate-700">{kyc.gender}</span>
+                      <span className="text-slate-400 font-medium">
+                        Giới tính
+                      </span>
+                      <span className="font-bold text-slate-700">
+                        {kyc.gender}
+                      </span>
                     </div>
                   )}
                   {kyc.nationality && (
                     <div className="flex justify-between">
-                      <span className="text-slate-400 font-medium">Quốc tịch</span>
-                      <span className="font-bold text-slate-700">{kyc.nationality}</span>
+                      <span className="text-slate-400 font-medium">
+                        Quốc tịch
+                      </span>
+                      <span className="font-bold text-slate-700">
+                        {kyc.nationality}
+                      </span>
                     </div>
                   )}
                   {kyc.submittedAt && (
                     <div className="flex justify-between">
-                      <span className="text-slate-400 font-medium">Nộp lúc</span>
-                      <span className="font-medium text-slate-500">{new Date(kyc.submittedAt).toLocaleDateString('vi-VN')}</span>
+                      <span className="text-slate-400 font-medium">
+                        Nộp lúc
+                      </span>
+                      <span className="font-medium text-slate-500">
+                        {new Date(kyc.submittedAt).toLocaleDateString("vi-VN")}
+                      </span>
                     </div>
                   )}
                   {kyc.verifiedAt && (
                     <div className="flex justify-between">
-                      <span className="text-slate-400 font-medium">Duyệt lúc</span>
-                      <span className="font-medium text-slate-500">{new Date(kyc.verifiedAt).toLocaleDateString('vi-VN')}</span>
+                      <span className="text-slate-400 font-medium">
+                        Duyệt lúc
+                      </span>
+                      <span className="font-medium text-slate-500">
+                        {new Date(kyc.verifiedAt).toLocaleDateString("vi-VN")}
+                      </span>
                     </div>
                   )}
                 </div>
 
                 {/* Actions — only for PENDING */}
-                {kyc.status === 'PENDING' && (
+                {kyc.status === "PENDING" && (
                   <div className="flex gap-2 pt-1">
-                    <button onClick={() => handleVerify(kyc.id, false)} disabled={isProc}
-                      className="flex-1 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-bold uppercase tracking-wider transition disabled:opacity-50 flex items-center justify-center gap-1">
+                    <button
+                      onClick={() => handleVerify(kyc.id, false)}
+                      disabled={isProc}
+                      className="flex-1 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-bold uppercase tracking-wider transition disabled:opacity-50 flex items-center justify-center gap-1"
+                    >
                       <XCircle size={14} /> Từ chối
                     </button>
-                    <button onClick={() => handleVerify(kyc.id, true)} disabled={isProc}
-                      className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition disabled:opacity-50 flex items-center justify-center gap-1 shadow-md shadow-emerald-500/20">
-                      {isProc ? <RefreshCw size={14} className="animate-spin" /> : <CheckCircle size={14} />} Duyệt
+                    <button
+                      onClick={() => handleVerify(kyc.id, true)}
+                      disabled={isProc}
+                      className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition disabled:opacity-50 flex items-center justify-center gap-1 shadow-md shadow-emerald-500/20"
+                    >
+                      {isProc ? (
+                        <RefreshCw size={14} className="animate-spin" />
+                      ) : (
+                        <CheckCircle size={14} />
+                      )}{" "}
+                      Duyệt
                     </button>
                   </div>
                 )}
               </div>
-            )
+            );
           })}
         </div>
       )}
     </div>
-  )
+  );
 }
 
 // ─── Inspections Tab ─────────────────────────────────────────────────────────
 
 function InspectionsTab({
-  inspections, users, loading, onRefresh
+  inspections,
+  users,
+  loading,
+  onRefresh,
 }: {
-  inspections: InspectionTask[]; users: AdminUser[]; loading: boolean; onRefresh: () => void
+  inspections: InspectionTask[];
+  users: AdminUser[];
+  loading: boolean;
+  onRefresh: () => void;
 }) {
-  const [filter, setFilter] = useState('ALL')
-  const [assignModal, setAssignModal] = useState<InspectionTask | null>(null)
-  const [selectedInspector, setSelectedInspector] = useState('')
-  const [assigning, setAssigning] = useState(false)
+  const [filter, setFilter] = useState("ALL");
+  const [assignModal, setAssignModal] = useState<InspectionTask | null>(null);
+  const [selectedInspector, setSelectedInspector] = useState("");
+  const [assigning, setAssigning] = useState(false);
 
-  const inspectors = users.filter(u => getPrimaryRole(u) === 'INSPECTOR')
-  const all = filter === 'ALL' ? inspections : inspections.filter(i => i.status === filter)
+  const inspectors = users.filter((u) => getPrimaryRole(u) === "INSPECTOR");
+  const all =
+    filter === "ALL"
+      ? inspections
+      : inspections.filter((i) => i.status === filter);
 
   const handleAssign = async () => {
-    if (!assignModal || !selectedInspector) return
-    setAssigning(true)
-    const ok = await inspectionService.assignInspector({ inspectionId: assignModal.inspectionId, inspectorId: selectedInspector })
+    if (!assignModal || !selectedInspector) return;
+    setAssigning(true);
+    const ok = await inspectionService.assignInspector({
+      inspectionId: assignModal.inspectionId,
+      inspectorId: selectedInspector,
+    });
     if (ok) {
-      alert('Gán inspector thành công!')
-      onRefresh()
-      setAssignModal(null)
+      alert("Gán inspector thành công!");
+      onRefresh();
+      setAssignModal(null);
     } else {
-      alert('Gán thất bại, vui lòng thử lại.')
+      alert("Gán thất bại, vui lòng thử lại.");
     }
-    setAssigning(false)
-  }
+    setAssigning(false);
+  };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 flex-wrap">
-        {['ALL', 'PENDING_ASSIGNED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED'].map(f => {
-          const st = INSPECTION_STATUS_MAP[f]
+        {[
+          "ALL",
+          "PENDING_ASSIGNED",
+          "ASSIGNED",
+          "IN_PROGRESS",
+          "COMPLETED",
+        ].map((f) => {
+          const st = INSPECTION_STATUS_MAP[f];
           return (
-            <button key={f} onClick={() => setFilter(f)}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${filter === f ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-slate-400'}`}>
-              {f === 'ALL' ? 'Tất cả' : st?.label ?? f}
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${filter === f ? "bg-slate-900 text-white" : "bg-white border border-slate-200 text-slate-500 hover:border-slate-400"}`}
+            >
+              {f === "ALL" ? "Tất cả" : (st?.label ?? f)}
             </button>
-          )
+          );
         })}
-        <button onClick={onRefresh} className="ml-auto p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 transition">
+        <button
+          onClick={onRefresh}
+          className="ml-auto p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 transition"
+        >
           <RefreshCw size={15} />
         </button>
       </div>
 
-      {loading ? <Spinner /> : all.length === 0 ? <EmptyState message="Không có đơn kiểm định nào." /> : (
+      {loading ? (
+        <Spinner />
+      ) : all.length === 0 ? (
+        <EmptyState message="Không có đơn kiểm định nào." />
+      ) : (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
@@ -487,34 +845,57 @@ function InspectionsTab({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {all.map(ins => {
-                  const st = INSPECTION_STATUS_MAP[ins.status] ?? { label: ins.status, color: 'bg-slate-100 text-slate-600' }
+                {all.map((ins) => {
+                  const st = INSPECTION_STATUS_MAP[ins.status] ?? {
+                    label: ins.status,
+                    color: "bg-slate-100 text-slate-600",
+                  };
                   return (
-                    <tr key={ins.inspectionId} className="hover:bg-slate-50/60 transition">
+                    <tr
+                      key={ins.inspectionId}
+                      className="hover:bg-slate-50/60 transition"
+                    >
                       <td className="px-5 py-3.5">
                         <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-700">
-                          {ins.inspectionType === 'COMPANY' ? '🏢 Tại Công Ty' : '📍 Tại Chỗ'}
+                          {ins.inspectionType === "COMPANY"
+                            ? "🏢 Tại Công Ty"
+                            : "📍 Tại Chỗ"}
                         </span>
                       </td>
                       <td className="px-5 py-3.5 text-sm text-slate-500">
-                        {ins.scheduledAt ? new Date(ins.scheduledAt).toLocaleString('vi-VN') : '—'}
+                        {ins.scheduledAt
+                          ? new Date(ins.scheduledAt).toLocaleString("vi-VN")
+                          : "—"}
                       </td>
                       <td className="px-5 py-3.5">
-                        <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${st.color}`}>{st.label}</span>
+                        <span
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${st.color}`}
+                        >
+                          {st.label}
+                        </span>
                       </td>
                       <td className="px-5 py-3.5 text-sm text-slate-500">
-                        {ins.inspector?.name || <span className="text-slate-300 italic">Chưa gán</span>}
+                        {ins.inspector?.name || (
+                          <span className="text-slate-300 italic">
+                            Chưa gán
+                          </span>
+                        )}
                       </td>
                       <td className="px-5 py-3.5">
-                        {ins.status === 'PENDING_ASSIGNED' && (
-                          <button onClick={() => { setAssignModal(ins); setSelectedInspector('') }}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition shadow-sm">
+                        {ins.status === "PENDING_ASSIGNED" && (
+                          <button
+                            onClick={() => {
+                              setAssignModal(ins);
+                              setSelectedInspector("");
+                            }}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition shadow-sm"
+                          >
                             <UserCheck size={13} /> Gán Inspector
                           </button>
                         )}
                       </td>
                     </tr>
-                  )
+                  );
                 })}
               </tbody>
             </table>
@@ -526,57 +907,109 @@ function InspectionsTab({
         <Modal title="Gán Inspector" onClose={() => setAssignModal(null)}>
           <div className="space-y-4">
             <div className="p-3 bg-slate-50 rounded-xl text-sm text-slate-600 space-y-1">
-              <p><span className="font-bold">Loại:</span> {assignModal.inspectionType === 'COMPANY' ? 'Tại Công Ty' : 'Tại Chỗ'}</p>
-              {assignModal.scheduledAt && <p><span className="font-bold">Lịch hẹn:</span> {new Date(assignModal.scheduledAt).toLocaleString('vi-VN')}</p>}
+              <p>
+                <span className="font-bold">Loại:</span>{" "}
+                {assignModal.inspectionType === "COMPANY"
+                  ? "Tại Công Ty"
+                  : "Tại Chỗ"}
+              </p>
+              {assignModal.scheduledAt && (
+                <p>
+                  <span className="font-bold">Lịch hẹn:</span>{" "}
+                  {new Date(assignModal.scheduledAt).toLocaleString("vi-VN")}
+                </p>
+              )}
             </div>
             <FormField label="Chọn Inspector">
-              <select value={selectedInspector} onChange={e => setSelectedInspector(e.target.value)} className={inputCls}>
+              <select
+                value={selectedInspector}
+                onChange={(e) => setSelectedInspector(e.target.value)}
+                className={inputCls}
+              >
                 <option value="">-- Chọn inspector --</option>
-                {inspectors.map(i => (
-                  <option key={i.id} value={i.id}>{i.name || i.username}</option>
+                {inspectors.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.name || i.username}
+                  </option>
                 ))}
               </select>
             </FormField>
             <div className="flex gap-3 pt-2">
-              <button onClick={() => setAssignModal(null)}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-wider transition">
+              <button
+                onClick={() => setAssignModal(null)}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-wider transition"
+              >
                 Hủy
               </button>
-              <button onClick={handleAssign} disabled={!selectedInspector || assigning}
-                className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition shadow-md disabled:opacity-50">
-                {assigning ? 'Đang gán...' : 'Xác Nhận Gán'}
+              <button
+                onClick={handleAssign}
+                disabled={!selectedInspector || assigning}
+                className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition shadow-md disabled:opacity-50"
+              >
+                {assigning ? "Đang gán..." : "Xác Nhận Gán"}
               </button>
             </div>
           </div>
         </Modal>
       )}
     </div>
-  )
+  );
 }
 
 // ─── Orders Tab ──────────────────────────────────────────────────────────────
 
-function OrdersTab({ orders, loading, onRefresh }: { orders: Order[]; loading: boolean; onRefresh: () => void }) {
-  const [filter, setFilter] = useState<Order['status'] | 'ALL'>('ALL')
+function OrdersTab({
+  orders,
+  loading,
+  onRefresh,
+}: {
+  orders: Order[];
+  loading: boolean;
+  onRefresh: () => void;
+}) {
+  const [filter, setFilter] = useState<Order["status"] | "ALL">("ALL");
 
-  const filtered = filter === 'ALL' ? orders : orders.filter(o => o.status === filter)
+  const filtered =
+    filter === "ALL" ? orders : orders.filter((o) => o.status === filter);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 flex-wrap">
-        {(['ALL', 'PENDING', 'CONFIRMED', 'SHIPPING', 'COMPLETED', 'CANCELLED'] as const).map(f => (
-          <button key={f} onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${filter === f ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-slate-400'
-              }`}>
-            {f === 'ALL' ? 'Tất cả' : f}
+        {(
+          [
+            "ALL",
+            "PENDING",
+            "CONFIRMED",
+            "SHIPPING",
+            "COMPLETED",
+            "CANCELLED",
+          ] as const
+        ).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
+              filter === f
+                ? "bg-slate-900 text-white"
+                : "bg-white border border-slate-200 text-slate-500 hover:border-slate-400"
+            }`}
+          >
+            {f === "ALL" ? "Tất cả" : f}
           </button>
         ))}
-        <button onClick={onRefresh} className="ml-auto p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 transition">
+        <button
+          onClick={onRefresh}
+          className="ml-auto p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 transition"
+        >
           <RefreshCw size={15} />
         </button>
       </div>
 
-      {loading ? <Spinner /> : filtered.length === 0 ? <EmptyState message="Không có đơn hàng nào." /> : (
+      {loading ? (
+        <Spinner />
+      ) : filtered.length === 0 ? (
+        <EmptyState message="Không có đơn hàng nào." />
+      ) : (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
@@ -591,22 +1024,41 @@ function OrdersTab({ orders, loading, onRefresh }: { orders: Order[]; loading: b
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {filtered.map(order => (
-                  <tr key={order.id} className="hover:bg-slate-50/60 transition">
-                    <td className="px-6 py-3.5 text-sm font-semibold text-slate-800">{order.id.slice(0, 8)}</td>
-                    <td className="px-6 py-3.5 text-sm text-slate-600">{order.buyerId}</td>
-                    <td className="px-6 py-3.5 text-sm text-slate-600">{order.listingId.slice(0, 8)}</td>
-                    <td className="px-6 py-3.5 text-sm font-bold text-slate-800">{order.totalPrice.toLocaleString('vi-VN')} ₫</td>
+                {filtered.map((order) => (
+                  <tr
+                    key={order.id}
+                    className="hover:bg-slate-50/60 transition"
+                  >
+                    <td className="px-6 py-3.5 text-sm font-semibold text-slate-800">
+                      {order.id.slice(0, 8)}
+                    </td>
+                    <td className="px-6 py-3.5 text-sm text-slate-600">
+                      {order.buyerId}
+                    </td>
+                    <td className="px-6 py-3.5 text-sm text-slate-600">
+                      {order.listingId.slice(0, 8)}
+                    </td>
+                    <td className="px-6 py-3.5 text-sm font-bold text-slate-800">
+                      {order.totalPrice.toLocaleString("vi-VN")} ₫
+                    </td>
                     <td className="px-6 py-3.5">
-                      <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${order.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
-                          order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
-                            order.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
-                              'bg-blue-100 text-blue-700'
-                        }`}>
+                      <span
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
+                          order.status === "COMPLETED"
+                            ? "bg-green-100 text-green-700"
+                            : order.status === "PENDING"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : order.status === "CANCELLED"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-blue-100 text-blue-700"
+                        }`}
+                      >
                         {order.status}
                       </span>
                     </td>
-                    <td className="px-6 py-3.5 text-sm text-slate-500">{new Date(order.createdAt).toLocaleDateString('vi-VN')}</td>
+                    <td className="px-6 py-3.5 text-sm text-slate-500">
+                      {new Date(order.createdAt).toLocaleDateString("vi-VN")}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -615,52 +1067,95 @@ function OrdersTab({ orders, loading, onRefresh }: { orders: Order[]; loading: b
         </div>
       )}
     </div>
-  )
+  );
 }
 
 // ─── Payments Tab ────────────────────────────────────────────────────────────
 
-function PaymentsTab({ payments, loading, onRefresh }: { payments: PaymentResult[]; loading: boolean; onRefresh: () => void }) {
-  const [filter, setFilter] = useState<PaymentResult['status'] | 'ALL'>('ALL')
+function PaymentsTab({
+  payments,
+  loading,
+  onRefresh,
+}: {
+  payments: PaymentResult[];
+  loading: boolean;
+  onRefresh: () => void;
+}) {
+  const [filter, setFilter] = useState<PaymentResult["status"] | "ALL">("ALL");
 
-  const filtered = filter === 'ALL' ? payments : payments.filter(p => p.status === filter)
-  const totalRevenue = payments.reduce((sum, p) => sum + (p.status === 'SUCCESS' ? p.amount : 0), 0)
+  const filtered =
+    filter === "ALL" ? payments : payments.filter((p) => p.status === filter);
+  const totalRevenue = payments.reduce(
+    (sum, p) => sum + (p.status === "SUCCESS" ? p.amount : 0),
+    0,
+  );
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
         <div className="bg-white rounded-xl border border-slate-100 p-4">
-          <p className="text-xs text-slate-500 font-bold uppercase mb-1">Tổng Doanh Thu</p>
-          <p className="text-2xl font-black text-green-600">{totalRevenue.toLocaleString('vi-VN')} ₫</p>
+          <p className="text-xs text-slate-500 font-bold uppercase mb-1">
+            Tổng Doanh Thu
+          </p>
+          <p className="text-2xl font-black text-green-600">
+            {totalRevenue.toLocaleString("vi-VN")} ₫
+          </p>
         </div>
         <div className="bg-white rounded-xl border border-slate-100 p-4">
-          <p className="text-xs text-slate-500 font-bold uppercase mb-1">Tổng Giao Dịch</p>
-          <p className="text-2xl font-black text-slate-800">{payments.length}</p>
+          <p className="text-xs text-slate-500 font-bold uppercase mb-1">
+            Tổng Giao Dịch
+          </p>
+          <p className="text-2xl font-black text-slate-800">
+            {payments.length}
+          </p>
         </div>
         <div className="bg-white rounded-xl border border-slate-100 p-4">
-          <p className="text-xs text-slate-500 font-bold uppercase mb-1">Thành Công</p>
-          <p className="text-2xl font-black text-emerald-600">{payments.filter(p => p.status === 'SUCCESS').length}</p>
+          <p className="text-xs text-slate-500 font-bold uppercase mb-1">
+            Thành Công
+          </p>
+          <p className="text-2xl font-black text-emerald-600">
+            {payments.filter((p) => p.status === "SUCCESS").length}
+          </p>
         </div>
         <div className="bg-white rounded-xl border border-slate-100 p-4">
-          <p className="text-xs text-slate-500 font-bold uppercase mb-1">Thất Bại</p>
-          <p className="text-2xl font-black text-red-600">{payments.filter(p => p.status === 'FAILED').length}</p>
+          <p className="text-xs text-slate-500 font-bold uppercase mb-1">
+            Thất Bại
+          </p>
+          <p className="text-2xl font-black text-red-600">
+            {payments.filter((p) => p.status === "FAILED").length}
+          </p>
         </div>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        {(['ALL', 'PENDING', 'SUCCESS', 'FAILED', 'REFUNDED'] as const).map(f => (
-          <button key={f} onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${filter === f ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-slate-400'
-              }`}>
-            {f === 'ALL' ? 'Tất cả' : f}
-          </button>
-        ))}
-        <button onClick={onRefresh} className="ml-auto p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 transition">
+        {(["ALL", "PENDING", "SUCCESS", "FAILED", "REFUNDED"] as const).map(
+          (f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
+                filter === f
+                  ? "bg-slate-900 text-white"
+                  : "bg-white border border-slate-200 text-slate-500 hover:border-slate-400"
+              }`}
+            >
+              {f === "ALL" ? "Tất cả" : f}
+            </button>
+          ),
+        )}
+        <button
+          onClick={onRefresh}
+          className="ml-auto p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 transition"
+        >
           <RefreshCw size={15} />
         </button>
       </div>
 
-      {loading ? <Spinner /> : filtered.length === 0 ? <EmptyState message="Không có giao dịch nào." /> : (
+      {loading ? (
+        <Spinner />
+      ) : filtered.length === 0 ? (
+        <EmptyState message="Không có giao dịch nào." />
+      ) : (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
@@ -674,21 +1169,38 @@ function PaymentsTab({ payments, loading, onRefresh }: { payments: PaymentResult
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {filtered.map(payment => (
-                  <tr key={payment.paymentId} className="hover:bg-slate-50/60 transition">
-                    <td className="px-6 py-3.5 text-sm font-semibold text-slate-800">{payment.paymentId.slice(0, 8)}</td>
-                    <td className="px-6 py-3.5 text-sm text-slate-600">{payment.orderId.slice(0, 8)}</td>
-                    <td className="px-6 py-3.5 text-sm font-bold text-slate-800">{payment.amount.toLocaleString('vi-VN')} ₫</td>
+                {filtered.map((payment) => (
+                  <tr
+                    key={payment.paymentId}
+                    className="hover:bg-slate-50/60 transition"
+                  >
+                    <td className="px-6 py-3.5 text-sm font-semibold text-slate-800">
+                      {payment.paymentId.slice(0, 8)}
+                    </td>
+                    <td className="px-6 py-3.5 text-sm text-slate-600">
+                      {payment.orderId.slice(0, 8)}
+                    </td>
+                    <td className="px-6 py-3.5 text-sm font-bold text-slate-800">
+                      {payment.amount.toLocaleString("vi-VN")} ₫
+                    </td>
                     <td className="px-6 py-3.5">
-                      <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${payment.status === 'SUCCESS' ? 'bg-green-100 text-green-700' :
-                          payment.status === 'FAILED' ? 'bg-red-100 text-red-700' :
-                            payment.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-slate-100 text-slate-700'
-                        }`}>
+                      <span
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
+                          payment.status === "SUCCESS"
+                            ? "bg-green-100 text-green-700"
+                            : payment.status === "FAILED"
+                              ? "bg-red-100 text-red-700"
+                              : payment.status === "PENDING"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-slate-100 text-slate-700"
+                        }`}
+                      >
                         {payment.status}
                       </span>
                     </td>
-                    <td className="px-6 py-3.5 text-sm text-slate-500">{new Date(payment.createdAt).toLocaleDateString('vi-VN')}</td>
+                    <td className="px-6 py-3.5 text-sm text-slate-500">
+                      {new Date(payment.createdAt).toLocaleDateString("vi-VN")}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -697,128 +1209,119 @@ function PaymentsTab({ payments, loading, onRefresh }: { payments: PaymentResult
         </div>
       )}
     </div>
-  )
-}
-
-// ─── Company Locations Tab ───────────────────────────────────────────────────
-
-function CompanyLocationsTab({ locations, loading }: { locations: InspectionLocation[]; loading: boolean }) {
-  const companyLocs = locations.filter(l => l.type === 'COMPANY')
-
-  return (
-    <div>
-      <div className="mb-4">
-        <h2 className="font-bold text-slate-800">Cơ Sở Kiểm Định Công Ty <span className="text-slate-400 font-normal text-sm">({companyLocs.length})</span></h2>
-      </div>
-
-      {loading ? <Spinner /> : companyLocs.length === 0 ? <EmptyState message="Không có cơ sở công ty nào." /> : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {companyLocs.map(loc => (
-            <div key={loc.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 hover:shadow-md transition">
-              <div className="flex items-center gap-2.5 mb-3">
-                <div className="p-2 rounded-xl bg-emerald-50">
-                  <MapPin size={16} className="text-emerald-600" />
-                </div>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
-                  Công ty
-                </span>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-bold text-slate-800">{loc.contactName || 'Chưa đặt tên'}</p>
-                <p className="text-xs text-slate-500">📞 {loc.contactPhone || 'Không có SĐT'}</p>
-                <p className="text-xs text-slate-500 line-clamp-2">📍 {loc.addressLine || 'Chưa có địa chỉ'}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
+  );
 }
 
 // ─── Catalog Tab (Brands + Components) ───────────────────────────────────────
 
 function CatalogTab() {
-  const [brands, setBrands] = useState<Brand[]>([])
-  const [components, setComponents] = useState<InspectionComponent[]>([])
-  const [loading, setLoading] = useState(true)
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [components, setComponents] = useState<InspectionComponent[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Brand form
-  const [brandModal, setBrandModal] = useState(false)
-  const [editBrand, setEditBrand] = useState<Brand | null>(null)
-  const [brandName, setBrandName] = useState('')
-  const [brandSaving, setBrandSaving] = useState(false)
+  const [brandModal, setBrandModal] = useState(false);
+  const [editBrand, setEditBrand] = useState<Brand | null>(null);
+  const [brandName, setBrandName] = useState("");
+  const [brandSaving, setBrandSaving] = useState(false);
 
   // Component form
-  const [compModal, setCompModal] = useState(false)
-  const [editComp, setEditComp] = useState<InspectionComponent | null>(null)
-  const [compName, setCompName] = useState('')
-  const [compSaving, setCompSaving] = useState(false)
+  const [compModal, setCompModal] = useState(false);
+  const [editComp, setEditComp] = useState<InspectionComponent | null>(null);
+  const [compName, setCompName] = useState("");
+  const [compSaving, setCompSaving] = useState(false);
 
   const fetch = useCallback(async () => {
-    setLoading(true)
-    const [b, c] = await Promise.all([brandService.getAllBrands(), componentService.getAllComponents()])
-    setBrands(b); setComponents(c); setLoading(false)
-  }, [])
+    setLoading(true);
+    const [b, c] = await Promise.all([
+      brandService.getAllBrands(),
+      componentService.getAllComponents(),
+    ]);
+    setBrands(b);
+    setComponents(c);
+    setLoading(false);
+  }, []);
 
-  useEffect(() => { fetch() }, [fetch])
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
 
-  const openBrand = (b?: Brand) => { setEditBrand(b ?? null); setBrandName(b?.name ?? ''); setBrandModal(true) }
-  const openComp = (c?: InspectionComponent) => { setEditComp(c ?? null); setCompName(c?.name ?? ''); setCompModal(true) }
+  const openBrand = (b?: Brand) => {
+    setEditBrand(b ?? null);
+    setBrandName(b?.name ?? "");
+    setBrandModal(true);
+  };
+  const openComp = (c?: InspectionComponent) => {
+    setEditComp(c ?? null);
+    setCompName(c?.name ?? "");
+    setCompModal(true);
+  };
 
   const saveBrand = async (e: React.FormEvent) => {
-    e.preventDefault(); setBrandSaving(true)
+    e.preventDefault();
+    setBrandSaving(true);
     try {
       if (editBrand) {
-        await brandService.updateBrands([{ id: editBrand.id, name: brandName }])
-        alert('Cập nhật thành công!')
+        await brandService.updateBrands([
+          { id: editBrand.id, name: brandName },
+        ]);
+        alert("Cập nhật thành công!");
       } else {
-        await brandService.createBrand(brandName)
-        alert('Thêm thương hiệu thành công!')
+        await brandService.createBrand(brandName);
+        alert("Thêm thương hiệu thành công!");
       }
-      setBrandModal(false); fetch()
-    } catch { alert('Có lỗi xảy ra.') }
-    finally { setBrandSaving(false) }
-  }
+      setBrandModal(false);
+      fetch();
+    } catch {
+      alert("Có lỗi xảy ra.");
+    } finally {
+      setBrandSaving(false);
+    }
+  };
 
   const deleteBrand = async (id: number) => {
-    if (!confirm('Bạn có chắc muốn xóa thương hiệu này?')) return
-    const ok = await brandService.deleteBrand(id)
+    if (!confirm("Bạn có chắc muốn xóa thương hiệu này?")) return;
+    const ok = await brandService.deleteBrand(id);
     if (ok) {
-      alert('Đã xóa!')
-      fetch()
+      alert("Đã xóa!");
+      fetch();
     } else {
-      alert('Xóa thất bại!')
+      alert("Xóa thất bại!");
     }
-  }
+  };
 
   const saveComp = async (e: React.FormEvent) => {
-    e.preventDefault(); setCompSaving(true)
+    e.preventDefault();
+    setCompSaving(true);
     try {
       if (editComp) {
-        await componentService.updateComponent(editComp.id, { name: compName })
-        alert('Cập nhật thành công!')
+        await componentService.updateComponent(editComp.id, { name: compName });
+        alert("Cập nhật thành công!");
       } else {
-        await componentService.createComponent({ name: compName })
-        alert('Thêm hạng mục thành công!')
+        await componentService.createComponent({ name: compName });
+        alert("Thêm hạng mục thành công!");
       }
-      setCompModal(false); fetch()
-    } catch { alert('Có lỗi xảy ra.') }
-    finally { setCompSaving(false) }
-  }
+      setCompModal(false);
+      fetch();
+    } catch {
+      alert("Có lỗi xảy ra.");
+    } finally {
+      setCompSaving(false);
+    }
+  };
 
   const deleteComp = async (id: number) => {
-    if (!confirm('Bạn có chắc muốn xóa hạng mục này?')) return
-    const ok = await componentService.deleteComponent(id)
+    if (!confirm("Bạn có chắc muốn xóa hạng mục này?")) return;
+    const ok = await componentService.deleteComponent(id);
     if (ok) {
-      alert('Đã xóa!')
-      fetch()
+      alert("Đã xóa!");
+      fetch();
     } else {
-      alert('Xóa thất bại!')
+      alert("Xóa thất bại!");
     }
-  }
+  };
 
-  if (loading) return <Spinner />
+  if (loading) return <Spinner />;
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -827,26 +1330,50 @@ function CatalogTab() {
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div className="flex items-center gap-2">
             <Bike size={18} className="text-amber-500" />
-            <h3 className="font-bold text-slate-800">Thương Hiệu <span className="text-slate-400 font-normal text-sm">({brands.length})</span></h3>
+            <h3 className="font-bold text-slate-800">
+              Thương Hiệu{" "}
+              <span className="text-slate-400 font-normal text-sm">
+                ({brands.length})
+              </span>
+            </h3>
           </div>
-          <button onClick={() => openBrand()}
-            className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition shadow-sm">
+          <button
+            onClick={() => openBrand()}
+            className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition shadow-sm"
+          >
             <Plus size={13} /> Thêm
           </button>
         </div>
-        {brands.length === 0 ? <EmptyState message="Chưa có thương hiệu nào." /> : (
+        {brands.length === 0 ? (
+          <EmptyState message="Chưa có thương hiệu nào." />
+        ) : (
           <ul className="divide-y divide-slate-50 max-h-80 overflow-y-auto">
-            {brands.map(b => (
-              <li key={b.id} className="flex items-center justify-between px-5 py-3 hover:bg-slate-50/60 transition group">
+            {brands.map((b) => (
+              <li
+                key={b.id}
+                className="flex items-center justify-between px-5 py-3 hover:bg-slate-50/60 transition group"
+              >
                 <div className="flex items-center gap-2.5">
                   <span className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center">
                     <Bike size={14} className="text-amber-500" />
                   </span>
-                  <span className="text-sm font-semibold text-slate-700">{b.name}</span>
+                  <span className="text-sm font-semibold text-slate-700">
+                    {b.name}
+                  </span>
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
-                  <button onClick={() => openBrand(b)} className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition"><Edit size={14} /></button>
-                  <button onClick={() => deleteBrand(b.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition"><Trash2 size={14} /></button>
+                  <button
+                    onClick={() => openBrand(b)}
+                    className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition"
+                  >
+                    <Edit size={14} />
+                  </button>
+                  <button
+                    onClick={() => deleteBrand(b.id)}
+                    className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               </li>
             ))}
@@ -859,26 +1386,50 @@ function CatalogTab() {
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div className="flex items-center gap-2">
             <Wrench size={18} className="text-indigo-500" />
-            <h3 className="font-bold text-slate-800">Hạng Mục KĐ <span className="text-slate-400 font-normal text-sm">({components.length})</span></h3>
+            <h3 className="font-bold text-slate-800">
+              Hạng Mục KĐ{" "}
+              <span className="text-slate-400 font-normal text-sm">
+                ({components.length})
+              </span>
+            </h3>
           </div>
-          <button onClick={() => openComp()}
-            className="flex items-center gap-1 px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold transition shadow-sm">
+          <button
+            onClick={() => openComp()}
+            className="flex items-center gap-1 px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold transition shadow-sm"
+          >
             <Plus size={13} /> Thêm
           </button>
         </div>
-        {components.length === 0 ? <EmptyState message="Chưa có hạng mục nào." /> : (
+        {components.length === 0 ? (
+          <EmptyState message="Chưa có hạng mục nào." />
+        ) : (
           <ul className="divide-y divide-slate-50 max-h-80 overflow-y-auto">
-            {components.map(c => (
-              <li key={c.id} className="flex items-center justify-between px-5 py-3 hover:bg-slate-50/60 transition group">
+            {components.map((c) => (
+              <li
+                key={c.id}
+                className="flex items-center justify-between px-5 py-3 hover:bg-slate-50/60 transition group"
+              >
                 <div className="flex items-center gap-2.5">
                   <span className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center">
                     <Wrench size={14} className="text-indigo-500" />
                   </span>
-                  <span className="text-sm font-semibold text-slate-700">{c.name}</span>
+                  <span className="text-sm font-semibold text-slate-700">
+                    {c.name}
+                  </span>
                 </div>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
-                  <button onClick={() => openComp(c)} className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition"><Edit size={14} /></button>
-                  <button onClick={() => deleteComp(c.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition"><Trash2 size={14} /></button>
+                  <button
+                    onClick={() => openComp(c)}
+                    className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition"
+                  >
+                    <Edit size={14} />
+                  </button>
+                  <button
+                    onClick={() => deleteComp(c.id)}
+                    className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               </li>
             ))}
@@ -888,17 +1439,34 @@ function CatalogTab() {
 
       {/* Brand Modal */}
       {brandModal && (
-        <Modal title={editBrand ? 'Sửa Thương Hiệu' : 'Thêm Thương Hiệu'} onClose={() => setBrandModal(false)}>
+        <Modal
+          title={editBrand ? "Sửa Thương Hiệu" : "Thêm Thương Hiệu"}
+          onClose={() => setBrandModal(false)}
+        >
           <form onSubmit={saveBrand} className="space-y-4">
             <FormField label="Tên thương hiệu">
-              <input required value={brandName} onChange={e => setBrandName(e.target.value)} placeholder="VD: Trek, Giant..." className={inputCls} />
+              <input
+                required
+                value={brandName}
+                onChange={(e) => setBrandName(e.target.value)}
+                placeholder="VD: Trek, Giant..."
+                className={inputCls}
+              />
             </FormField>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => setBrandModal(false)}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-wider transition">Hủy</button>
-              <button type="submit" disabled={brandSaving}
-                className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition shadow-md disabled:opacity-50">
-                {brandSaving ? 'Đang lưu...' : 'Lưu'}
+              <button
+                type="button"
+                onClick={() => setBrandModal(false)}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-wider transition"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={brandSaving}
+                className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition shadow-md disabled:opacity-50"
+              >
+                {brandSaving ? "Đang lưu..." : "Lưu"}
               </button>
             </div>
           </form>
@@ -907,101 +1475,183 @@ function CatalogTab() {
 
       {/* Component Modal */}
       {compModal && (
-        <Modal title={editComp ? 'Sửa Hạng Mục' : 'Thêm Hạng Mục'} onClose={() => setCompModal(false)}>
+        <Modal
+          title={editComp ? "Sửa Hạng Mục" : "Thêm Hạng Mục"}
+          onClose={() => setCompModal(false)}
+        >
           <form onSubmit={saveComp} className="space-y-4">
             <FormField label="Tên hạng mục">
-              <input required value={compName} onChange={e => setCompName(e.target.value)} placeholder="VD: Khung xe, Bộ truyền động..." className={inputCls} />
+              <input
+                required
+                value={compName}
+                onChange={(e) => setCompName(e.target.value)}
+                placeholder="VD: Khung xe, Bộ truyền động..."
+                className={inputCls}
+              />
             </FormField>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => setCompModal(false)}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-wider transition">Hủy</button>
-              <button type="submit" disabled={compSaving}
-                className="flex-1 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition shadow-md disabled:opacity-50">
-                {compSaving ? 'Đang lưu...' : 'Lưu'}
+              <button
+                type="button"
+                onClick={() => setCompModal(false)}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-wider transition"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={compSaving}
+                className="flex-1 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition shadow-md disabled:opacity-50"
+              >
+                {compSaving ? "Đang lưu..." : "Lưu"}
               </button>
             </div>
           </form>
         </Modal>
       )}
     </div>
-  )
+  );
 }
 
 // ─── Locations Tab ────────────────────────────────────────────────────────────
 
-function LocationsTab({ locations, loading, onRefresh }: { locations: InspectionLocation[]; loading: boolean; onRefresh: () => void }) {
-  const [modal, setModal] = useState(false)
-  const [editId, setEditId] = useState<string | null>(null)
-  const [form, setForm] = useState({ contactName: '', contactPhone: '', addressLine: '' })
-  const [saving, setSaving] = useState(false)
+function LocationsTab({
+  locations,
+  loading,
+  onRefresh,
+}: {
+  locations: InspectionLocation[];
+  loading: boolean;
+  onRefresh: () => void;
+}) {
+  // only show company-created locations here
+  const companyLocs = locations.filter((l) => l.type === "COMPANY");
+
+  const [modal, setModal] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    contactName: "",
+    contactPhone: "",
+    addressLine: "",
+  });
+  const [saving, setSaving] = useState(false);
 
   const open = (loc?: InspectionLocation) => {
-    setEditId(loc ? String(loc.id) : null)
-    setForm({ contactName: loc?.contactName ?? '', contactPhone: loc?.contactPhone ?? '', addressLine: loc?.addressLine ?? '' })
-    setModal(true)
-  }
+    setEditId(loc ? String(loc.id) : null);
+    setForm({
+      contactName: loc?.contactName ?? "",
+      contactPhone: loc?.contactPhone ?? "",
+      addressLine: loc?.addressLine ?? "",
+    });
+    setModal(true);
+  };
 
   const save = async (e: React.FormEvent) => {
-    e.preventDefault(); setSaving(true)
+    e.preventDefault();
+    setSaving(true);
     try {
       if (editId) {
-        await locationService.updateLocation(Number(editId), form)
-        alert('Cập nhật thành công!')
+        await locationService.updateLocation(Number(editId), form);
+        alert("Cập nhật thành công!");
       } else {
-        await locationService.createLocation(form)
-        alert('Tạo mới thành công!')
+        await locationService.createLocation(form);
+        alert("Tạo mới thành công!");
       }
-      setModal(false); onRefresh()
+      setModal(false);
+      onRefresh();
     } catch (error: unknown) {
       // unknown may not have message property
-      const msg = (error && typeof error === 'object' && 'message' in error)
-        ? (error as any).message
-        : undefined
-      alert(msg || 'Có lỗi xảy ra.')
-    } finally { setSaving(false) }
-  }
+      const msg =
+        error && typeof error === "object" && "message" in error
+          ? (error as any).message
+          : undefined;
+      alert(msg || "Có lỗi xảy ra.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const remove = async (id: number) => {
-    if (!confirm('Bạn có chắc muốn xóa địa điểm này?')) return
-    const ok = await locationService.deleteLocation(id)
+    if (!confirm("Bạn có chắc muốn xóa địa điểm này?")) return;
+    const ok = await locationService.deleteLocation(id);
     if (ok) {
-      alert('Đã xóa!')
-      onRefresh()
+      alert("Đã xóa!");
+      onRefresh();
     } else {
-      alert('Xóa thất bại!')
+      alert("Xóa thất bại!");
     }
-  }
+  };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-bold text-slate-800">Cơ Sở Kiểm Định <span className="text-slate-400 font-normal text-sm">({locations.length})</span></h2>
-        <button onClick={() => open()}
-          className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition shadow-md">
+        <h2 className="font-bold text-slate-800">
+          Cơ Sở Kiểm Định Công Ty{" "}
+          <span className="text-slate-400 font-normal text-sm">
+            ({companyLocs.length})
+          </span>
+        </h2>
+        <button
+          onClick={() => open()}
+          className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition shadow-md"
+        >
           <Plus size={15} /> Thêm Cơ Sở
         </button>
       </div>
 
-      {loading ? <Spinner /> : locations.length === 0 ? <EmptyState message="Chưa có cơ sở kiểm định nào." /> : (
+      {loading ? (
+        <Spinner />
+      ) : companyLocs.length === 0 ? (
+        <EmptyState message="Chưa có cơ sở kiểm định công ty nào." />
+      ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {locations.map(loc => (
-            <div key={loc.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 hover:shadow-md transition group relative">
+          {companyLocs.map((loc) => (
+            <div
+              key={loc.id}
+              className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 hover:shadow-md transition group relative"
+            >
               <div className="absolute top-4 right-4 flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
-                <button onClick={() => open(loc)} className="p-1.5 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition"><Edit size={14} /></button>
-                <button onClick={() => remove(loc.id)} className="p-1.5 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-600 transition"><Trash2 size={14} /></button>
+                <button
+                  onClick={() => open(loc)}
+                  className="p-1.5 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition"
+                >
+                  <Edit size={14} />
+                </button>
+                <button
+                  onClick={() => remove(loc.id)}
+                  className="p-1.5 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-600 transition"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
               <div className="flex items-center gap-2.5 mb-3">
-                <div className={`p-2 rounded-xl ${loc.type === 'COMPANY' ? 'bg-emerald-50' : 'bg-amber-50'}`}>
-                  <MapPin size={16} className={loc.type === 'COMPANY' ? 'text-emerald-600' : 'text-amber-600'} />
+                <div
+                  className={`p-2 rounded-xl ${loc.type === "COMPANY" ? "bg-emerald-50" : "bg-amber-50"}`}
+                >
+                  <MapPin
+                    size={16}
+                    className={
+                      loc.type === "COMPANY"
+                        ? "text-emerald-600"
+                        : "text-amber-600"
+                    }
+                  />
                 </div>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${loc.type === 'COMPANY' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                  {loc.type === 'COMPANY' ? 'Công ty' : 'Cá nhân'}
+                <span
+                  className={`text-xs font-bold px-2 py-0.5 rounded-full ${loc.type === "COMPANY" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}
+                >
+                  {loc.type === "COMPANY" ? "Công ty" : "Cá nhân"}
                 </span>
               </div>
               <div className="space-y-1.5 pr-10">
-                <p className="text-sm font-bold text-slate-800">{loc.contactName || 'Chưa đặt tên'}</p>
-                <p className="text-xs text-slate-500">📞 {loc.contactPhone || 'Không có SĐT'}</p>
-                <p className="text-xs text-slate-500 line-clamp-2">📍 {loc.addressLine || 'Chưa có địa chỉ'}</p>
+                <p className="text-sm font-bold text-slate-800">
+                  {loc.contactName || "Chưa đặt tên"}
+                </p>
+                <p className="text-xs text-slate-500">
+                  📞 {loc.contactPhone || "Không có SĐT"}
+                </p>
+                <p className="text-xs text-slate-500 line-clamp-2">
+                  📍 {loc.addressLine || "Chưa có địa chỉ"}
+                </p>
               </div>
             </div>
           ))}
@@ -1009,104 +1659,174 @@ function LocationsTab({ locations, loading, onRefresh }: { locations: Inspection
       )}
 
       {modal && (
-        <Modal title={editId ? 'Cập Nhật Cơ Sở' : 'Thêm Cơ Sở Mới'} onClose={() => setModal(false)}>
+        <Modal
+          title={editId ? "Cập Nhật Cơ Sở" : "Thêm Cơ Sở Mới"}
+          onClose={() => setModal(false)}
+        >
           <form onSubmit={save} className="space-y-4">
             <FormField label="Tên liên hệ">
-              <input required value={form.contactName} onChange={e => setForm({ ...form, contactName: e.target.value })}
-                placeholder="VD: Trung Tâm Kiểm Định A" className={inputCls} />
+              <input
+                required
+                value={form.contactName}
+                onChange={(e) =>
+                  setForm({ ...form, contactName: e.target.value })
+                }
+                placeholder="VD: Trung Tâm Kiểm Định A"
+                className={inputCls}
+              />
             </FormField>
             <FormField label="Số điện thoại">
-              <input required type="tel" value={form.contactPhone} onChange={e => setForm({ ...form, contactPhone: e.target.value })}
-                placeholder="VD: 0987654321" className={inputCls} />
+              <input
+                required
+                type="tel"
+                value={form.contactPhone}
+                onChange={(e) =>
+                  setForm({ ...form, contactPhone: e.target.value })
+                }
+                placeholder="VD: 0987654321"
+                className={inputCls}
+              />
             </FormField>
             <FormField label="Địa chỉ chi tiết">
-              <textarea required value={form.addressLine} onChange={e => setForm({ ...form, addressLine: e.target.value })}
-                placeholder="VD: 123 Đường Nguyễn Huệ, Q1, TP.HCM" rows={3}
-                className={`${inputCls} resize-none`} />
+              <textarea
+                required
+                value={form.addressLine}
+                onChange={(e) =>
+                  setForm({ ...form, addressLine: e.target.value })
+                }
+                placeholder="VD: 123 Đường Nguyễn Huệ, Q1, TP.HCM"
+                rows={3}
+                className={`${inputCls} resize-none`}
+              />
             </FormField>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => setModal(false)}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-wider transition">Hủy</button>
-              <button type="submit" disabled={saving}
-                className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition shadow-md disabled:opacity-50">
-                {saving ? 'Đang lưu...' : 'Lưu Cơ Sở'}
+              <button
+                type="button"
+                onClick={() => setModal(false)}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-wider transition"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition shadow-md disabled:opacity-50"
+              >
+                {saving ? "Đang lưu..." : "Lưu Cơ Sở"}
               </button>
             </div>
           </form>
         </Modal>
       )}
     </div>
-  )
+  );
 }
 
 // ─── Listings Moderation Tab ──────────────────────────────────────────────────
 
-function ListingsTab({ listings, loading, onRefresh }: { listings: Listing[]; loading: boolean; onRefresh: () => void }) {
-  type ListFilter = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'LIVE' | 'DRAFT'
-  const [filter, setFilter] = useState<ListFilter>('ALL')
-  const [processing, setProcessing] = useState<string | null>(null)
-  const [search, setSearch] = useState('')
+function ListingsTab({
+  listings,
+  loading,
+  onRefresh,
+}: {
+  listings: Listing[];
+  loading: boolean;
+  onRefresh: () => void;
+}) {
+  type ListFilter =
+    | "ALL"
+    | "PENDING"
+    | "APPROVED"
+    | "REJECTED"
+    | "LIVE"
+    | "DRAFT";
+  const [filter, setFilter] = useState<ListFilter>("ALL");
+  const [processing, setProcessing] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
-  const filtered = listings.filter(l => {
-    const matchStatus = filter === 'ALL' || l.status === filter
+  const filtered = listings.filter((l) => {
+    const matchStatus = filter === "ALL" || l.status === filter;
     // defensive: title may be undefined/null if backend returns malformed data
-    const title = l.title || ''
-    const matchSearch = !search ||
+    const title = l.title || "";
+    const matchSearch =
+      !search ||
       title.toLowerCase().includes(search.toLowerCase()) ||
-      (l.brand?.name ?? '').toLowerCase().includes(search.toLowerCase())
-    return matchStatus && matchSearch
-  })
+      (l.brand?.name ?? "").toLowerCase().includes(search.toLowerCase());
+    return matchStatus && matchSearch;
+  });
 
-  const pendingCount = listings.filter(l => l.status === 'PENDING').length
+  const pendingCount = listings.filter((l) => l.status === "PENDING").length;
 
   const handleApprove = async (id: string) => {
-    setProcessing(id)
-    const ok = await listingService.approveListing(id)
-    if (ok) { alert('Đã duyệt bài đăng!'); onRefresh() }
-    else alert('Thao tác thất bại, vui lòng thử lại.')
-    setProcessing(null)
-  }
+    setProcessing(id);
+    const ok = await listingService.approveListing(id);
+    if (ok) {
+      alert("Đã duyệt bài đăng!");
+      onRefresh();
+    } else alert("Thao tác thất bại, vui lòng thử lại.");
+    setProcessing(null);
+  };
 
   const handleReject = async (id: string) => {
-    setProcessing(id)
-    const ok = await listingService.rejectListing(id)
-    if (ok) { alert('Đã từ chối bài đăng!'); onRefresh() }
-    else alert('Thao tác thất bại, vui lòng thử lại.')
-    setProcessing(null)
-  }
+    setProcessing(id);
+    const ok = await listingService.rejectListing(id);
+    if (ok) {
+      alert("Đã từ chối bài đăng!");
+      onRefresh();
+    } else alert("Thao tác thất bại, vui lòng thử lại.");
+    setProcessing(null);
+  };
 
   const filterTabs: { key: ListFilter; label: string }[] = [
-    { key: 'ALL', label: 'Tất cả' },
-    { key: 'PENDING', label: 'Chờ duyệt' },
-    { key: 'APPROVED', label: 'Đã duyệt' },
-    { key: 'LIVE', label: 'Đang bán' },
-    { key: 'REJECTED', label: 'Từ chối' },
-    { key: 'DRAFT', label: 'Nháp' },
-  ]
+    { key: "ALL", label: "Tất cả" },
+    { key: "PENDING", label: "Chờ duyệt" },
+    { key: "APPROVED", label: "Đã duyệt" },
+    { key: "LIVE", label: "Đang bán" },
+    { key: "REJECTED", label: "Từ chối" },
+    { key: "DRAFT", label: "Nháp" },
+  ];
 
   return (
     <div className="space-y-4">
       {/* Filter bar */}
       <div className="flex items-center gap-2 flex-wrap">
         {filterTabs.map(({ key, label }) => (
-          <button key={key} onClick={() => setFilter(key)}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 ${filter === key ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-slate-400'
-              }`}>
+          <button
+            key={key}
+            onClick={() => setFilter(key)}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 ${
+              filter === key
+                ? "bg-slate-900 text-white"
+                : "bg-white border border-slate-200 text-slate-500 hover:border-slate-400"
+            }`}
+          >
             {label}
-            {key === 'PENDING' && pendingCount > 0 && (
-              <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded-full">{pendingCount}</span>
+            {key === "PENDING" && pendingCount > 0 && (
+              <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded-full">
+                {pendingCount}
+              </span>
             )}
           </button>
         ))}
-        <input value={search} onChange={e => setSearch(e.target.value)}
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
           placeholder="Tìm tiêu đề / thương hiệu..."
-          className="ml-auto px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-400 w-52" />
-        <button onClick={onRefresh} className="p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 transition">
+          className="ml-auto px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-400 w-52"
+        />
+        <button
+          onClick={onRefresh}
+          className="p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 transition"
+        >
           <RefreshCw size={15} />
         </button>
       </div>
 
-      {loading ? <Spinner /> : filtered.length === 0 ? <EmptyState message="Không có bài đăng nào." /> : (
+      {loading ? (
+        <Spinner />
+      ) : filtered.length === 0 ? (
+        <EmptyState message="Không có bài đăng nào." />
+      ) : (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
@@ -1122,54 +1842,92 @@ function ListingsTab({ listings, loading, onRefresh }: { listings: Listing[]; lo
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {filtered.map((listing, i) => {
-                  const st = LISTING_STATUS_MAP[listing.status] ?? { label: listing.status, color: 'bg-slate-100 text-slate-600' }
-                  const isProc = processing === listing.id
-                  const thumb = listing.images?.[0]?.secureUrl
+                  const st = LISTING_STATUS_MAP[listing.status] ?? {
+                    label: listing.status,
+                    color: "bg-slate-100 text-slate-600",
+                  };
+                  const isProc = processing === listing.id;
+                  const thumb = listing.images?.[0]?.secureUrl;
                   return (
-                    <tr key={listing.id || String(i)} className="hover:bg-slate-50/60 transition">
+                    <tr
+                      key={listing.id || String(i)}
+                      className="hover:bg-slate-50/60 transition"
+                    >
                       {/* Thumbnail */}
                       <td className="px-5 py-3">
-                        {thumb
-                          ? <img src={thumb} alt="thumb" className="w-14 h-10 object-cover rounded-xl border border-slate-100" />
-                          : <div className="w-14 h-10 rounded-xl bg-slate-100 flex items-center justify-center"><ImageIcon size={16} className="text-slate-300" /></div>
-                        }
+                        {thumb ? (
+                          <img
+                            src={thumb}
+                            alt="thumb"
+                            className="w-14 h-10 object-cover rounded-xl border border-slate-100"
+                          />
+                        ) : (
+                          <div className="w-14 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                            <ImageIcon size={16} className="text-slate-300" />
+                          </div>
+                        )}
                       </td>
                       {/* Title */}
                       <td className="px-5 py-3 max-w-[220px]">
-                        <p className="text-sm font-semibold text-slate-800 line-clamp-2 leading-snug">{listing.title || '—'}</p>
-                        {listing.frameNumber && <p className="text-[10px] text-slate-400 mt-0.5">Frame: {listing.frameNumber}</p>}
+                        <p className="text-sm font-semibold text-slate-800 line-clamp-2 leading-snug">
+                          {listing.title || "—"}
+                        </p>
+                        {listing.frameNumber && (
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            Frame: {listing.frameNumber}
+                          </p>
+                        )}
                       </td>
                       {/* Brand */}
                       <td className="px-5 py-3">
-                        <span className="text-sm text-slate-600 font-medium">{listing.brand?.name ?? '—'}</span>
+                        <span className="text-sm text-slate-600 font-medium">
+                          {listing.brand?.name ?? "—"}
+                        </span>
                       </td>
                       {/* Price */}
                       <td className="px-5 py-3">
                         <span className="text-sm font-bold text-slate-800">
-                          {listing.price != null ? listing.price.toLocaleString('vi-VN') + ' ₫' : '—'}
+                          {listing.price != null
+                            ? listing.price.toLocaleString("vi-VN") + " ₫"
+                            : "—"}
                         </span>
                       </td>
                       {/* Status badge */}
                       <td className="px-5 py-3">
-                        <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${st.color}`}>{st.label}</span>
+                        <span
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${st.color}`}
+                        >
+                          {st.label}
+                        </span>
                       </td>
                       {/* Actions */}
                       <td className="px-5 py-3">
-                        {listing.status === 'PENDING' && (
+                        {listing.status === "PENDING" && (
                           <div className="flex gap-2">
-                            <button onClick={() => handleReject(listing.id)} disabled={isProc}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition disabled:opacity-50">
+                            <button
+                              onClick={() => handleReject(listing.id)}
+                              disabled={isProc}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition disabled:opacity-50"
+                            >
                               <XCircle size={13} /> Từ chối
                             </button>
-                            <button onClick={() => handleApprove(listing.id)} disabled={isProc}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold transition disabled:opacity-50 shadow-sm">
-                              {isProc ? <RefreshCw size={13} className="animate-spin" /> : <CheckCircle size={13} />} Duyệt
+                            <button
+                              onClick={() => handleApprove(listing.id)}
+                              disabled={isProc}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold transition disabled:opacity-50 shadow-sm"
+                            >
+                              {isProc ? (
+                                <RefreshCw size={13} className="animate-spin" />
+                              ) : (
+                                <CheckCircle size={13} />
+                              )}{" "}
+                              Duyệt
                             </button>
                           </div>
                         )}
                       </td>
                     </tr>
-                  )
+                  );
                 })}
               </tbody>
             </table>
@@ -1177,7 +1935,7 @@ function ListingsTab({ listings, loading, onRefresh }: { listings: Listing[]; lo
         </div>
       )}
     </div>
-  )
+  );
 }
 
 // ─── Create Inspector Tab ─────────────────────────────────────────────────────
@@ -1196,43 +1954,57 @@ function CreateInspectorTab({
   onVerifyOTP,
   onCreate,
 }: {
-  form: { fullName: string; email: string; password: string; confirmPassword: string }
-  otp: string
-  otpSent: boolean
-  verificationToken: string
-  message: { type: 'success' | 'error'; text: string } | null
-  verifyingOTP: boolean
-  creatingInspector: boolean
-  onFormChange: (field: string, value: string) => void
-  onOTPChange: (value: string) => void
-  onSendOTP: () => Promise<void>
-  onVerifyOTP: () => Promise<void>
-  onCreate: () => Promise<void>
+  form: {
+    fullName: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+  };
+  otp: string;
+  otpSent: boolean;
+  verificationToken: string;
+  message: { type: "success" | "error"; text: string } | null;
+  verifyingOTP: boolean;
+  creatingInspector: boolean;
+  onFormChange: (field: string, value: string) => void;
+  onOTPChange: (value: string) => void;
+  onSendOTP: () => Promise<void>;
+  onVerifyOTP: () => Promise<void>;
+  onCreate: () => Promise<void>;
 }) {
   return (
     <div className="space-y-6">
       <div className="max-w-2xl">
-        <h2 className="text-lg font-bold text-slate-800 mb-2">Tạo Tài Khoản Kiểm Định Viên</h2>
-        <p className="text-sm text-slate-500">Tạo tài khoản mới cho kiểm định viên. Tài khoản này sẽ không yêu cầu xác minh KYC.</p>
+        <h2 className="text-lg font-bold text-slate-800 mb-2">
+          Tạo Tài Khoản Kiểm Định Viên
+        </h2>
+        <p className="text-sm text-slate-500">
+          Tạo tài khoản mới cho kiểm định viên. Tài khoản này sẽ không yêu cầu
+          xác minh KYC.
+        </p>
       </div>
 
       {/* Message display */}
       {message && (
-        <div className={`p-4 rounded-lg ${message.type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
+        <div
+          className={`p-4 rounded-lg ${message.type === "success" ? "bg-emerald-50 border border-emerald-200 text-emerald-700" : "bg-red-50 border border-red-200 text-red-700"}`}
+        >
           <p className="text-sm font-medium">{message.text}</p>
         </div>
       )}
 
       {/* Form section */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
-        <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wider mb-4">Thông Tin Kiểm Định Viên</h3>
+        <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wider mb-4">
+          Thông Tin Kiểm Định Viên
+        </h3>
 
         {/* Full Name */}
         <FormField label="Họ Tên">
           <input
             type="text"
             value={form.fullName}
-            onChange={e => onFormChange('fullName', e.target.value)}
+            onChange={(e) => onFormChange("fullName", e.target.value)}
             placeholder="Nhập họ tên đầy đủ"
             className={inputCls}
             disabled={otpSent && !verificationToken}
@@ -1244,7 +2016,7 @@ function CreateInspectorTab({
           <input
             type="email"
             value={form.email}
-            onChange={e => onFormChange('email', e.target.value)}
+            onChange={(e) => onFormChange("email", e.target.value)}
             placeholder="Nhập email"
             className={inputCls}
             disabled={otpSent && !verificationToken}
@@ -1256,7 +2028,7 @@ function CreateInspectorTab({
           <input
             type="password"
             value={form.password}
-            onChange={e => onFormChange('password', e.target.value)}
+            onChange={(e) => onFormChange("password", e.target.value)}
             placeholder="Nhập mật khẩu"
             className={inputCls}
             disabled={otpSent && !verificationToken}
@@ -1268,7 +2040,7 @@ function CreateInspectorTab({
           <input
             type="password"
             value={form.confirmPassword}
-            onChange={e => onFormChange('confirmPassword', e.target.value)}
+            onChange={(e) => onFormChange("confirmPassword", e.target.value)}
             placeholder="Xác nhận mật khẩu"
             className={inputCls}
             disabled={otpSent && !verificationToken}
@@ -1295,7 +2067,7 @@ function CreateInspectorTab({
               <input
                 type="text"
                 value={otp}
-                onChange={e => onOTPChange(e.target.value)}
+                onChange={(e) => onOTPChange(e.target.value)}
                 placeholder="Nhập mã OTP từ email"
                 className={inputCls}
               />
@@ -1314,13 +2086,17 @@ function CreateInspectorTab({
         {/* Create account button */}
         {verificationToken && (
           <div className="mt-6 pt-6 border-t border-emerald-200 bg-emerald-50 rounded-lg p-4">
-            <p className="text-sm text-emerald-700 font-medium mb-4">✓ OTP đã xác minh. Bạn có thể tạo tài khoản.</p>
+            <p className="text-sm text-emerald-700 font-medium mb-4">
+              ✓ OTP đã xác minh. Bạn có thể tạo tài khoản.
+            </p>
             <button
               onClick={onCreate}
               disabled={creatingInspector}
               className="w-full px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white rounded-lg font-bold text-sm transition flex items-center justify-center gap-2"
             >
-              {creatingInspector && <RefreshCw size={16} className="animate-spin" />}
+              {creatingInspector && (
+                <RefreshCw size={16} className="animate-spin" />
+              )}
               Tạo Tài Khoản Kiểm Định Viên
             </button>
           </div>
@@ -1339,365 +2115,470 @@ function CreateInspectorTab({
         </ul>
       </div>
     </div>
-  )
+  );
 }
 
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 export default function AdminDashboard() {
-  const { logout } = useAuth()
-  const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState<Tab>('overview')
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<Tab>("overview");
 
   const handleLogout = async () => {
     try {
-      await logout()
+      await logout();
     } catch (err) {
-      console.error('Logout failed', err)
+      console.error("Logout failed", err);
     }
-    navigate('/')
-  }
+    navigate("/");
+  };
 
-  const [users, setUsers] = useState<AdminUser[]>([])
-  const [kycList, setKycList] = useState<KYCRequest[]>([])
-  const [inspections, setInspections] = useState<InspectionTask[]>([])
-  const [locations, setLocations] = useState<InspectionLocation[]>([])
-  const [brands, setBrands] = useState<Brand[]>([])
-  const [components, setComponents] = useState<InspectionComponent[]>([])
-  const [listings, setListings] = useState<Listing[]>([])
-  const [orders, setOrders] = useState<Order[]>([])
-  const [payments, setPayments] = useState<PaymentResult[]>([])
-  const [companyLocations, setCompanyLocations] = useState<InspectionLocation[]>([])
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [kycList, setKycList] = useState<KYCRequest[]>([]);
+  const [inspections, setInspections] = useState<InspectionTask[]>([]);
+  const [locations, setLocations] = useState<InspectionLocation[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [components, setComponents] = useState<InspectionComponent[]>([]);
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [payments, setPayments] = useState<PaymentResult[]>([]);
 
   // Inspector account creation form state
-  const [inspectorForm, setInspectorForm] = useState({ fullName: '', email: '', password: '', confirmPassword: '' })
-  const [inspectorOTP, setInspectorOTP] = useState('')
-  const [otpSent, setOtpSent] = useState(false)
-  const [verificationToken, setVerificationToken] = useState('')
-  const [creatingInspector, setCreatingInspector] = useState(false)
-  const [verifyingOTP, setVerifyingOTP] = useState(false)
-  const [inspectorMessage, setInspectorMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [inspectorForm, setInspectorForm] = useState({
+    fullName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [inspectorOTP, setInspectorOTP] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [verificationToken, setVerificationToken] = useState("");
+  const [creatingInspector, setCreatingInspector] = useState(false);
+  const [verifyingOTP, setVerifyingOTP] = useState(false);
+  const [inspectorMessage, setInspectorMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
-  const [usersLoading, setUsersLoading] = useState(true)
-  const [kycLoading, setKycLoading] = useState(true)
-  const [inspLoading, setInspLoading] = useState(true)
-  const [locLoading, setLocLoading] = useState(true)
-  const [listingsLoading, setListingsLoading] = useState(true)
-  const [ordersLoading, setOrdersLoading] = useState(true)
-  const [paymentsLoading, setPaymentsLoading] = useState(true)
-  const [companyLocLoading, setCompanyLocLoading] = useState(true)
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [kycLoading, setKycLoading] = useState(true);
+  const [inspLoading, setInspLoading] = useState(true);
+  const [locLoading, setLocLoading] = useState(true);
+  const [listingsLoading, setListingsLoading] = useState(true);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+  const [paymentsLoading, setPaymentsLoading] = useState(true);
   // catalogLoading was unused; each tab manages its own loading state
 
-  const overviewLoading = usersLoading || kycLoading || inspLoading || locLoading
+  const overviewLoading =
+    usersLoading || kycLoading || inspLoading || locLoading;
 
   const fetchUsers = useCallback(async () => {
-    setUsersLoading(true)
+    setUsersLoading(true);
     try {
-      const data = await adminService.getAllUsers()
-      setUsers(data)
+      const data = await adminService.getAllUsers();
+      setUsers(data);
     } catch (err) {
-      console.error('[Admin] fetchUsers failed', err)
+      console.error("[Admin] fetchUsers failed", err);
     } finally {
-      setUsersLoading(false)
+      setUsersLoading(false);
     }
-  }, [])
+  }, []);
 
   const fetchKYC = useCallback(async () => {
-    setKycLoading(true)
+    setKycLoading(true);
     try {
-      const data = await adminService.getAllKYCRequests()
-      setKycList(data)
+      const data = await adminService.getAllKYCRequests();
+      setKycList(data);
     } catch (err) {
-      console.error('[Admin] fetchKYC failed', err)
+      console.error("[Admin] fetchKYC failed", err);
     } finally {
-      setKycLoading(false)
+      setKycLoading(false);
     }
-  }, [])
+  }, []);
 
   const fetchInspections = useCallback(async () => {
-    setInspLoading(true)
+    setInspLoading(true);
     try {
-      const data = await inspectionService.getAllInspections()
-      setInspections(data)
+      const data = await inspectionService.getAllInspections();
+      setInspections(data);
     } catch (err) {
-      console.error('[Admin] fetchInspections failed', err)
+      console.error("[Admin] fetchInspections failed", err);
     } finally {
-      setInspLoading(false)
+      setInspLoading(false);
     }
-  }, [])
+  }, []);
 
   const fetchLocations = useCallback(async () => {
-    setLocLoading(true)
+    setLocLoading(true);
     try {
-      const data = await locationService.getAllLocations()
-      setLocations(data)
+      const data = await locationService.getAllLocations();
+      setLocations(data);
     } catch (err) {
-      console.error('[Admin] fetchLocations failed', err)
+      console.error("[Admin] fetchLocations failed", err);
     } finally {
-      setLocLoading(false)
+      setLocLoading(false);
     }
-  }, [])
+  }, []);
 
   const fetchOverviewCatalog = useCallback(async () => {
     try {
-      const [b, c] = await Promise.all([brandService.getAllBrands(), componentService.getAllComponents()])
-      setBrands(Array.isArray(b) ? b : [])
-      setComponents(Array.isArray(c) ? c : [])
+      const [b, c] = await Promise.all([
+        brandService.getAllBrands(),
+        componentService.getAllComponents(),
+      ]);
+      setBrands(Array.isArray(b) ? b : []);
+      setComponents(Array.isArray(c) ? c : []);
     } catch (err) {
-      console.error('[Admin] fetchOverviewCatalog failed', err)
+      console.error("[Admin] fetchOverviewCatalog failed", err);
     }
-  }, [])
+  }, []);
 
   const fetchListings = useCallback(async () => {
-    setListingsLoading(true)
+    setListingsLoading(true);
     try {
-      const data = await listingService.getAllListings()
+      const data = await listingService.getAllListings();
       if (Array.isArray(data)) {
-        setListings(data)
+        setListings(data);
       } else {
-        console.warn('[Admin] unexpected listings response', data)
-        setListings([])
+        console.warn("[Admin] unexpected listings response", data);
+        setListings([]);
       }
     } catch (err) {
-      console.error('[Admin] fetchListings failed', err)
-      setListings([])
+      console.error("[Admin] fetchListings failed", err);
+      setListings([]);
     } finally {
-      setListingsLoading(false)
+      setListingsLoading(false);
     }
-  }, [])
+  }, []);
 
   const fetchOrders = useCallback(async () => {
-    setOrdersLoading(true)
+    setOrdersLoading(true);
     try {
-      const data = await orderService.getAllOrders()
-      setOrders(Array.isArray(data) ? data : [])
+      const data = await orderService.getAllOrders();
+      setOrders(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('[Admin] fetchOrders failed', err)
-      setOrders([])
+      console.error("[Admin] fetchOrders failed", err);
+      setOrders([]);
     } finally {
-      setOrdersLoading(false)
+      setOrdersLoading(false);
     }
-  }, [])
+  }, []);
 
   const fetchPayments = useCallback(async () => {
-    setPaymentsLoading(true)
+    setPaymentsLoading(true);
     try {
-      const data = await paymentService.getAllPayments()
-      setPayments(Array.isArray(data) ? data : [])
+      const data = await paymentService.getAllPayments();
+      setPayments(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('[Admin] fetchPayments failed', err)
-      setPayments([])
+      console.error("[Admin] fetchPayments failed", err);
+      setPayments([]);
     } finally {
-      setPaymentsLoading(false)
+      setPaymentsLoading(false);
     }
-  }, [])
-
-  const fetchCompanyLocations = useCallback(async () => {
-    setCompanyLocLoading(true)
-    try {
-      const data = await locationService.getMyCompanyLocation()
-      setCompanyLocations(Array.isArray(data) ? data : [])
-    } catch (err) {
-      console.error('[Admin] fetchCompanyLocations failed', err)
-      setCompanyLocations([])
-    } finally {
-      setCompanyLocLoading(false)
-    }
-  }, [])
+  }, []);
 
   const handleSendInspectorOTP = useCallback(async () => {
     if (!inspectorForm.email) {
-      setInspectorMessage({ type: 'error', text: 'Vui lòng nhập email' })
-      return
+      setInspectorMessage({ type: "error", text: "Vui lòng nhập email" });
+      return;
     }
-    setVerifyingOTP(true)
+    setVerifyingOTP(true);
     try {
-      const success = await adminService.sendInspectorOTP(inspectorForm.email)
+      const success = await adminService.sendInspectorOTP(inspectorForm.email);
       if (success) {
-        setOtpSent(true)
-        setInspectorMessage({ type: 'success', text: 'OTP đã được gửi tới email. Vui lòng kiểm tra email để lấy mã OTP.' })
+        setOtpSent(true);
+        setInspectorMessage({
+          type: "success",
+          text: "OTP đã được gửi tới email. Vui lòng kiểm tra email để lấy mã OTP.",
+        });
       } else {
-        setInspectorMessage({ type: 'error', text: 'Không thể gửi OTP. Vui lòng thử lại.' })
+        setInspectorMessage({
+          type: "error",
+          text: "Không thể gửi OTP. Vui lòng thử lại.",
+        });
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Lỗi khi gửi OTP'
-      console.error('Error sending OTP:', err)
-      setInspectorMessage({ type: 'error', text: errorMessage })
+      const errorMessage =
+        err instanceof Error ? err.message : "Lỗi khi gửi OTP";
+      console.error("Error sending OTP:", err);
+      setInspectorMessage({ type: "error", text: errorMessage });
     } finally {
-      setVerifyingOTP(false)
+      setVerifyingOTP(false);
     }
-  }, [inspectorForm.email])
+  }, [inspectorForm.email]);
 
   const handleVerifyInspectorOTP = useCallback(async () => {
     if (!inspectorOTP) {
-      setInspectorMessage({ type: 'error', text: 'Vui lòng nhập OTP' })
-      return
+      setInspectorMessage({ type: "error", text: "Vui lòng nhập OTP" });
+      return;
     }
-    setVerifyingOTP(true)
+    setVerifyingOTP(true);
     try {
-      const token = await adminService.verifyInspectorOTP(inspectorForm.email, inspectorOTP)
-      setVerificationToken(token)
-      setInspectorMessage({ type: 'success', text: 'OTP đã xác minh thành công. Bạn có thể tạo tài khoản inspector.' })
+      const token = await adminService.verifyInspectorOTP(
+        inspectorForm.email,
+        inspectorOTP,
+      );
+      setVerificationToken(token);
+      setInspectorMessage({
+        type: "success",
+        text: "OTP đã xác minh thành công. Bạn có thể tạo tài khoản inspector.",
+      });
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'OTP không hợp lệ'
-      console.error('Error verifying OTP:', err)
-      setInspectorMessage({ type: 'error', text: errorMessage })
+      const errorMessage =
+        err instanceof Error ? err.message : "OTP không hợp lệ";
+      console.error("Error verifying OTP:", err);
+      setInspectorMessage({ type: "error", text: errorMessage });
     } finally {
-      setVerifyingOTP(false)
+      setVerifyingOTP(false);
     }
-  }, [inspectorForm.email, inspectorOTP])
+  }, [inspectorForm.email, inspectorOTP]);
 
   const handleCreateInspector = useCallback(async () => {
     // Validation
     if (!inspectorForm.fullName) {
-      setInspectorMessage({ type: 'error', text: 'Vui lòng nhập họ tên' })
-      return
+      setInspectorMessage({ type: "error", text: "Vui lòng nhập họ tên" });
+      return;
     }
     if (!inspectorForm.email) {
-      setInspectorMessage({ type: 'error', text: 'Vui lòng nhập email' })
-      return
+      setInspectorMessage({ type: "error", text: "Vui lòng nhập email" });
+      return;
     }
     if (!inspectorForm.password || !inspectorForm.confirmPassword) {
-      setInspectorMessage({ type: 'error', text: 'Vui lòng nhập mật khẩu' })
-      return
+      setInspectorMessage({ type: "error", text: "Vui lòng nhập mật khẩu" });
+      return;
     }
     if (inspectorForm.password !== inspectorForm.confirmPassword) {
-      setInspectorMessage({ type: 'error', text: 'Mật khẩu không khớp' })
-      return
+      setInspectorMessage({ type: "error", text: "Mật khẩu không khớp" });
+      return;
     }
     if (!verificationToken) {
-      setInspectorMessage({ type: 'error', text: 'Vui lòng xác minh OTP trước khi tạo tài khoản' })
-      return
+      setInspectorMessage({
+        type: "error",
+        text: "Vui lòng xác minh OTP trước khi tạo tài khoản",
+      });
+      return;
     }
 
-    setCreatingInspector(true)
+    setCreatingInspector(true);
     try {
       const success = await adminService.createInspectorAccount({
         fullName: inspectorForm.fullName,
         email: inspectorForm.email,
         password: inspectorForm.password,
         verificationToken: verificationToken,
-      })
+      });
       if (success) {
-        setInspectorMessage({ type: 'success', text: 'Tài khoản inspector đã được tạo thành công!' })
+        setInspectorMessage({
+          type: "success",
+          text: "Tài khoản inspector đã được tạo thành công!",
+        });
         // Reset form
-        setInspectorForm({ fullName: '', email: '', password: '', confirmPassword: '' })
-        setInspectorOTP('')
-        setOtpSent(false)
-        setVerificationToken('')
+        setInspectorForm({
+          fullName: "",
+          email: "",
+          password: "",
+          confirmPassword: "",
+        });
+        setInspectorOTP("");
+        setOtpSent(false);
+        setVerificationToken("");
         // Refresh users list
-        fetchUsers()
+        fetchUsers();
       } else {
-        setInspectorMessage({ type: 'error', text: 'Không thể tạo tài khoản. Vui lòng thử lại.' })
+        setInspectorMessage({
+          type: "error",
+          text: "Không thể tạo tài khoản. Vui lòng thử lại.",
+        });
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Lỗi khi tạo tài khoản'
-      console.error('Error creating inspector:', err)
-      setInspectorMessage({ type: 'error', text: errorMessage })
+      const errorMessage =
+        err instanceof Error ? err.message : "Lỗi khi tạo tài khoản";
+      console.error("Error creating inspector:", err);
+      setInspectorMessage({ type: "error", text: errorMessage });
     } finally {
-      setCreatingInspector(false)
+      setCreatingInspector(false);
     }
-  }, [inspectorForm, verificationToken, fetchUsers])
+  }, [inspectorForm, verificationToken, fetchUsers]);
 
   useEffect(() => {
-    fetchUsers()
-    fetchKYC()
-    fetchInspections()
-    fetchLocations()
-    fetchOverviewCatalog()
-    fetchListings()
-    fetchOrders()
-    fetchPayments()
-    fetchCompanyLocations()
-  }, [fetchUsers, fetchKYC, fetchInspections, fetchLocations, fetchOverviewCatalog, fetchListings, fetchOrders, fetchPayments, fetchCompanyLocations])
+    fetchUsers();
+    fetchKYC();
+    fetchInspections();
+    fetchLocations();
+    fetchOverviewCatalog();
+    fetchListings();
+    fetchOrders();
+    fetchPayments();
+  }, [
+    fetchUsers,
+    fetchKYC,
+    fetchInspections,
+    fetchLocations,
+    fetchOverviewCatalog,
+    fetchListings,
+    fetchOrders,
+    fetchPayments,
+  ]);
 
-  const pendingKYC = kycList.filter(k => k.status === 'PENDING').length
-  const pendingInsp = inspections.filter(i => i.status === 'PENDING_ASSIGNED').length
-  const pendingListings = Array.isArray(listings) ? listings.filter(l => l.status === 'PENDING').length : 0
+  const pendingKYC = kycList.filter((k) => k.status === "PENDING").length;
+  const pendingInsp = inspections.filter(
+    (i) => i.status === "PENDING_ASSIGNED",
+  ).length;
+  const pendingListings = Array.isArray(listings)
+    ? listings.filter((l) => l.status === "PENDING").length
+    : 0;
 
-  const navItems: { tab: Tab; label: string; icon: React.ElementType; badge?: number }[] = [
-    { tab: 'overview', label: 'Tổng Quan', icon: LayoutDashboard },
-    { tab: 'users', label: 'Người Dùng', icon: Users },
-    { tab: 'kyc', label: 'Xác Minh KYC', icon: FileCheck, badge: pendingKYC },
-    { tab: 'listings', label: 'Duyệt Bài Đăng', icon: Tag, badge: pendingListings },
-    { tab: 'inspections', label: 'Kiểm Định', icon: ClipboardList, badge: pendingInsp },
-    { tab: 'orders', label: 'Đơn Hàng', icon: ShoppingCart, badge: undefined },
-    { tab: 'payments', label: 'Thanh Toán', icon: CreditCard, badge: undefined },
-    { tab: 'create-inspector', label: 'Tạo Kiểm Định Viên', icon: UserPlus },
-    { tab: 'company-locations', label: 'Cơ Sở Công Ty', icon: MapPin },
-    { tab: 'catalog', label: 'Thương Hiệu & Hạng Mục', icon: Wrench },
-    { tab: 'locations', label: 'Cơ Sở Kiểm Định', icon: MapPin },
-  ]
+  const navItems: {
+    tab: Tab;
+    label: string;
+    icon: React.ElementType;
+    badge?: number;
+  }[] = [
+    { tab: "overview", label: "Tổng Quan", icon: LayoutDashboard },
+    { tab: "users", label: "Người Dùng", icon: Users },
+    { tab: "kyc", label: "Xác Minh KYC", icon: FileCheck, badge: pendingKYC },
+    {
+      tab: "listings",
+      label: "Duyệt Bài Đăng",
+      icon: Tag,
+      badge: pendingListings,
+    },
+    {
+      tab: "inspections",
+      label: "Kiểm Định",
+      icon: ClipboardList,
+      badge: pendingInsp,
+    },
+    { tab: "orders", label: "Đơn Hàng", icon: ShoppingCart, badge: undefined },
+    {
+      tab: "payments",
+      label: "Thanh Toán",
+      icon: CreditCard,
+      badge: undefined,
+    },
+    { tab: "create-inspector", label: "Tạo Kiểm Định Viên", icon: UserPlus },
+    { tab: "catalog", label: "Thương Hiệu & Hạng Mục", icon: Wrench },
+    { tab: "locations", label: "Cơ Sở Kiểm Định", icon: MapPin },
+  ];
 
   return (
     <DashboardErrorBoundary>
       <div className="min-h-[calc(100vh-80px)] bg-slate-50 font-sans">
         <div className="max-w-[1400px] mx-auto px-4 py-6">
-
           {/* Page header */}
           <div className="mb-6 flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-black text-slate-900 tracking-tight">Bảng Điều Khiển Quản Trị</h1>
-              <p className="text-slate-500 text-sm mt-0.5">BikeHub Admin Panel — Quản lý toàn bộ hoạt động hệ thống</p>
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+                Bảng Điều Khiển Quản Trị
+              </h1>
+              <p className="text-slate-500 text-sm mt-0.5">
+                BikeHub Admin Panel — Quản lý toàn bộ hoạt động hệ thống
+              </p>
             </div>
-            <button onClick={handleLogout} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition">
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-bold transition"
+            >
               Đăng xuất
             </button>
           </div>
 
           <div className="flex gap-6 items-start">
-
             {/* ── Sidebar ── */}
             <nav className="w-56 shrink-0 sticky top-6">
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                {navItems.map(item => {
-                  const Icon = item.icon
-                  const isActive = activeTab === item.tab
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.tab;
                   return (
-                    <button key={item.tab} onClick={() => setActiveTab(item.tab)}
-                      className={`w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition group ${isActive ? 'bg-amber-500 text-white' : 'text-slate-600 hover:bg-slate-50'}`}>
+                    <button
+                      key={item.tab}
+                      onClick={() => setActiveTab(item.tab)}
+                      className={`w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition group ${isActive ? "bg-amber-500 text-white" : "text-slate-600 hover:bg-slate-50"}`}
+                    >
                       <span className="flex items-center gap-2.5">
-                        <Icon size={17} className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600'} />
+                        <Icon
+                          size={17}
+                          className={
+                            isActive
+                              ? "text-white"
+                              : "text-slate-400 group-hover:text-slate-600"
+                          }
+                        />
                         {item.label}
                       </span>
                       <span className="flex items-center gap-1.5">
                         {item.badge != null && item.badge > 0 && (
-                          <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/30 text-white' : 'bg-red-500 text-white'}`}>
+                          <span
+                            className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${isActive ? "bg-white/30 text-white" : "bg-red-500 text-white"}`}
+                          >
                             {item.badge}
                           </span>
                         )}
-                        {isActive && <ChevronRight size={14} className="text-white/70" />}
+                        {isActive && (
+                          <ChevronRight size={14} className="text-white/70" />
+                        )}
                       </span>
                     </button>
-                  )
+                  );
                 })}
               </div>
             </nav>
 
             {/* ── Content ── */}
             <div className="flex-1 min-w-0">
-              {activeTab === 'overview' && (
+              {activeTab === "overview" && (
                 <OverviewTab
-                  users={users} kyc={kycList} inspections={inspections}
-                  brands={brands} components={components} locations={locations}
+                  users={users}
+                  kyc={kycList}
+                  inspections={inspections}
+                  brands={brands}
+                  components={components}
+                  locations={locations}
                   loading={overviewLoading}
                 />
               )}
-              {activeTab === 'users' && <UsersTab users={users} loading={usersLoading} />}
-              {activeTab === 'kyc' && <KycTab kycList={kycList} loading={kycLoading} onRefresh={fetchKYC} />}
-              {activeTab === 'listings' && (
-                <ListingsTab listings={listings} loading={listingsLoading} onRefresh={fetchListings} />
+              {activeTab === "users" && (
+                <UsersTab users={users} loading={usersLoading} />
               )}
-              {activeTab === 'inspections' && (
-                <InspectionsTab inspections={inspections} users={users} loading={inspLoading} onRefresh={fetchInspections} />
+              {activeTab === "kyc" && (
+                <KycTab
+                  kycList={kycList}
+                  loading={kycLoading}
+                  onRefresh={fetchKYC}
+                />
               )}
-              {activeTab === 'orders' && (
-                <OrdersTab orders={orders} loading={ordersLoading} onRefresh={fetchOrders} />
+              {activeTab === "listings" && (
+                <ListingsTab
+                  listings={listings}
+                  loading={listingsLoading}
+                  onRefresh={fetchListings}
+                />
               )}
-              {activeTab === 'payments' && (
-                <PaymentsTab payments={payments} loading={paymentsLoading} onRefresh={fetchPayments} />
+              {activeTab === "inspections" && (
+                <InspectionsTab
+                  inspections={inspections}
+                  users={users}
+                  loading={inspLoading}
+                  onRefresh={fetchInspections}
+                />
               )}
-              {activeTab === 'create-inspector' && (
+              {activeTab === "orders" && (
+                <OrdersTab
+                  orders={orders}
+                  loading={ordersLoading}
+                  onRefresh={fetchOrders}
+                />
+              )}
+              {activeTab === "payments" && (
+                <PaymentsTab
+                  payments={payments}
+                  loading={paymentsLoading}
+                  onRefresh={fetchPayments}
+                />
+              )}
+              {activeTab === "create-inspector" && (
                 <CreateInspectorTab
                   form={inspectorForm}
                   otp={inspectorOTP}
@@ -1706,24 +2587,27 @@ export default function AdminDashboard() {
                   message={inspectorMessage}
                   verifyingOTP={verifyingOTP}
                   creatingInspector={creatingInspector}
-                  onFormChange={(field, value) => setInspectorForm(prev => ({ ...prev, [field]: value }))}
+                  onFormChange={(field, value) =>
+                    setInspectorForm((prev) => ({ ...prev, [field]: value }))
+                  }
                   onOTPChange={setInspectorOTP}
                   onSendOTP={handleSendInspectorOTP}
                   onVerifyOTP={handleVerifyInspectorOTP}
                   onCreate={handleCreateInspector}
                 />
               )}
-              {activeTab === 'company-locations' && (
-                <CompanyLocationsTab locations={companyLocations} loading={companyLocLoading} />
-              )}
-              {activeTab === 'catalog' && <CatalogTab />}
-              {activeTab === 'locations' && (
-                <LocationsTab locations={locations} loading={locLoading} onRefresh={fetchLocations} />
+              {activeTab === "catalog" && <CatalogTab />}
+              {activeTab === "locations" && (
+                <LocationsTab
+                  locations={locations}
+                  loading={locLoading}
+                  onRefresh={fetchLocations}
+                />
               )}
             </div>
           </div>
         </div>
       </div>
     </DashboardErrorBoundary>
-  )
+  );
 }
