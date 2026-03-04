@@ -81,7 +81,7 @@ function ProfileGuard() {
 function Home() {
   const [selectedBrand, setSelectedBrand] = useState("Tất cả");
   const [brands, setBrands] = useState<Brand[]>([]);
-  const { role } = useAuth();
+  const { role, isLoading } = useAuth();
 
   useEffect(() => {
     brandService
@@ -90,14 +90,30 @@ function Home() {
       .catch(() => setBrands([]));
   }, []);
 
-  if (role === "admin") {
+  // Wait for auth to fully load before rendering role-based redirects
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mb-4"></div>
+          <p className="text-slate-500">Đang tải...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Role-based redirects only for admin and inspector
+  const normalizedRole = (role || "guest").toLowerCase();
+
+  if (normalizedRole === "admin") {
     return <Navigate to="/admin/dashboard" replace />;
   }
 
-  if (role === "inspector") {
+  if (normalizedRole === "inspector") {
     return <Navigate to="/inspector/dashboard" replace />;
   }
 
+  // For buyer, seller, and guest: show normal homepage
   return (
     <div className="relative">
       <Header />

@@ -1,8 +1,8 @@
-import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { Loader2 } from 'lucide-react'; // Sử dụng lucide-react giống các file khác
-import type { UserRole } from '../contexts/AuthContext';
+import React from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { Loader2 } from "lucide-react"; // Sử dụng lucide-react giống các file khác
+import type { UserRole } from "../contexts/AuthContext";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -16,7 +16,7 @@ interface ProtectedRouteProps {
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requiredRole,
-  fallbackPath = '/login',
+  fallbackPath = "/login",
 }) => {
   const { isAuthenticated, role, isLoading, user } = useAuth();
   const location = useLocation();
@@ -35,15 +35,29 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // 2. Chưa đăng nhập: Chuyển hướng về Login và lưu lại trang hiện tại
   if (!isAuthenticated || !user) {
+    console.warn("Access denied: User not authenticated", {
+      path: location.pathname,
+    });
     return <Navigate to={fallbackPath} state={{ from: location }} replace />;
   }
 
   // 3. Kiểm tra quyền truy cập (Role)
   if (requiredRole) {
-    const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
-    
-    // Nếu role của user không nằm trong danh sách được phép
-    if (!allowedRoles.includes(role)) {
+    const allowedRoles = Array.isArray(requiredRole)
+      ? requiredRole
+      : [requiredRole];
+    const normalizedUserRole = (role || "guest").toLowerCase();
+    const isAuthorized = allowedRoles.some(
+      (r) => (r || "").toLowerCase() === normalizedUserRole,
+    );
+
+    if (!isAuthorized) {
+      console.warn("Access denied: Insufficient permissions", {
+        userRole: role,
+        normalizedRole: normalizedUserRole,
+        allowedRoles,
+        path: location.pathname,
+      });
       return <Navigate to="/unauthorized" replace />;
     }
   }
@@ -56,7 +70,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
  * Component dành cho các trang chỉ dành cho khách (chưa đăng nhập)
  * Ví dụ: Trang giới thiệu Marketplace cho khách
  */
-export const GuestRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const GuestRoute: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const { isLoading } = useAuth();
 
   if (isLoading) {
