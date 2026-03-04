@@ -276,7 +276,7 @@ export default function CreateListingPage() {
                 {isLoadingAddresses ? (
                   <p>Đang tải địa chỉ...</p>
                 ) : showAddressForm ? (
-                  <form onSubmit={handleAddressSubmit} className="space-y-4">
+                  <div className="space-y-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
                         Tên người liên hệ
@@ -322,7 +322,8 @@ export default function CreateListingPage() {
                     )}
                     <div className="flex gap-2">
                       <button
-                        type="submit"
+                        type="button"
+                        onClick={handleAddressSubmit}
                         className="bg-green-600 text-white py-2 px-4 rounded-xl font-black text-sm"
                       >
                         Lưu địa chỉ
@@ -345,7 +346,7 @@ export default function CreateListingPage() {
                         </button>
                       )}
                     </div>
-                  </form>
+                  </div>
                 ) : addresses.length === 0 ? (
                   <p>Chưa có địa chỉ. Vui lòng thêm để tiếp tục.</p>
                 ) : (
