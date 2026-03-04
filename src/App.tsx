@@ -31,6 +31,7 @@ import CheckoutPage from "./pages/CheckoutPage";
 import OrderTrackingPage from "./pages/OrderTrackingPage";
 import CreateListingPage from "./pages/CreateListingPage";
 import ScheduleInspectionPage from "./pages/ScheduleInspectionPage";
+import DebugPage from "./pages/DebugPage";
 
 // --- Contexts & Protection ---
 import { AuthProvider } from "./contexts/AuthContext";
@@ -152,6 +153,7 @@ function App() {
                 </>
               }
             />
+            <Route path="/debug" element={<DebugPage />} />
             <Route
               path="/marketplace"
               element={
