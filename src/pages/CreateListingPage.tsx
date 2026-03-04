@@ -185,7 +185,12 @@ export default function CreateListingPage() {
 
       images.forEach((img) => fd.append("images", img));
 
-      await listingService.createListing(fd);
+      const created = await listingService.createListing(fd);
+      if (created && created.id) {
+        // Navigate to scheduling page so seller can choose inspection slot
+        navigate("/seller/schedule", { state: { listingId: created.id } });
+        return;
+      }
       setSuccess(true);
       setTimeout(() => navigate("/seller/dashboard"), 1800);
     } catch (err: any) {
