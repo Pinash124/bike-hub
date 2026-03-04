@@ -471,7 +471,7 @@ export default function CreateListingPage() {
                     />
                   </Field>
 
-                  <Field label="Thời gian sử dụng (tháng)" required>
+                  <Field label="Thời gian sử dụng (năm)" required>
                     <input
                       required
                       type="number"
@@ -480,7 +480,7 @@ export default function CreateListingPage() {
                       value={formData.usageDuration}
                       onChange={handleInputChange}
                       className={inputCls}
-                      placeholder="Nhập số tháng"
+                      placeholder="Nhập số năm"
                     />
                   </Field>
                 </div>
