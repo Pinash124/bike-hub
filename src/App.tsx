@@ -66,7 +66,8 @@ import { useAuth } from "./contexts/AuthContext";
 // guard wrapper for profile route to prevent admins from accessing
 function ProfileGuard() {
   const { role } = useAuth();
-  if (role === "admin") {
+  const normalizedRole = (role || "guest").toLowerCase();
+  if (normalizedRole === "admin") {
     return <Navigate to="/unauthorized" replace />;
   }
   return (

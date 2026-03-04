@@ -40,7 +40,13 @@ export default function LoginModal({
 
     try {
       setIsSubmitting(true);
+      // login() calls getMyInfo() which updates user and role state
       await login(username, password);
+
+      // Give React a moment to update state before navigating
+      // This ensures user/role are properly set before page renders
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       if (onClose) onClose();
 
       // Navigate về trang trước hoặc trang chủ

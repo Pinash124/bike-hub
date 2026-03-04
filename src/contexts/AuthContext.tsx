@@ -151,27 +151,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       // Extract role - handle both singular 'role' and 'roles' array
-      let extractedRole = "buyer"; // default
-
+      let rawRole: string | undefined;
       if (result.role) {
-        extractedRole = String(result.role).toLowerCase();
+        rawRole = String(result.role);
       } else if (
         result.roles &&
         Array.isArray(result.roles) &&
         result.roles.length > 0
       ) {
-        const roleName = result.roles[0]?.name || result.roles[0];
-        extractedRole = String(roleName).toLowerCase();
+        const first = result.roles[0];
+        rawRole = String(first?.name || first);
       }
 
-      // Validate role is one of the allowed values
-      const validRoles = ["guest", "buyer", "seller", "inspector", "admin"];
-      if (!validRoles.includes(extractedRole as UserRole)) {
-        console.warn(
-          `Invalid role received: ${extractedRole}, defaulting to buyer`,
-        );
-        extractedRole = "buyer";
-      }
+      const extractedRole = (rawRole || "buyer").toLowerCase();
+
+      // Map backend role strings to our canonical roles
+      let normalized: UserRole;
+      if (extractedRole.includes("admin")) normalized = "admin";
+      else if (extractedRole.includes("seller")) normalized = "seller";
+      else if (extractedRole.includes("inspector")) normalized = "inspector";
+      else if (extractedRole.includes("buyer")) normalized = "buyer";
+      else normalized = "buyer";
+
+      console.log(
+        "Raw role from server:",
+        rawRole,
+        "normalized to",
+        normalized,
+      );
 
       const userData: UserProfile = {
         id: result.id,
