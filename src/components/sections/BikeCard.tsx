@@ -19,13 +19,26 @@ export default function BikeCard(props: BikeCardProps) {
     // Chuyển hướng đến /product/:id và truyền toàn bộ dữ liệu qua state
     navigate(`/product/${id}`, {
       state: {
-        product: {
-          ...props,
-          name: title, // Chuyển title thành name để khớp với ProductDetail.tsx
-        }
+        // ProductDetailPage reads location.state?.listing
+        listing: {
+          id,
+          title,
+          price,
+          description: props.description ?? '',
+          brand: { id: 0, name: props.brand ?? '' },
+          images: image?.startsWith('http') ? [{ id: '0', imageOrder: 0, secureUrl: image }] : [],
+          status: 'LIVE' as const,
+          usageDuration: mileage ?? 0,
+          condition: condition ?? 'Đã qua sử dụng',
+          bikeType: 'N/A',
+          location: location ?? '',
+          frameNumber: '',
+          createdAt: new Date().toISOString(),
+        },
       }
     });
   };
+
 
   return (
     <div

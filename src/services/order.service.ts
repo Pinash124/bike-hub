@@ -5,8 +5,7 @@ import { API_ENDPOINTS } from '../config/api';
 
 export interface OrderCreatePayload {
     listingId: string;
-    addressId: number;
-    note?: string;
+    description?: string; // Swagger: PlaceOrderRequest has listingId + description (no addressId)
 }
 
 export interface Order {
@@ -22,7 +21,7 @@ export interface Order {
 export const orderService = {
     /**
      * [BUYER] Tạo đơn mua xe mới
-     * POST /order/create
+     * POST /order/create  →  { listingId, description }
      */
     createOrder: async (payload: OrderCreatePayload): Promise<Order | null> => {
         try {
@@ -39,7 +38,7 @@ export const orderService = {
 
     /**
      * [BUYER] Lấy danh sách đơn hàng của tôi
-     * GET /order hoặc GET /order/history
+     * GET /order
      */
     getMyOrders: async (): Promise<Order[]> => {
         try {
@@ -56,7 +55,6 @@ export const orderService = {
 
     /**
      * [ADMIN] Lấy tất cả đơn hàng trong hệ thống
-     * GET /order
      */
     getAllOrders: async (): Promise<Order[]> => {
         try {
@@ -73,7 +71,7 @@ export const orderService = {
 
     /**
      * [BUYER] Hủy đơn hàng
-     * DELETE or POST /order/{id}/cancel
+     * POST /order/{id}/cancel
      */
     cancelOrder: async (orderId: string): Promise<boolean> => {
         try {

@@ -1,48 +1,28 @@
 // src/services/payment.service.ts
 // Role: BUYER — Initiate payment for an order
+// Swagger: POST /payment/create/order  { order_id: number, description: string }
 import api from '../api/axiosConfig';
-import { API_ENDPOINTS } from '../config/api';
 
 export interface PaymentCreatePayload {
-    orderId: string;
-    method?: 'STRIPE' | 'BANK_TRANSFER' | 'COD';
-    returnUrl?: string;
+    order_id: number | string; // Swagger uses integer order_id
+    description?: string;
 }
 
 export interface PaymentResult {
-    paymentId: string;
-    orderId: string;
-    status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED';
-    amount: number;
-    paymentUrl?: string; // Stripe redirect URL if applicable
-    createdAt: string;
+    paymentUrl?: string;   // redirect URL if available
+    paymentId?: string | number;
+    status?: string;
+    amount?: number;
 }
 
 export const paymentService = {
     /**
-     * [BATCH] Lấy tất cả giao dịch thanh toán trong hệ thống
-     * GET /payment
-     */
-    getAllPayments: async (): Promise<PaymentResult[]> => {
-        try {
-            const response = await api.get('/payment'); // Điều chỉnh đường dẫn nếu cần
-            if (response.data?.code === 1000) {
-                return Array.isArray(response.data.result) ? response.data.result : [];
-            }
-            return [];
-        } catch (error) {
-            console.error('Error fetching all payments:', error);
-            return [];
-        }
-    },
-
-    /**
-     * [BUYER] Khởi tạo giao dịch thanh toán
-     * POST /payment/create
+     * [BUYER] Khởi tạo giao dịch thanh toán cho đơn hàng
+     * POST /payment/create/order  →  { order_id, description }
      */
     createPayment: async (payload: PaymentCreatePayload): Promise<PaymentResult | null> => {
         try {
-            const response = await api.post(API_ENDPOINTS.PAYMENT_CREATE, payload);
+            const response = await api.post('/payment/create/order', payload);
             if (response.data?.code === 1000) {
                 return response.data.result;
             }
@@ -54,19 +34,19 @@ export const paymentService = {
     },
 
     /**
-     * [BUYER] Kiểm tra trạng thái thanh toán
-     * GET /payment/{orderId}/status
+     * [BUYER] Lấy tất cả thanh toán
+     * GET /all
      */
-    getPaymentStatus: async (orderId: string): Promise<PaymentResult | null> => {
+    getAllPayments: async (): Promise<PaymentResult[]> => {
         try {
-            const response = await api.get(API_ENDPOINTS.PAYMENT_STATUS(orderId));
+            const response = await api.get('/all');
             if (response.data?.code === 1000) {
-                return response.data.result;
+                return Array.isArray(response.data.result) ? response.data.result : [];
             }
-            return null;
+            return [];
         } catch (error) {
-            console.error('Error getting payment status:', error);
-            return null;
+            console.error('Error fetching all payments:', error);
+            return [];
         }
     },
 };

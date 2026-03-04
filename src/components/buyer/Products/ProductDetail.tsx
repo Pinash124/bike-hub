@@ -1,224 +1,224 @@
 import React, { useState } from 'react';
-import { ShoppingCart, MessageSquare, Heart, Share2, ChevronLeft, Star } from 'lucide-react';
+import { ShoppingCart, MessageSquare, Heart, Share2, ChevronLeft, Zap, Tag, Clock, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../../contexts/CartContext';
+import { type Listing } from '../../../services/listing.service';
 
-export interface ProductDetailProps {
-  product: {
-    id: string;
-    name: string;
-    price: number;
-    condition: string;
-    image: string;
-    seller: string;
-    sellerId: string;
-    rating: number;
-    reviews: number;
-    brand: string;
-    material: string;
-    size: string;
-    description: string;
-  };
+interface ListingDetailProps {
+  listing: Listing;
 }
 
-export const ProductDetail: React.FC<ProductDetailProps> = ({ product }) => {
+const PLACEHOLDER = 'https://images.unsplash.com/photo-1532298229144-0ee050c99d2b?q=80&w=800';
+
+const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  LIVE: { label: 'Đang bán', color: 'bg-green-600 text-white' },
+  RESERVED: { label: 'Đã đặt cọc', color: 'bg-yellow-500 text-white' },
+  SOLD: { label: 'Đã bán', color: 'bg-red-600 text-white' },
+  DRAFT: { label: 'Bản nháp', color: 'bg-gray-400 text-white' },
+  PENDING: { label: 'Chờ duyệt', color: 'bg-blue-500 text-white' },
+  APPROVED: { label: 'Đã duyệt', color: 'bg-indigo-500 text-white' },
+  REJECTED: { label: 'Bị từ chối', color: 'bg-red-400 text-white' },
+};
+
+export const ProductDetail: React.FC<ListingDetailProps> = ({ listing }) => {
   const navigate = useNavigate();
   const { addItem } = useCart();
-  const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
 
+  const images = listing.images?.length
+    ? listing.images
+      .slice()
+      .sort((a, b) => a.imageOrder - b.imageOrder)
+      .map((img) => img.secureUrl)
+    : [PLACEHOLDER];
+
+  const isAvailable = listing.status === 'LIVE';
+
+  const statusInfo = STATUS_LABELS[listing.status] ?? {
+    label: listing.status,
+    color: 'bg-gray-400 text-white',
+  };
+
   const handleAddToCart = () => {
     addItem({
-      id: `cart_${product.id}`,
-      productId: product.id,
-      productName: product.name,
-      price: product.price,
-      quantity,
-      image: product.image,
-      sellerId: product.sellerId,
-      sellerName: product.seller,
+      id: `cart_${listing.id}`,
+      productId: listing.id,
+      productName: listing.title,
+      price: listing.price,
+      quantity: 1,
+      image: images[0],
+      sellerId: String(listing.brand?.id ?? ''),
+      sellerName: listing.brand?.name ?? 'Người bán',
     });
-    alert('Sản phẩm đã được thêm vào giỏ hàng!');
+    alert('Đã thêm vào giỏ hàng!');
   };
 
-  const handleContact = () => alert('Tính năng chat với người bán đang phát triển');
+  const handleBuyNow = () => {
+    navigate('/buyer/checkout', { state: { listingId: listing.id, listing } });
+  };
+
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
-    alert('Đã sao chép liên kết sản phẩm!');
+    alert('Đã sao chép liên kết!');
   };
 
-  const images = [product.image, product.image, product.image];
+  const specs = [
+    { label: 'Thương hiệu', value: listing.brand?.name ?? 'N/A', icon: <Tag size={14} /> },
+    { label: 'Thời gian sử dụng', value: listing.usageDuration ? `${listing.usageDuration} tháng` : 'N/A', icon: <Clock size={14} /> },
+    { label: 'Tình trạng', value: listing.condition ?? 'N/A', icon: <Award size={14} /> },
+    { label: 'Loại xe', value: listing.bikeType ?? 'N/A', icon: <Zap size={14} /> },
+  ];
 
   return (
     <div className="bg-white min-h-screen">
-      {/* Header Bar */}
-      <div className="bg-gray-50 px-6 py-4 border-b-2 border-gray-100 sticky top-0 z-10">
-        <button 
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 bg-white text-green-600 border-2 border-green-600 px-4 py-2 rounded-lg font-bold hover:bg-green-50 transition-colors"
-        >
-          <ChevronLeft size={20} /> Quay lại
-        </button>
+      {/* Sticky sub-header */}
+      <div className="bg-gray-50 px-6 py-4 border-b-2 border-gray-100 sticky top-[72px] z-10">
+        <div className="max-w-[1400px] mx-auto flex items-center justify-between">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 bg-white text-green-600 border-2 border-green-600 px-4 py-2 rounded-lg font-bold hover:bg-green-50 transition-colors"
+          >
+            <ChevronLeft size={20} /> Quay lại
+          </button>
+          <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider ${statusInfo.color}`}>
+            {statusInfo.label}
+          </span>
+        </div>
       </div>
 
       <div className="max-w-[1400px] mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Image Section */}
-          <div className="flex flex-col gap-4">
-            <div className="relative w-full aspect-square bg-gray-50 border-2 border-gray-100 rounded-2xl flex items-center justify-center overflow-hidden">
-              <span className="text-8xl">{images[selectedImage]}</span>
-              <span className="absolute top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-md">
-                {product.condition}
-              </span>
-            </div>
-            <div className="grid grid-cols-4 gap-3">
-              {images.map((img, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedImage(index)}
-                  className={`aspect-square bg-gray-50 border-2 rounded-xl flex items-center justify-center transition-all text-2xl
-                    ${index === selectedImage ? 'border-green-600 shadow-md' : 'border-gray-100 hover:border-green-200'}`}
-                >
-                  {img}
-                </button>
-              ))}
-            </div>
-          </div>
 
-          {/* Info Section */}
-          <div className="flex flex-col gap-6">
-            <div className="flex justify-between items-start gap-4">
-              <div>
-                <h1 className="text-4xl font-black text-gray-900 leading-tight mb-2">{product.name}</h1>
-                <p className="text-gray-500 font-medium">{product.brand} • {product.size} • {product.material}</p>
-              </div>
-              <button 
+          {/* ── Image Gallery ── */}
+          <div className="flex flex-col gap-4">
+            <div className="relative w-full aspect-square bg-gray-50 border-2 border-gray-100 rounded-2xl overflow-hidden">
+              <img
+                src={images[selectedImage]}
+                alt={listing.title}
+                className="w-full h-full object-cover transition-opacity duration-300"
+                onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER; }}
+              />
+              <span className={`absolute top-4 left-4 px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider shadow ${statusInfo.color}`}>
+                {statusInfo.label}
+              </span>
+              <button
                 onClick={() => setIsFavorite(!isFavorite)}
-                className={`w-14 h-14 border-2 rounded-xl flex items-center justify-center transition-all
-                  ${isFavorite ? 'bg-red-500 border-red-500 text-white shadow-lg' : 'bg-white border-gray-100 text-gray-400 hover:border-green-600 hover:text-green-600'}`}
+                className={`absolute top-4 right-4 w-11 h-11 rounded-xl flex items-center justify-center shadow-md transition-all
+                  ${isFavorite ? 'bg-red-500 text-white' : 'bg-white text-gray-400 hover:text-red-500'}`}
               >
-                <Heart size={28} fill={isFavorite ? 'currentColor' : 'none'} />
+                <Heart size={22} fill={isFavorite ? 'currentColor' : 'none'} />
               </button>
             </div>
 
-            <div className="flex items-center gap-4 p-4 bg-green-50 rounded-xl">
-              <span className="flex items-center gap-1 text-green-700 font-bold text-lg">
-                <Star size={20} className="fill-green-600" /> {product.rating}
-              </span>
-              <span className="text-green-600/70 font-medium">({product.reviews} đánh giá)</span>
+            {images.length > 1 && (
+              <div className="grid grid-cols-4 gap-3">
+                {images.map((src, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedImage(idx)}
+                    className={`aspect-square bg-gray-50 border-2 rounded-xl overflow-hidden transition-all
+                      ${idx === selectedImage ? 'border-green-600 shadow-md' : 'border-gray-100 hover:border-green-300'}`}
+                  >
+                    <img
+                      src={src}
+                      alt={`Ảnh ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER; }}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ── Info Section ── */}
+          <div className="flex flex-col gap-6">
+            <div>
+              <p className="text-xs font-black text-green-600 uppercase tracking-widest mb-2">
+                {listing.brand?.name ?? 'Xe đạp'}
+              </p>
+              <h1 className="text-3xl font-black text-gray-900 leading-tight">{listing.title}</h1>
             </div>
 
+            {/* Price */}
             <div className="border-b-2 border-gray-100 pb-4">
               <h2 className="text-4xl font-black text-green-600">
-                {(product.price / 1000000).toFixed(1)}M VND
+                {listing.price.toLocaleString('vi-VN')}
+                <span className="text-lg ml-2 font-bold text-green-500">VND</span>
               </h2>
             </div>
 
+            {/* Description */}
             <div>
-              <h3 className="text-lg font-bold text-gray-900 mb-3">Mô tả</h3>
-              <p className="text-gray-600 leading-relaxed text-base">{product.description}</p>
+              <h3 className="text-base font-bold text-gray-900 mb-2">Mô tả</h3>
+              <p className="text-gray-600 leading-relaxed">{listing.description || 'Chưa có mô tả.'}</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { label: 'Thương hiệu', value: product.brand },
-                { label: 'Kích cỡ khung', value: product.size },
-                { label: 'Chất liệu', value: product.material },
-                { label: 'Tình trạng', value: product.condition }
-              ].map((spec) => (
+            {/* Specs */}
+            <div className="grid grid-cols-2 gap-3">
+              {specs.map((spec) => (
                 <div key={spec.label} className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                  <label className="block text-green-600 font-black text-[10px] uppercase tracking-wider mb-1">{spec.label}</label>
-                  <p className="text-gray-900 font-bold">{spec.value}</p>
+                  <div className="flex items-center gap-1.5 text-green-600 mb-1">
+                    {spec.icon}
+                    <label className="text-[10px] font-black uppercase tracking-wider">{spec.label}</label>
+                  </div>
+                  <p className="text-gray-900 font-bold text-sm">{spec.value}</p>
                 </div>
               ))}
             </div>
 
-            {/* Seller Card */}
-            <div className="bg-white border-2 border-green-100 rounded-2xl p-6 shadow-sm">
-              <div className="flex gap-4 mb-4">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-3xl">👤</div>
-                <div className="flex-1">
-                  <h4 className="text-lg font-bold text-gray-900">{product.seller}</h4>
-                  <p className="text-sm text-gray-500">⭐ 4.6 (128 đánh giá)</p>
+            {/* Frame number */}
+            {listing.frameNumber && (
+              <div className="bg-green-50 border border-green-100 rounded-xl p-4">
+                <p className="text-[11px] font-black text-green-600 uppercase tracking-widest mb-1">Số khung xe</p>
+                <p className="font-mono font-bold text-gray-800">{listing.frameNumber}</p>
+              </div>
+            )}
+
+            {/* CTA Buttons */}
+            {isAvailable ? (
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={handleBuyNow}
+                  className="w-full flex items-center justify-center gap-3 bg-green-600 text-white py-4 rounded-2xl font-black text-lg shadow-lg shadow-green-200 hover:bg-green-700 hover:-translate-y-0.5 transition-all active:scale-95"
+                >
+                  <Zap size={22} /> Mua ngay
+                </button>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={handleAddToCart}
+                    className="flex items-center justify-center gap-2 border-2 border-green-600 text-green-600 py-3 rounded-xl font-bold hover:bg-green-50 transition-all"
+                  >
+                    <ShoppingCart size={20} /> Thêm vào giỏ
+                  </button>
+                  <button
+                    onClick={() => alert('Tính năng chat đang phát triển')}
+                    className="flex items-center justify-center gap-2 border-2 border-gray-200 text-gray-600 py-3 rounded-xl font-bold hover:border-gray-400 transition-all"
+                  >
+                    <MessageSquare size={20} /> Chat người bán
+                  </button>
                 </div>
-                <button className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-green-700 transition-colors self-center">
-                  Xem cửa hàng
-                </button>
               </div>
-              <p className="text-xs text-gray-400">Tham gia từ 2023</p>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <label className="font-bold text-gray-900">Số lượng:</label>
-              <div className="flex items-center gap-1 bg-gray-50 border-2 border-gray-100 rounded-xl p-1">
-                <button 
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-10 h-10 bg-white text-green-600 font-black rounded-lg hover:bg-green-600 hover:text-white transition-all shadow-sm"
-                >
-                  −
-                </button>
-                <input 
-                  type="number" 
-                  value={quantity} 
-                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-16 text-center bg-transparent font-bold text-gray-900 outline-none"
-                />
-                <button 
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="w-10 h-10 bg-white text-green-600 font-black rounded-lg hover:bg-green-600 hover:text-white transition-all shadow-sm"
-                >
-                  +
-                </button>
+            ) : (
+              <div className="w-full py-4 bg-gray-100 rounded-2xl text-center text-gray-500 font-bold text-lg">
+                {listing.status === 'SOLD' ? '🚫 Sản phẩm đã bán' : '⏳ Sản phẩm chưa sẵn có'}
               </div>
-            </div>
+            )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <button 
-                onClick={handleAddToCart}
-                className="flex items-center justify-center gap-3 bg-green-600 text-white p-4 rounded-2xl font-black text-lg shadow-lg shadow-green-200 hover:bg-green-700 hover:-translate-y-1 transition-all active:scale-95"
-              >
-                <ShoppingCart size={24} /> Thêm vào giỏ
-              </button>
-              <button 
-                onClick={handleContact}
-                className="flex items-center justify-center gap-3 bg-white text-green-600 border-2 border-green-600 p-4 rounded-2xl font-black text-lg hover:bg-green-50 transition-all"
-              >
-                <MessageSquare size={24} /> Chat ngay
-              </button>
-            </div>
-
-            <button 
+            <button
               onClick={handleShare}
-              className="w-full bg-transparent text-green-600 border-2 border-green-100 p-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:border-green-600 hover:bg-green-50 transition-all"
+              className="w-full flex items-center justify-center gap-2 text-gray-500 border border-gray-200 py-3 rounded-xl font-bold hover:border-green-300 hover:text-green-600 transition-all text-sm"
             >
-              <Share2 size={18} /> Chia sẻ sản phẩm này
+              <Share2 size={16} /> Chia sẻ sản phẩm
             </button>
           </div>
         </div>
 
-        {/* Reviews Section */}
-        <div className="mt-16 pt-12 border-t-2 border-gray-100">
-          <h2 className="text-3xl font-black text-gray-900 mb-8">Đánh giá khách hàng ({product.reviews})</h2>
-          <div className="flex flex-col gap-6">
-            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6">
-              <div className="flex justify-between items-center mb-4">
-                <span className="font-bold text-gray-900">Nguyễn Văn A</span>
-                <span className="text-yellow-400 flex tracking-wider">⭐⭐⭐⭐⭐</span>
-              </div>
-              <p className="text-gray-600 leading-relaxed mb-4">Xe đạp tuyệt vời! Đúng như mô tả. Người bán nhiệt tình và hữu ích. Rất khuyến khích!</p>
-              <div className="text-xs text-gray-400">Người mua đã xác thực • 2 tuần trước</div>
-            </div>
-
-            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6">
-              <div className="flex justify-between items-center mb-4">
-                <span className="font-bold text-gray-900">Trần Thị B</span>
-                <span className="text-yellow-400 flex tracking-wider">⭐⭐⭐⭐</span>
-              </div>
-              <p className="text-gray-600 leading-relaxed mb-4">Tình trạng xe tốt. Giao hàng nhanh và đóng gói cẩn thận.</p>
-              <div className="text-xs text-gray-400">Người mua đã xác thực • 1 tháng trước</div>
-            </div>
-          </div>
+        {/* Meta footer */}
+        <div className="mt-12 pt-8 border-t-2 border-gray-100 text-sm text-gray-400 flex gap-6 flex-wrap">
+          <span>ID: <strong className="text-gray-600">{listing.id.slice(0, 8).toUpperCase()}</strong></span>
+          <span>Đăng ngày: <strong className="text-gray-600">{new Date(listing.createdAt).toLocaleDateString('vi-VN')}</strong></span>
         </div>
       </div>
     </div>

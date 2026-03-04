@@ -8,9 +8,6 @@ import { listingService } from '../services/listing.service';
 const BIKE_TYPES = [
     { value: 'MTB_BIKE', label: 'Xe địa hình (MTB)', emoji: '🏔️' },
     { value: 'ROAD_BIKE', label: 'Xe đua (Road)', emoji: '🚴' },
-    { value: 'TOURING_BIKE', label: 'Xe đường phố (Touring)', emoji: '🌆' },
-    { value: 'ELECTRIC_BIKE', label: 'Xe điện (E-Bike)', emoji: '⚡' },
-    { value: 'GRAVEL_BIKE', label: 'Xe sỏi (Gravel)', emoji: '🪨' },
 ];
 
 interface FieldProps {
@@ -93,13 +90,26 @@ export default function CreateListingPage() {
         setError('');
         try {
             const fd = new FormData();
-            Object.entries(formData).forEach(([k, v]) => fd.append(k, v));
+
+            // Only append non-empty fields — backend rejects extra blank fields
+            if (formData.title) fd.append('title', formData.title);
+            if (formData.brandName) fd.append('brandName', formData.brandName);
+            if (formData.bikeType) fd.append('bikeType', formData.bikeType);
+            if (formData.frameNumber) fd.append('frameNumber', formData.frameNumber);
+            if (formData.description) fd.append('description', formData.description);
+            if (formData.price) fd.append('price', formData.price);
+            if (formData.usageDuration) fd.append('usageDuration', formData.usageDuration);
+
             images.forEach(img => fd.append('images', img));
+
             await listingService.createListing(fd);
             setSuccess(true);
             setTimeout(() => navigate('/seller/dashboard'), 1800);
         } catch (err: any) {
-            setError(err.message || 'Đăng tin thất bại. Vui lòng thử lại.');
+            // Show actual backend error message
+            const backendMsg = err?.response?.data?.message;
+            console.error('Create listing raw error:', err?.response?.data);
+            setError(backendMsg || err.message || 'Đăng tin thất bại. Vui lòng thử lại.');
         } finally {
             setIsLoading(false);
         }

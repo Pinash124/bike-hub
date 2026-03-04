@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Heart, ShoppingBag, Clock, User, MessageSquare, Bike } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Heart, ShoppingBag, Clock, User, MessageSquare } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { orderService } from '../../services/order.service'

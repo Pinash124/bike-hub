@@ -1,105 +1,151 @@
 import React, { useState } from 'react';
-import { MapPin, CreditCard, Package, AlertCircle, Check } from 'lucide-react';
-import { useCart } from '../../../contexts/CartContext';
+import { MapPin, CreditCard, Package, AlertCircle, Check, Loader2, ShoppingCart } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { type Address } from '../../../services/address.service';
-
+import { orderService } from '../../../services/order.service';
+import { paymentService } from '../../../services/payment.service';
+import { useCart } from '../../../contexts/CartContext';
 
 interface CheckoutProps {
   addresses: Address[];
-  onPayment?: (data: CheckoutData) => void;
+  /** One or more listing IDs to purchase (Buy Now = 1 item, Cart = N items) */
+  listingIds: string[];
 }
 
-export interface CheckoutData {
-  selectedAddressId: number;
-  items: any[];
-  totalAmount: number;
-  shippingCost: number;
-}
+export const Checkout: React.FC<CheckoutProps> = ({ addresses, listingIds }) => {
+  const navigate = useNavigate();
+  const { items: cartItems, clearCart } = useCart();
+  const defaultAddress = addresses.find((a) => a.isDefault) ?? addresses[0];
 
-export const Checkout: React.FC<CheckoutProps> = ({ addresses, onPayment }) => {
-  const { selectedItems, totalPrice } = useCart();
   const [selectedAddressId, setSelectedAddressId] = useState<number | ''>(
-    addresses.find((a) => a.isDefault)?.id || addresses[0]?.id || ''
+    defaultAddress?.id ?? ''
   );
-  const [shippingMethod, setShippingMethod] = useState<'standard' | 'express'>('standard');
   const [notes, setNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const shippingCost = shippingMethod === 'standard' ? 30000 : 100000;
+  // Build a display list from cartItems (if coming from cart) or just show listing IDs
+  const displayItems = listingIds.map((lid) => {
+    const cartItem = cartItems.find((c) => c.productId === lid);
+    return {
+      id: lid,
+      name: cartItem?.productName ?? `Sản phẩm #${lid.slice(0, 8).toUpperCase()}`,
+      price: cartItem?.price ?? 0,
+      image: cartItem?.image ?? '',
+    };
+  });
 
-  const handleVNPAYPayment = async () => {
+  const totalPrice = displayItems.reduce((sum, item) => sum + item.price, 0);
+
+  const handlePayment = async () => {
     if (!selectedAddressId) {
-      alert('Please select a delivery address');
+      setError('Vui lòng chọn địa chỉ giao hàng.');
       return;
     }
-
-    if (selectedItems.length === 0) {
-      alert('Your cart is empty');
-      return;
-    }
-
+    setError(null);
     setIsProcessing(true);
 
     try {
-      // Simulate VNPAY API call
-      const checkoutData: CheckoutData = {
-        selectedAddressId: selectedAddressId as number, // Cast to number as it can be ''
-        items: selectedItems,
-        totalAmount: totalPrice + shippingCost,
-        shippingCost,
-      };
+      // Create one order per listing
+      // Swagger PlaceOrderRequest: { listingId, description? } — no addressId
+      const selectedAddress = addresses.find(a => a.id === selectedAddressId);
+      const addressNote = selectedAddress
+        ? `${selectedAddress.nameContact ?? selectedAddress.fullName} — ${selectedAddress.addressLine ?? selectedAddress.detail} — ${selectedAddress.phoneContact ?? selectedAddress.phone}`
+        : undefined;
 
-      console.log('Processing payment:', checkoutData);
+      const orders = await Promise.all(
+        listingIds.map((listingId) =>
+          orderService.createOrder({
+            listingId,
+            description: notes || addressNote || undefined,
+          })
+        )
+      );
 
-      // In real app, integrate with VNPAY API
-      // Redirect to VNPAY payment gateway
-      setTimeout(() => {
-        onPayment?.(checkoutData);
-        alert('Redirecting to VNPAY payment...');
-        // window.location.href = 'https://sandbox.vnpayment.vn/...';
-        setIsProcessing(false);
-      }, 1000);
-    } catch (error) {
-      console.error('Payment error:', error);
-      alert('Payment failed. Please try again.');
+      const failedOrders = orders.filter((o) => !o);
+      if (failedOrders.length > 0) {
+        throw new Error(`Không thể tạo ${failedOrders.length} đơn hàng. Vui lòng thử lại.`);
+      }
+
+      // Initiate payment: POST /payment/create/order { order_id, description }
+      const firstOrder = orders.find(Boolean)!;
+      const orderId = (firstOrder as any).id;
+      const payment = await paymentService.createPayment({
+        order_id: orderId,
+        description: notes || 'BikeHub Order Payment',
+      });
+
+      // Clear cart after successful order creation
+      clearCart();
+
+      if (payment?.paymentUrl) {
+        window.location.href = payment.paymentUrl;
+      } else {
+        navigate('/buyer/orders', { replace: true });
+      }
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? err?.message ?? 'Thanh toán thất bại.';
+      setError(msg);
+    } finally {
       setIsProcessing(false);
     }
   };
 
-  return (
-    <div className="max-w-[1200px] mx-auto p-6">
-      <h1 className="text-2xl font-semibold">Order Checkout</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-        {/* Left Column - Checkout Form */}
+  return (
+    <div className="max-w-[1100px] mx-auto px-4 py-10">
+      <h1 className="text-3xl font-black text-gray-900 mb-8 uppercase tracking-tight">Thanh toán</h1>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* ── Left: Form ── */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Step 1: Delivery Address */}
-          <div className="bg-white p-4 rounded shadow">
-            <h2 className="flex items-center gap-2 text-lg font-semibold"><MapPin size={20} /> Delivery Address</h2>
+
+          {/* Delivery Address */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900 mb-4">
+              <MapPin size={20} className="text-green-600" /> Địa chỉ giao hàng
+            </h2>
 
             {addresses.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-3 py-6">
-                <AlertCircle size={48} />
-                <p className="text-gray-600">No addresses saved. Please add an address first.</p>
-                <button className="mt-2 bg-green-600 text-white px-4 py-2 rounded">Add Address</button>
+              <div className="flex flex-col items-center py-8 gap-3 text-gray-500">
+                <AlertCircle size={40} className="text-gray-300" />
+                <p>Chưa có địa chỉ. Vui lòng thêm địa chỉ trong hồ sơ.</p>
+                <button
+                  onClick={() => navigate('/buyer/dashboard?tab=addresses')}
+                  className="text-green-600 font-bold hover:underline"
+                >
+                  Thêm địa chỉ →
+                </button>
               </div>
             ) : (
-              <div className="mt-4 space-y-3">
+              <div className="space-y-3">
                 {addresses.map((address) => (
-                  <label key={address.id} className="flex items-start gap-3 p-3 border rounded">
+                  <label
+                    key={address.id}
+                    className={`flex items-start gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all
+                      ${selectedAddressId === address.id ? 'border-green-600 bg-green-50' : 'border-gray-100 hover:border-green-200'}`}
+                  >
                     <input
                       type="radio"
                       name="address"
                       value={address.id}
                       checked={selectedAddressId === address.id}
                       onChange={(e) => setSelectedAddressId(Number(e.target.value))}
-                      className="mt-1 h-4 w-4"
+                      className="mt-1 h-4 w-4 accent-green-600"
                     />
-                    <div>
-                      <h4 className="font-semibold">{address.fullName}</h4>
-                      <p className="text-sm text-gray-500">{address.phone}</p>
-                      <p className="text-sm text-gray-500">{address.detail}, {address.ward}, {address.district}, {address.province}</p>
-                      {address.isDefault && <span className="inline-block mt-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Default</span>}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-gray-900">{address.fullName}</span>
+                        {address.isDefault && (
+                          <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
+                            Mặc định
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-500 mt-0.5">{address.phone}</p>
+                      <p className="text-sm text-gray-500">
+                        {address.detail}, {address.ward}, {address.district}, {address.province}
+                      </p>
                     </div>
                   </label>
                 ))}
@@ -107,94 +153,105 @@ export const Checkout: React.FC<CheckoutProps> = ({ addresses, onPayment }) => {
             )}
           </div>
 
-          {/* Step 2: Shipping Method */}
-          <div className="bg-white p-4 rounded shadow">
-            <h2 className="flex items-center gap-2 text-lg font-semibold"><Package size={20} /> Shipping Method</h2>
-            <div className="mt-4 space-y-3">
-              <label className="flex items-center justify-between p-3 border rounded">
-                <div className="flex items-center gap-3">
-                  <input type="radio" name="shipping" value="standard" checked={shippingMethod === 'standard'} onChange={(e) => setShippingMethod(e.target.value as 'standard' | 'express')} className="h-4 w-4" />
-                  <div>
-                    <div className="font-semibold">Standard Delivery</div>
-                    <div className="text-sm text-gray-500">3-5 business days</div>
-                  </div>
-                </div>
-                <div className="text-sm">30,000 VND</div>
-              </label>
-
-              <label className="flex items-center justify-between p-3 border rounded">
-                <div className="flex items-center gap-3">
-                  <input type="radio" name="shipping" value="express" checked={shippingMethod === 'express'} onChange={(e) => setShippingMethod(e.target.value as 'standard' | 'express')} className="h-4 w-4" />
-                  <div>
-                    <div className="font-semibold">Express Delivery</div>
-                    <div className="text-sm text-gray-500">1-2 business days</div>
-                  </div>
-                </div>
-                <div className="text-sm">100,000 VND</div>
-              </label>
+          {/* Shipping Method */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900 mb-4">
+              <Package size={20} className="text-green-600" /> Phương thức giao hàng
+            </h2>
+            <div className="p-4 border-2 border-green-600 rounded-xl bg-green-50">
+              <div className="font-bold text-gray-900">Giao hàng tiêu chuẩn</div>
+              <div className="text-sm text-gray-500 mt-0.5">3–5 ngày làm việc • Miễn phí</div>
             </div>
           </div>
 
-          {/* Step 3: Order Notes */}
-          <div className="bg-white p-4 rounded shadow">
-            <h2 className="text-lg font-semibold">Order Notes (Optional)</h2>
-            <textarea placeholder="Add any special instructions for the seller..." value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="w-full mt-2 p-2 border rounded" />
+          {/* Notes */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-3">Ghi chú (tuỳ chọn)</h2>
+            <textarea
+              placeholder="Hướng dẫn đặc biệt cho người bán..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              className="w-full p-3 border-2 border-gray-100 rounded-xl focus:border-green-400 outline-none resize-none text-sm"
+            />
           </div>
         </div>
 
-        {/* Right Column - Order Summary */}
-        <div className="bg-white p-4 rounded shadow">
-          <h2 className="text-lg font-semibold mb-3">Order Summary</h2>
+        {/* ── Right: Order Summary ── */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 h-fit sticky top-28">
+          <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <ShoppingCart size={20} className="text-green-600" /> Tóm tắt đơn hàng
+          </h2>
 
-          {/* Items */}
-          <div className="space-y-2">
-            {selectedItems.length === 0 ? (
-              <p className="text-gray-500">No items selected</p>
-            ) : (
-              selectedItems.map((item) => (
-                <div key={item.productId} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded">{item.image}</div>
-                    <div>
-                      <div className="text-sm">{item.productName}</div>
-                      <div className="text-xs text-gray-500">x{item.quantity}</div>
-                    </div>
-                  </div>
-                  <span className="font-semibold">{((item.price * item.quantity) / 1000000).toFixed(1)}M</span>
+          {/* Item list */}
+          <div className="space-y-3 mb-4">
+            {displayItems.map((item) => (
+              <div key={item.id} className="flex items-center gap-3">
+                {item.image ? (
+                  <img src={item.image} alt={item.name} className="w-14 h-14 object-cover rounded-lg border border-gray-100" />
+                ) : (
+                  <div className="w-14 h-14 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-xl">🚲</div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-gray-900 text-sm line-clamp-2">{item.name}</p>
+                  {item.price > 0 && (
+                    <p className="text-green-600 font-bold text-sm mt-0.5">
+                      {item.price.toLocaleString('vi-VN')} ₫
+                    </p>
+                  )}
                 </div>
-              ))
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t border-gray-100 my-4" />
+
+          <div className="flex justify-between py-1 text-sm">
+            <span className="text-gray-500">Số lượng sản phẩm</span>
+            <span className="font-bold">{listingIds.length} xe</span>
+          </div>
+          <div className="flex justify-between py-1 text-sm">
+            <span className="text-gray-500">Phí vận chuyển</span>
+            <span className="font-bold text-green-600">Miễn phí</span>
+          </div>
+
+          {totalPrice > 0 && (
+            <>
+              <div className="border-t border-gray-100 my-4" />
+              <div className="flex justify-between items-end">
+                <span className="text-gray-600 font-medium">Tổng cộng</span>
+                <span className="text-2xl font-black text-green-600">
+                  {totalPrice.toLocaleString('vi-VN')} ₫
+                </span>
+              </div>
+            </>
+          )}
+
+          <div className="border-t border-gray-100 my-4" />
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm flex items-center gap-2">
+              <AlertCircle size={16} className="shrink-0" /> {error}
+            </div>
+          )}
+
+          <button
+            onClick={handlePayment}
+            disabled={isProcessing || addresses.length === 0 || !selectedAddressId}
+            className="w-full bg-green-600 text-white py-4 rounded-xl font-black text-base flex items-center justify-center gap-2
+              hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
+          >
+            {isProcessing ? (
+              <><Loader2 size={20} className="animate-spin" /> Đang xử lý...</>
+            ) : (
+              <><CreditCard size={20} /> Thanh toán ngay</>
             )}
-          </div>
-
-          <div className="border-t my-3" />
-
-          {/* Subtotal */}
-          <div className="flex justify-between py-2">
-            <span>Subtotal ({selectedItems.length} items)</span>
-            <span>{(totalPrice / 1000000).toFixed(1)}M VND</span>
-          </div>
-
-          {/* Shipping Cost */}
-          <div className="flex justify-between py-2">
-            <span>Shipping ({shippingMethod})</span>
-            <span>{(shippingCost / 1000).toFixed(0)}K VND</span>
-          </div>
-
-          <div className="border-t my-3" />
-
-          {/* Total */}
-          <div className="flex justify-between py-2 font-semibold text-lg">
-            <span>Total Payment</span>
-            <span>{((totalPrice + shippingCost) / 1000000).toFixed(1)}M VND</span>
-          </div>
-
-          {/* VNPAY Button */}
-          <button className="w-full mt-4 bg-green-600 text-white py-2 rounded flex items-center justify-center gap-2" onClick={handleVNPAYPayment} disabled={isProcessing || selectedItems.length === 0}>
-            {isProcessing ? <>Processing...</> : <><CreditCard size={20} /> Pay with VNPAY</>}
           </button>
 
-          {/* Security Badge */}
-          <div className="flex items-center gap-2 mt-4 text-sm text-gray-600"><Check size={16} /> <span>Secure payment with VNPAY</span></div>
+          <div className="flex items-center gap-2 mt-4 text-xs text-gray-400">
+            <Check size={14} className="text-green-500" />
+            <span>Giao dịch được bảo mật</span>
+          </div>
         </div>
       </div>
     </div>

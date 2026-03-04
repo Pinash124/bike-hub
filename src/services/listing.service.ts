@@ -28,13 +28,24 @@ export interface Listing {
 export const listingService = {
     createListing: async (formData: FormData): Promise<Listing | null> => {
         try {
+            // NOTE: Do NOT manually set Content-Type for multipart/form-data.
+            // Axios/XMLHttpRequest must auto-generate the boundary parameter.
+            // We delete the default 'application/json' header to allow this.
             const response = await api.post(API_ENDPOINTS.LISTING, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+                transformRequest: (data, headers) => {
+                    // Remove Content-Type so browser/axios sets it with correct boundary
+                    if (headers) delete headers['Content-Type'];
+                    return data;
+                },
             });
             if (response.data?.code === 1000) return response.data.result;
             throw new Error(response.data?.message || 'Create listing failed');
-        } catch (error) {
-            console.error('Error creating listing:', error);
+        } catch (error: any) {
+            const msg = error?.response?.data?.message;
+            console.error('Error creating listing:', msg || error);
             throw error;
         }
     },

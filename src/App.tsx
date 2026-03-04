@@ -1,6 +1,7 @@
 // src/App.tsx
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom' // Đã xóa Navigate dư thừa
-import { useState } from 'react'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { brandService, type Brand } from './services/brand.service'
 
 // --- Layout & Common Components ---
 import Header from './components/common/Header'
@@ -64,8 +65,11 @@ function ProfileGuard() {
 }
 
 function Home() {
-  const [selectedCategory, setSelectedCategory] = useState('Tất cả')
+  const [selectedBrand, setSelectedBrand] = useState('Tất cả')
+  const [brands, setBrands] = useState<Brand[]>([])
   const { role } = useAuth()
+
+  useEffect(() => { brandService.getAllBrands().then(setBrands).catch(() => setBrands([])); }, []);
 
   if (role === 'admin') {
     return <Navigate to="/admin/dashboard" replace />
@@ -83,8 +87,9 @@ function Home() {
         <FilterSection />
         <FeaturedBikes />
         <Categories
-          onSelectCategory={setSelectedCategory}
-          selectedCategory={selectedCategory}
+          brands={brands}
+          onSelectBrand={setSelectedBrand}
+          selectedBrand={selectedBrand}
         />
         <Features />
       </main>

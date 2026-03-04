@@ -306,8 +306,11 @@ const CartTab: React.FC = () => {
               </div>
 
               <button
-                onClick={() => navigate('/buyer/checkout')}
-                className="w-full flex items-center justify-center gap-3 py-4.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs transition-all shadow-[0_0_40px_rgba(34,197,94,0.3)] active:scale-95 relative z-10 group overflow-hidden"
+                onClick={() => navigate('/buyer/checkout', {
+                  state: { listingIds: items.map(i => i.productId) }
+                })}
+                disabled={items.length === 0}
+                className="w-full flex items-center justify-center gap-3 py-4.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs transition-all shadow-[0_0_40px_rgba(34,197,94,0.3)] active:scale-95 relative z-10 group overflow-hidden"
               >
                 <span className="relative z-10">Thanh Toán Ngay</span>
                 <ChevronRight size={18} className="relative z-10 group-hover:translate-x-1 transition-transform" />
@@ -409,14 +412,11 @@ const AddressesTab: React.FC = () => {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Form State
+  // Form State — matches Swagger AddressCreationRequest
   const [formData, setFormData] = useState({
-    fullName: '',
-    phone: '',
-    province: '',
-    district: '',
-    ward: '',
-    detail: '',
+    nameContact: '',
+    phoneContact: '',
+    addressLine: '',
   });
 
   useEffect(() => {
@@ -445,19 +445,12 @@ const AddressesTab: React.FC = () => {
 
   const handleSubmit = async () => {
     try {
-      await addressService.addAddress(formData as any);
+      await addressService.addAddress(formData);
       setShowForm(false);
-      setFormData({
-        fullName: '',
-        phone: '',
-        province: '',
-        district: '',
-        ward: '',
-        detail: '',
-      });
-      fetchAddresses(); // Refresh list
+      setFormData({ nameContact: '', phoneContact: '', addressLine: '' });
+      fetchAddresses();
     } catch (error) {
-      alert('Failed to add address');
+      alert('Thêm địa chỉ thất bại. Vui lòng thử lại.');
     }
   };
 
@@ -487,28 +480,16 @@ const AddressesTab: React.FC = () => {
         <div className="bg-white p-4 rounded shadow mb-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium">Full Name</label>
-              <input name="fullName" value={formData.fullName} onChange={handleInputChange} className="mt-1 w-full border rounded p-2" type="text" placeholder="Enter your full name" />
+              <label className="block text-sm font-medium">Tên liên hệ</label>
+              <input name="nameContact" value={formData.nameContact} onChange={handleInputChange} className="mt-1 w-full border rounded p-2" type="text" placeholder="Họ và tên" />
             </div>
             <div>
-              <label className="block text-sm font-medium">Phone Number</label>
-              <input name="phone" value={formData.phone} onChange={handleInputChange} className="mt-1 w-full border rounded p-2" type="tel" placeholder="Enter phone number" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Province/City</label>
-              <input name="province" value={formData.province} onChange={handleInputChange} className="mt-1 w-full border rounded p-2" type="text" placeholder="Province" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">District</label>
-              <input name="district" value={formData.district} onChange={handleInputChange} className="mt-1 w-full border rounded p-2" type="text" placeholder="District" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Ward</label>
-              <input name="ward" value={formData.ward} onChange={handleInputChange} className="mt-1 w-full border rounded p-2" type="text" placeholder="Ward" />
+              <label className="block text-sm font-medium">Số điện thoại</label>
+              <input name="phoneContact" value={formData.phoneContact} onChange={handleInputChange} className="mt-1 w-full border rounded p-2" type="tel" placeholder="Số điện thoại" />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium">Detailed Address</label>
-              <textarea name="detail" value={formData.detail} onChange={handleInputChange} className="mt-1 w-full border rounded p-2" placeholder="Street address, building number, etc." rows={2}></textarea>
+              <label className="block text-sm font-medium">Địa chỉ đầy đủ</label>
+              <textarea name="addressLine" value={formData.addressLine} onChange={handleInputChange} className="mt-1 w-full border rounded p-2" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành" rows={2}></textarea>
             </div>
           </div>
 
@@ -520,13 +501,12 @@ const AddressesTab: React.FC = () => {
       )}
 
       <div className="space-y-4">
-        {isLoading ? <p>Loading addresses...</p> : addresses.length === 0 ? <p className="text-gray-600">No addresses saved yet</p> : (
+        {isLoading ? <p>Đang tải địa chỉ...</p> : addresses.length === 0 ? <p className="text-gray-600">Chưa có địa chỉ nào</p> : (
           addresses.map((addr: any) => (
             <div key={addr.id} className="bg-white p-4 rounded shadow border border-gray-100 flex justify-between items-center">
               <div>
-                <p className="font-bold">{addr.fullName} <span className="text-gray-500 font-normal">| {addr.phone}</span></p>
-                <p className="text-sm text-gray-600">{addr.detail}, {addr.ward}</p>
-                <p className="text-sm text-gray-600">{addr.district}, {addr.province}</p>
+                <p className="font-bold">{addr.nameContact || addr.fullName} <span className="text-gray-500 font-normal">| {addr.phoneContact || addr.phone}</span></p>
+                <p className="text-sm text-gray-600">{addr.addressLine || addr.detail}</p>
               </div>
               <button
                 onClick={() => handleDelete(addr.id)}
