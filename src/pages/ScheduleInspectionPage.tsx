@@ -12,7 +12,7 @@ export default function ScheduleInspectionPage() {
   const listingId = state?.listingId;
 
   const [locations, setLocations] = useState<InspectionLocation[]>([]);
-  const [isLoadingLocations, setIsLoadingLocations] = useState(true);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(false);
   const [inspectionType, setInspectionType] = useState<"ONSITE" | "COMPANY">(
     "ONSITE",
   );
@@ -20,13 +20,20 @@ export default function ScheduleInspectionPage() {
   const [scheduledAt, setScheduledAt] = useState<string>("");
   const [error, setError] = useState("");
 
+  // Fetch company locations when inspection type changes to COMPANY
   useEffect(() => {
-    locationService
-      .getAllLocations()
-      .then(setLocations)
-      .catch((e) => console.error(e))
-      .finally(() => setIsLoadingLocations(false));
-  }, []);
+    if (inspectionType === "COMPANY") {
+      setIsLoadingLocations(true);
+      locationService
+        .getMyCompanyLocation()
+        .then(setLocations)
+        .catch((e) => {
+          console.error(e);
+          setLocations([]);
+        })
+        .finally(() => setIsLoadingLocations(false));
+    }
+  }, [inspectionType]);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
