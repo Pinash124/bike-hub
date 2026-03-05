@@ -534,7 +534,9 @@ export default function InspectorDashboard() {
                     </div>
                     <div className="space-y-3">
                       <div className="flex justify-between items-center py-2 border-b border-slate-100">
-                        <span className="font-medium text-slate-600">Loại:</span>
+                        <span className="font-medium text-slate-600">
+                          Loại:
+                        </span>
                         <span className="font-bold text-slate-800">
                           {currentLocation.type === "SELLER"
                             ? "Người bán"
@@ -568,29 +570,36 @@ export default function InspectorDashboard() {
                     </div>
                   </div>
 
-                  {currentTask?.status === "COMPLETED" && currentTask.scores && currentTask.scores.length > 0 && (
-                    <div>
-                      <div className="bg-green-50 text-green-800 text-xs font-medium p-4 rounded-xl mb-4">
-                        Điểm đánh giá các bộ phận xe
+                  {currentTask?.status === "COMPLETED" &&
+                    currentTask.scores &&
+                    currentTask.scores.length > 0 && (
+                      <div>
+                        <div className="bg-green-50 text-green-800 text-xs font-medium p-4 rounded-xl mb-4">
+                          Điểm đánh giá các bộ phận xe
+                        </div>
+                        <div className="space-y-3">
+                          {currentTask.scores.map((scoreItem: any) => {
+                            const component = components.find(
+                              (c) => c.id === scoreItem.componentId,
+                            );
+                            return (
+                              <div
+                                key={scoreItem.componentId}
+                                className="flex justify-between items-center py-2 border-b border-slate-100"
+                              >
+                                <span className="font-medium text-slate-600">
+                                  {component?.name ||
+                                    `Bộ phận ${scoreItem.componentId}`}
+                                </span>
+                                <span className="font-bold text-slate-800">
+                                  {scoreItem.score}/10
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                      <div className="space-y-3">
-                        {currentTask.scores.map((scoreItem: any) => {
-                          const component = components.find((c) => c.id === scoreItem.componentId);
-                          return (
-                            <div
-                              key={scoreItem.componentId}
-                              className="flex justify-between items-center py-2 border-b border-slate-100"
-                            >
-                              <span className="font-medium text-slate-600">
-                                {component?.name || `Bộ phận ${scoreItem.componentId}`}
-                              </span>
-                              <span className="font-bold text-slate-800">{scoreItem.score}/10</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                    )}
                 </div>
               ) : (
                 <div className="text-center py-8 text-slate-500">
