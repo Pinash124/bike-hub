@@ -40,7 +40,25 @@ export const brandService = {
   },
 
   /**
-   * [ADMIN] Cập nhật danh sách brands
+   * [ADMIN] Cập nhật thương hiệu
+   * PUT /brand
+   */
+  updateBrand: async (id: number, name: string): Promise<Brand | null> => {
+    try {
+      const response = await api.put(API_ENDPOINTS.BRAND, { id, name });
+      const payload =
+        response.data?.result ?? response.data?.data ?? response.data;
+      if (payload && !Array.isArray(payload)) return payload;
+      if (Array.isArray(payload) && payload.length > 0) return payload[0];
+      return null;
+    } catch (error) {
+      console.error("Error updating brand:", error);
+      return null;
+    }
+  },
+
+  /**
+   * [ADMIN] Cập nhật danh sách brands (legacy - batch update)
    * PUT /brand
    */
   updateBrands: async (

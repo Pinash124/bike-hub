@@ -1262,9 +1262,7 @@ function CatalogTab() {
     setBrandSaving(true);
     try {
       if (editBrand) {
-        await brandService.updateBrands([
-          { id: editBrand.id, name: brandName },
-        ]);
+        await brandService.updateBrand(editBrand.id, brandName);
         alert("Cập nhật thành công!");
       } else {
         await brandService.createBrand(brandName);
