@@ -580,7 +580,7 @@ export default function InspectorDashboard() {
                         <div className="space-y-3">
                           {currentTask.scores.map((scoreItem: any) => {
                             const component = components.find(
-                              (c) => c.id === scoreItem.componentId,
+                              (c) => c.id === Number(scoreItem.componentId),
                             );
                             return (
                               <div
