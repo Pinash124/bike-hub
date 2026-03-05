@@ -16,7 +16,7 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   SOLD: { label: 'Đã bán', color: 'bg-red-600 text-white' },
   DRAFT: { label: 'Bản nháp', color: 'bg-gray-400 text-white' },
   PENDING: { label: 'Chờ duyệt', color: 'bg-blue-500 text-white' },
-  APPROVED: { label: 'Đã duyệt', color: 'bg-indigo-500 text-white' },
+  APPROVED: { label: 'Đang bán', color: 'bg-green-600 text-white' },
   REJECTED: { label: 'Bị từ chối', color: 'bg-red-400 text-white' },
 };
 
@@ -33,7 +33,7 @@ export const ProductDetail: React.FC<ListingDetailProps> = ({ listing }) => {
       .map((img) => img.secureUrl)
     : [PLACEHOLDER];
 
-  const isAvailable = listing.status === 'LIVE';
+  const isAvailable = listing.status === 'LIVE' || listing.status === 'APPROVED';
 
   const statusInfo = STATUS_LABELS[listing.status] ?? {
     label: listing.status,

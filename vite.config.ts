@@ -65,6 +65,16 @@ export default defineConfig({
         changeOrigin: true,
         secure: true,
       },
+      '/plan': {
+        target: RAILWAY_API,
+        changeOrigin: true,
+        secure: true,
+      },
+      '/subscription': {
+        target: RAILWAY_API,
+        changeOrigin: true,
+        secure: true,
+      },
     },
   },
 })

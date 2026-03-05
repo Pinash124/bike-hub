@@ -1,7 +1,6 @@
 // src/services/payment.service.ts
-// Role: BUYER — Initiate payment for an order
-// Swagger: POST /payment/create/order  { order_id: number, description: string }
 import api from "../api/axiosConfig";
+import { API_ENDPOINTS } from '../config/api';
 
 export interface PaymentCreatePayload {
   order_id: number | string; // Swagger uses integer order_id
@@ -11,39 +10,65 @@ export interface PaymentCreatePayload {
 export interface PaymentResult {
   paymentUrl?: string; // redirect URL if available
   paymentId?: string | number;
+  id?: string | number;
   status?: string;
   amount?: number;
   orderId?: string | number;
+  subscriptionId?: string | number;
+  description?: string;
   createdAt?: string | Date;
 }
 
 export const paymentService = {
   /**
-   * [BUYER] Khởi tạo giao dịch thanh toán cho đơn hàng
-   * POST /payment/create/order  →  { order_id, description }
+   * Tạo payment link cho Đơn Hàng (Order) PayOS
+   * POST /payment/create/order
    */
-  createPayment: async (
-    payload: PaymentCreatePayload,
-  ): Promise<PaymentResult | null> => {
+  createPayment: async (payload: any): Promise<PaymentResult | null> => {
     try {
-      const response = await api.post("/payment/create/order", payload);
+      // If payload is primitive id, wrap it. If it's already an object (like from Checkout.tsx), use it.
+      const body = typeof payload === 'object' ? payload : { order_id: payload };
+      const response = await api.post(API_ENDPOINTS.PAYMENT_CREATE_ORDER, body);
       if (response.data?.code === 1000) {
         return response.data.result;
       }
-      throw new Error(response.data?.message || "Khởi tạo thanh toán thất bại");
-    } catch (error) {
-      console.error("Error creating payment:", error);
+      throw new Error(response.data?.message || 'Tạo liên kết thanh toán thất bại');
+    } catch (error: any) {
+      const serverMsg = error.response?.data?.message;
+      console.error('Error creating payment:', serverMsg || error.message || error);
       throw error;
     }
   },
 
   /**
-   * [BUYER] Lấy tất cả thanh toán
-   * GET /all
+   * Tạo payment link cho Đăng Ký Gói (Subscription) qua PayOS
+   * POST /payment/create/subscription
+   */
+  createSubscriptionPayment: async (subscriptionId: string, description?: string): Promise<PaymentResult | null> => {
+    try {
+      // Swagger: POST /payment/create/subscription (Nhận subscriptionId)
+      const response = await api.post(API_ENDPOINTS.PAYMENT_CREATE_SUBSCRIPTION, {
+        subscriptionId: subscriptionId,
+        description: description || 'Thanh toán gói đăng ký BikeHub'
+      });
+      if (response.data?.code === 1000) {
+        return response.data.result;
+      }
+      throw new Error(response.data?.message || 'Tạo thanh toán gói thất bại');
+    } catch (error: any) {
+      const serverMsg = error.response?.data?.message;
+      console.error('Error creating subscription payment:', serverMsg || error.message || error);
+      throw error;
+    }
+  },
+
+  /**
+   * [ADMIN/BUYER] Lấy tất cả thanh toán
+   * GET /payment/all
    */
   getAllPayments: async (): Promise<PaymentResult[]> => {
     try {
-      const response = await api.get("/all");
+      const response = await api.get(API_ENDPOINTS.PAYMENT_ALL);
       if (response.data?.code === 1000) {
         return Array.isArray(response.data.result) ? response.data.result : [];
       }

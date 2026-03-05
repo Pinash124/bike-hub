@@ -97,7 +97,7 @@ export const listingService = {
     /** [ADMIN] POST /listing/{id}/approve */
     approveListing: async (id: string): Promise<boolean> => {
         try {
-            const response = await api.post(API_ENDPOINTS.LISTING_APPROVE(id));
+            const response = await api.post(API_ENDPOINTS.LISTING_APPROVE(id), {});
             return response.data?.code === 1000;
         } catch (error) {
             console.error('Error approving listing:', error);
@@ -110,17 +110,18 @@ export const listingService = {
         try {
             const response = await api.get(API_ENDPOINTS.LISTING_DETAIL(id));
             if (response.data?.code === 1000) return response.data.result;
-            return null;
-        } catch (error) {
-            console.error(`Error fetching listing ${id}:`, error);
-            return null;
+            throw new Error(response.data?.message || 'Không thể tải thông tin xe');
+        } catch (error: any) {
+            const serverMsg = error.response?.data?.message;
+            console.error(`Error fetching listing ${id}:`, serverMsg || error.message || error);
+            throw error;
         }
     },
 
     /** [ADMIN] POST /listing/{id}/reject */
     rejectListing: async (id: string): Promise<boolean> => {
         try {
-            const response = await api.post(API_ENDPOINTS.LISTING_REJECT(id));
+            const response = await api.post(API_ENDPOINTS.LISTING_REJECT(id), {});
             return response.data?.code === 1000;
         } catch (error) {
             console.error('Error rejecting listing:', error);

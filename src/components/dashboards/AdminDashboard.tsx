@@ -24,6 +24,7 @@ import {
   CreditCard,
   UserPlus,
   Image as ImageIcon,
+  Zap,
 } from "lucide-react";
 import React, { useEffect, useState, useCallback } from "react";
 import { useAuth } from "../../contexts/AuthContext";
@@ -53,6 +54,7 @@ import {
   paymentService,
   type PaymentResult,
 } from "../../services/payment.service";
+import { planService, type Plan } from "../../services/plan.service";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -67,7 +69,8 @@ type Tab =
   | "orders"
   | "payments"
   | "company-locations"
-  | "create-inspector";
+  | "create-inspector"
+  | "plans";
 
 // ─── Error boundary ───────────────────────────────────────────────────────────
 
@@ -119,21 +122,21 @@ const ROLE_COLOR: Record<string, string> = {
   ADMIN: "bg-rose-100 text-rose-700",
 };
 const INSPECTION_STATUS_MAP: Record<string, { label: string; color: string }> =
-  {
-    PENDING_ASSIGNED: {
-      label: "Chờ gán",
-      color: "bg-amber-100 text-amber-700",
-    },
-    ASSIGNED: { label: "Đã gán", color: "bg-blue-100 text-blue-700" },
-    IN_PROGRESS: {
-      label: "Đang thực hiện",
-      color: "bg-indigo-100 text-indigo-700",
-    },
-    COMPLETED: {
-      label: "Hoàn thành",
-      color: "bg-emerald-100 text-emerald-700",
-    },
-  };
+{
+  PENDING_ASSIGNED: {
+    label: "Chờ gán",
+    color: "bg-amber-100 text-amber-700",
+  },
+  ASSIGNED: { label: "Đã gán", color: "bg-blue-100 text-blue-700" },
+  IN_PROGRESS: {
+    label: "Đang thực hiện",
+    color: "bg-indigo-100 text-indigo-700",
+  },
+  COMPLETED: {
+    label: "Hoàn thành",
+    color: "bg-emerald-100 text-emerald-700",
+  },
+};
 const KYC_STATUS_MAP: Record<
   string,
   { label: string; color: string; icon: React.ElementType }
@@ -157,7 +160,7 @@ const KYC_STATUS_MAP: Record<
 const LISTING_STATUS_MAP: Record<string, { label: string; color: string }> = {
   DRAFT: { label: "Nháp", color: "bg-slate-100 text-slate-600" },
   PENDING: { label: "Chờ duyệt", color: "bg-amber-100 text-amber-700" },
-  APPROVED: { label: "Đã duyệt", color: "bg-emerald-100 text-emerald-700" },
+  APPROVED: { label: "Đang bán", color: "bg-blue-100 text-blue-700" },
   LIVE: { label: "Đang bán", color: "bg-blue-100 text-blue-700" },
   REJECTED: { label: "Từ chối", color: "bg-red-100 text-red-700" },
   RESERVED: { label: "Đặt cọc", color: "bg-purple-100 text-purple-700" },
@@ -231,6 +234,238 @@ const inputCls =
   "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition placeholder:text-slate-300";
 
 // ─── Overview Tab ─────────────────────────────────────────────────────────────
+
+// ─── Plans Tab ───────────────────────────────────────────────────────────────
+
+function PlansTab({
+  plans: initialPlans,
+  loading: initialLoading,
+  onRefresh,
+}: {
+  plans: Plan[];
+  loading: boolean;
+  onRefresh: () => void;
+}) {
+  const [plans, setPlans] = useState<Plan[]>(initialPlans);
+  const [loading, setLoading] = useState(initialLoading);
+  const [modal, setModal] = useState(false);
+  const [editPlan, setEditPlan] = useState<Plan | null>(null);
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    price: 0,
+    durationDays: 30,
+    isActive: true,
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setPlans(initialPlans);
+    setLoading(initialLoading);
+  }, [initialPlans, initialLoading]);
+
+  const open = (p?: Plan) => {
+    setEditPlan(p ?? null);
+    setForm({
+      name: p?.name ?? "",
+      description: p?.description ?? "",
+      price: p?.price ?? 0,
+      durationDays: p?.durationDays ?? 30,
+      isActive: p?.isActive ?? true,
+    });
+    setModal(true);
+  };
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      if (editPlan) {
+        await planService.updatePlan(editPlan.id, form);
+        alert("Cập nhật gói thành công!");
+      } else {
+        await planService.createPlan(form);
+        alert("Tạo gói mới thành công!");
+      }
+      setModal(false);
+      onRefresh();
+    } catch (err: any) {
+      alert(err.message || "Có lỗi xảy ra.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const remove = async (id: number) => {
+    if (!confirm("Bạn có chắc muốn xóa gói này?")) return;
+    try {
+      const ok = await planService.deletePlan(id);
+      if (ok) {
+        alert("Đã xóa gói!");
+        onRefresh();
+      } else {
+        alert("Xóa gói thất bại.");
+      }
+    } catch (err: any) {
+      alert(err.message || "Có lỗi xảy ra khi xóa.");
+    }
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="font-bold text-slate-800">
+          Danh Sách Gói Dịch Vụ{" "}
+          <span className="text-slate-400 font-normal text-sm">
+            ({plans.length})
+          </span>
+        </h2>
+        <button
+          onClick={() => open()}
+          className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-md"
+        >
+          <Plus size={15} /> Tạo Gói Mới
+        </button>
+      </div>
+
+      {loading ? (
+        <Spinner />
+      ) : plans.length === 0 ? (
+        <EmptyState message="Chưa có gói dịch vụ nào." />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {plans.map((plan) => (
+            <div
+              key={plan.id}
+              className={`bg-white rounded-2xl border ${plan.isActive ? 'border-indigo-100' : 'border-slate-200 opacity-60'} shadow-sm p-6 hover:shadow-md transition group relative`}
+            >
+              <div className="absolute top-4 right-4 flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
+                <button
+                  onClick={() => open(plan)}
+                  className="p-1.5 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition"
+                >
+                  <Edit size={14} />
+                </button>
+                <button
+                  onClick={() => remove(plan.id)}
+                  className="p-1.5 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-600 transition"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3 mb-4">
+                <div className={`p-2 rounded-xl ${plan.isActive ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-100 text-slate-400'}`}>
+                  <Zap size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800">{plan.name}</h3>
+                  <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${plan.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600'}`}>
+                    {plan.isActive ? 'Đang bật' : 'Đã tắt'}
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-sm text-slate-500 mb-6 line-clamp-2 h-10">
+                {plan.description}
+              </p>
+
+              <div className="flex items-end justify-between border-t border-slate-50 pt-4">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Giá gói</p>
+                  <p className="text-xl font-black text-slate-900">
+                    {plan.price.toLocaleString('vi-VN')}
+                    <span className="text-xs ml-0.5 mt-1 font-bold">₫</span>
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Thời hạn</p>
+                  <p className="text-sm font-bold text-slate-700">{plan.durationDays} ngày</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {modal && (
+        <Modal
+          title={editPlan ? "Sửa Gói Cước" : "Tạo Gói Cước Mới"}
+          onClose={() => setModal(false)}
+        >
+          <form onSubmit={save} className="space-y-4">
+            <FormField label="Tên gói">
+              <input
+                required
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="VD: Gói Cơ Bản, Gói Premium..."
+                className={inputCls}
+              />
+            </FormField>
+            <FormField label="Mô tả ngắn">
+              <textarea
+                required
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                placeholder="VD: Hiển thị ưu tiên trong 30 ngày..."
+                rows={3}
+                className={`${inputCls} resize-none`}
+              />
+            </FormField>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="Giá (VNĐ)">
+                <input
+                  required
+                  type="number"
+                  value={form.price}
+                  onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+                  className={inputCls}
+                />
+              </FormField>
+              <FormField label="Số ngày">
+                <input
+                  required
+                  type="number"
+                  value={form.durationDays}
+                  onChange={(e) => setForm({ ...form, durationDays: Number(e.target.value) })}
+                  className={inputCls}
+                />
+              </FormField>
+            </div>
+            <div className="flex items-center gap-2 pt-2">
+              <input
+                type="checkbox"
+                id="isActive"
+                checked={form.isActive}
+                onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
+                className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+              />
+              <label htmlFor="isActive" className="text-sm font-bold text-slate-700">Kích hoạt gói ngay</label>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={() => setModal(false)}
+                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-wider transition"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition shadow-md disabled:opacity-50"
+              >
+                {saving ? "Đang lưu..." : "Lưu Thay Đổi"}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+    </div>
+  );
+}
 
 function OverviewTab({
   users,
@@ -774,12 +1009,31 @@ function InspectionsTab({
   const [assignModal, setAssignModal] = useState<InspectionTask | null>(null);
   const [selectedInspector, setSelectedInspector] = useState("");
   const [assigning, setAssigning] = useState(false);
+  const [availableInspectors, setAvailableInspectors] = useState<AdminUser[]>([]);
+  const [fetchingAvailable, setFetchingAvailable] = useState(false);
 
   const inspectors = users.filter((u) => getPrimaryRole(u) === "INSPECTOR");
   const all =
     filter === "ALL"
       ? inspections
       : inspections.filter((i) => i.status === filter);
+
+  const handleOpenAssignModal = async (ins: InspectionTask) => {
+    setAssignModal(ins);
+    setSelectedInspector("");
+    if (ins.scheduledAt) {
+      setFetchingAvailable(true);
+      try {
+        const available = await inspectionService.getAvailableInspectors(ins.scheduledAt);
+        setAvailableInspectors(available.length > 0 ? available : inspectors);
+      } catch (err) {
+        setAvailableInspectors(inspectors); // fallback
+      }
+      setFetchingAvailable(false);
+    } else {
+      setAvailableInspectors(inspectors);
+    }
+  };
 
   const handleAssign = async () => {
     if (!assignModal || !selectedInspector) return;
@@ -884,10 +1138,7 @@ function InspectionsTab({
                       <td className="px-5 py-3.5">
                         {ins.status === "PENDING_ASSIGNED" && (
                           <button
-                            onClick={() => {
-                              setAssignModal(ins);
-                              setSelectedInspector("");
-                            }}
+                            onClick={() => handleOpenAssignModal(ins)}
                             className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition shadow-sm"
                           >
                             <UserCheck size={13} /> Gán Inspector
@@ -921,18 +1172,25 @@ function InspectionsTab({
               )}
             </div>
             <FormField label="Chọn Inspector">
-              <select
-                value={selectedInspector}
-                onChange={(e) => setSelectedInspector(e.target.value)}
-                className={inputCls}
-              >
-                <option value="">-- Chọn inspector --</option>
-                {inspectors.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.name || i.username}
-                  </option>
-                ))}
-              </select>
+              {fetchingAvailable ? (
+                <div className="text-sm text-slate-500 py-2.5 flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full border-2 border-slate-200 border-t-amber-500 animate-spin"></div>
+                  Đang tìm inspector rảnh...
+                </div>
+              ) : (
+                <select
+                  value={selectedInspector}
+                  onChange={(e) => setSelectedInspector(e.target.value)}
+                  className={inputCls}
+                >
+                  <option value="">-- Chọn inspector --</option>
+                  {availableInspectors.map((i) => (
+                    <option key={i.id} value={i.id}>
+                      {i.name || i.username || i.id}
+                    </option>
+                  ))}
+                </select>
+              )}
             </FormField>
             <div className="flex gap-3 pt-2">
               <button
@@ -988,11 +1246,10 @@ function OrdersTab({
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
-              filter === f
-                ? "bg-slate-900 text-white"
-                : "bg-white border border-slate-200 text-slate-500 hover:border-slate-400"
-            }`}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${filter === f
+              ? "bg-slate-900 text-white"
+              : "bg-white border border-slate-200 text-slate-500 hover:border-slate-400"
+              }`}
           >
             {f === "ALL" ? "Tất cả" : f}
           </button>
@@ -1043,15 +1300,14 @@ function OrdersTab({
                     </td>
                     <td className="px-6 py-3.5">
                       <span
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
-                          order.status === "COMPLETED"
-                            ? "bg-green-100 text-green-700"
-                            : order.status === "PENDING"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : order.status === "CANCELLED"
-                                ? "bg-red-100 text-red-700"
-                                : "bg-blue-100 text-blue-700"
-                        }`}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${order.status === "COMPLETED"
+                          ? "bg-green-100 text-green-700"
+                          : order.status === "PENDING"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : order.status === "CANCELLED"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-blue-100 text-blue-700"
+                          }`}
                       >
                         {order.status}
                       </span>
@@ -1082,9 +1338,20 @@ function PaymentsTab({
   onRefresh: () => void;
 }) {
   const [filter, setFilter] = useState<PaymentResult["status"] | "ALL">("ALL");
+  const [search, setSearch] = useState("");
 
-  const filtered =
-    filter === "ALL" ? payments : payments.filter((p) => p.status === filter);
+  const filtered = payments.filter((p: any) => {
+    const matchStatus = filter === "ALL" || p.status === filter;
+    const searchLow = search.toLowerCase();
+    const matchSearch =
+      !search ||
+      String(p.paymentId || p.id || "").toLowerCase().includes(searchLow) ||
+      String(p.orderId || p.subscriptionId || "").toLowerCase().includes(searchLow) ||
+      String(p.description || "").toLowerCase().includes(searchLow) ||
+      String(p.orderCode || "").toLowerCase().includes(searchLow);
+    return matchStatus && matchSearch;
+  });
+
   const totalRevenue = payments.reduce(
     (sum, p) => sum + (p.status === "SUCCESS" ? (p.amount ?? 0) : 0),
     0,
@@ -1133,19 +1400,24 @@ function PaymentsTab({
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
-                filter === f
-                  ? "bg-slate-900 text-white"
-                  : "bg-white border border-slate-200 text-slate-500 hover:border-slate-400"
-              }`}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${filter === f
+                ? "bg-slate-900 text-white"
+                : "bg-white border border-slate-200 text-slate-500 hover:border-slate-400"
+                }`}
             >
               {f === "ALL" ? "Tất cả" : f}
             </button>
           ),
         )}
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Tìm ID / nội dung..."
+          className="ml-auto px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-400 w-52"
+        />
         <button
           onClick={onRefresh}
-          className="ml-auto p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 transition"
+          className="p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 transition"
         >
           <RefreshCw size={15} />
         </button>
@@ -1162,38 +1434,41 @@ function PaymentsTab({
               <thead>
                 <tr className="bg-slate-50 text-slate-500 text-[11px] font-bold uppercase tracking-wider border-b border-slate-100">
                   <th className="px-6 py-3.5">Mã Giao Dịch</th>
-                  <th className="px-6 py-3.5">Mã Đơn</th>
+                  <th className="px-6 py-3.5">Mã Đơn / Sub</th>
+                  <th className="px-6 py-3.5">Nội Dung</th>
                   <th className="px-6 py-3.5">Số Tiền</th>
                   <th className="px-6 py-3.5">Trạng Thái</th>
                   <th className="px-6 py-3.5">Ngày</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {filtered.map((payment) => (
+                {filtered.map((payment, index) => (
                   <tr
-                    key={payment.paymentId}
+                    key={payment.paymentId || (payment as any).id || index}
                     className="hover:bg-slate-50/60 transition"
                   >
                     <td className="px-6 py-3.5 text-sm font-semibold text-slate-800">
-                      {String(payment.paymentId ?? "").slice(0, 8)}
+                      {String(payment.paymentId || (payment as any).id || "N/A").slice(0, 8)}
                     </td>
                     <td className="px-6 py-3.5 text-sm text-slate-600">
-                      {String(payment.orderId ?? "").slice(0, 8)}
+                      {String(payment.orderId || (payment as any).subscriptionId || "N/A").slice(0, 8)}
+                    </td>
+                    <td className="px-6 py-3.5 text-sm text-slate-500 max-w-[200px] truncate">
+                      {payment.description || "—"}
                     </td>
                     <td className="px-6 py-3.5 text-sm font-bold text-slate-800">
                       {(payment.amount ?? 0).toLocaleString("vi-VN")} ₫
                     </td>
                     <td className="px-6 py-3.5">
                       <span
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
-                          payment.status === "SUCCESS"
-                            ? "bg-green-100 text-green-700"
-                            : payment.status === "FAILED"
-                              ? "bg-red-100 text-red-700"
-                              : payment.status === "PENDING"
-                                ? "bg-yellow-100 text-yellow-700"
-                                : "bg-slate-100 text-slate-700"
-                        }`}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${payment.status === "SUCCESS"
+                          ? "bg-green-100 text-green-700"
+                          : payment.status === "FAILED"
+                            ? "bg-red-100 text-red-700"
+                            : payment.status === "PENDING"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-slate-100 text-slate-700"
+                          }`}
                       >
                         {payment.status}
                       </span>
@@ -1201,8 +1476,8 @@ function PaymentsTab({
                     <td className="px-6 py-3.5 text-sm text-slate-500">
                       {payment.createdAt
                         ? new Date(payment.createdAt).toLocaleDateString(
-                            "vi-VN",
-                          )
+                          "vi-VN",
+                        )
                         : "N/A"}
                     </td>
                   </tr>
@@ -1747,7 +2022,7 @@ function ListingsTab({
   const [search, setSearch] = useState("");
 
   const filtered = listings.filter((l) => {
-    const matchStatus = filter === "ALL" || l.status === filter;
+    const matchStatus = filter === "ALL" || l.status === filter || (filter === "LIVE" && l.status === "APPROVED");
     // defensive: title may be undefined/null if backend returns malformed data
     const title = l.title || "";
     const matchSearch =
@@ -1782,7 +2057,6 @@ function ListingsTab({
   const filterTabs: { key: ListFilter; label: string }[] = [
     { key: "ALL", label: "Tất cả" },
     { key: "PENDING", label: "Chờ duyệt" },
-    { key: "APPROVED", label: "Đã duyệt" },
     { key: "LIVE", label: "Đang bán" },
     { key: "REJECTED", label: "Từ chối" },
     { key: "DRAFT", label: "Nháp" },
@@ -1796,11 +2070,10 @@ function ListingsTab({
           <button
             key={key}
             onClick={() => setFilter(key)}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 ${
-              filter === key
-                ? "bg-slate-900 text-white"
-                : "bg-white border border-slate-200 text-slate-500 hover:border-slate-400"
-            }`}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 ${filter === key
+              ? "bg-slate-900 text-white"
+              : "bg-white border border-slate-200 text-slate-500 hover:border-slate-400"
+              }`}
           >
             {label}
             {key === "PENDING" && pendingCount > 0 && (
@@ -2142,6 +2415,7 @@ export default function AdminDashboard() {
   const [locations, setLocations] = useState<InspectionLocation[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [components, setComponents] = useState<InspectionComponent[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [payments, setPayments] = useState<PaymentResult[]>([]);
@@ -2170,6 +2444,7 @@ export default function AdminDashboard() {
   const [listingsLoading, setListingsLoading] = useState(true);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [paymentsLoading, setPaymentsLoading] = useState(true);
+  const [plansLoading, setPlansLoading] = useState(true);
   // catalogLoading was unused; each tab manages its own loading state
 
   const overviewLoading =
@@ -2271,12 +2546,26 @@ export default function AdminDashboard() {
     setPaymentsLoading(true);
     try {
       const data = await paymentService.getAllPayments();
+      console.log("[Admin] fetchPayments raw data:", data);
       setPayments(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("[Admin] fetchPayments failed", err);
       setPayments([]);
     } finally {
       setPaymentsLoading(false);
+    }
+  }, []);
+
+  const fetchPlans = useCallback(async () => {
+    setPlansLoading(true);
+    try {
+      const data = await planService.getAllPlans();
+      setPlans(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("[Admin] fetchPlans failed", err);
+      setPlans([]);
+    } finally {
+      setPlansLoading(false);
     }
   }, []);
 
@@ -2412,6 +2701,7 @@ export default function AdminDashboard() {
     fetchListings();
     fetchOrders();
     fetchPayments();
+    fetchPlans();
   }, [
     fetchUsers,
     fetchKYC,
@@ -2437,32 +2727,33 @@ export default function AdminDashboard() {
     icon: React.ElementType;
     badge?: number;
   }[] = [
-    { tab: "overview", label: "Tổng Quan", icon: LayoutDashboard },
-    { tab: "users", label: "Người Dùng", icon: Users },
-    { tab: "kyc", label: "Xác Minh KYC", icon: FileCheck, badge: pendingKYC },
-    {
-      tab: "listings",
-      label: "Duyệt Bài Đăng",
-      icon: Tag,
-      badge: pendingListings,
-    },
-    {
-      tab: "inspections",
-      label: "Kiểm Định",
-      icon: ClipboardList,
-      badge: pendingInsp,
-    },
-    { tab: "orders", label: "Đơn Hàng", icon: ShoppingCart, badge: undefined },
-    {
-      tab: "payments",
-      label: "Thanh Toán",
-      icon: CreditCard,
-      badge: undefined,
-    },
-    { tab: "create-inspector", label: "Tạo Kiểm Định Viên", icon: UserPlus },
-    { tab: "catalog", label: "Thương Hiệu & Hạng Mục", icon: Wrench },
-    { tab: "locations", label: "Cơ Sở Kiểm Định", icon: MapPin },
-  ];
+      { tab: "overview", label: "Tổng Quan", icon: LayoutDashboard },
+      { tab: "users", label: "Người Dùng", icon: Users },
+      { tab: "kyc", label: "Xác Minh KYC", icon: FileCheck, badge: pendingKYC },
+      {
+        tab: "listings",
+        label: "Duyệt Bài Đăng",
+        icon: Tag,
+        badge: pendingListings,
+      },
+      {
+        tab: "inspections",
+        label: "Kiểm Định",
+        icon: ClipboardList,
+        badge: pendingInsp,
+      },
+      { tab: "orders", label: "Đơn Hàng", icon: ShoppingCart, badge: undefined },
+      {
+        tab: "payments",
+        label: "Thanh Toán",
+        icon: CreditCard,
+        badge: undefined,
+      },
+      { tab: "create-inspector", label: "Tạo Kiểm Định Viên", icon: UserPlus },
+      { tab: "catalog", label: "Thương Hiệu & Hạng Mục", icon: Wrench },
+      { tab: "locations", label: "Cơ Sở Kiểm Định", icon: MapPin },
+      { tab: "plans", label: "Quản Lý Gói", icon: Zap },
+    ];
 
   return (
     <DashboardErrorBoundary>
@@ -2604,6 +2895,13 @@ export default function AdminDashboard() {
                   locations={locations}
                   loading={locLoading}
                   onRefresh={fetchLocations}
+                />
+              )}
+              {activeTab === "plans" && (
+                <PlansTab
+                  plans={plans}
+                  loading={plansLoading}
+                  onRefresh={fetchPlans}
                 />
               )}
             </div>

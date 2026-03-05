@@ -32,6 +32,8 @@ import OrderTrackingPage from "./pages/OrderTrackingPage";
 import CreateListingPage from "./pages/CreateListingPage";
 import ScheduleInspectionPage from "./pages/ScheduleInspectionPage";
 import DebugPage from "./pages/DebugPage";
+import ChoosePlanPage from "./pages/seller/ChoosePlanPage";
+import PaymentResultPage from "./pages/seller/PaymentResultPage";
 
 // --- Contexts & Protection ---
 import { AuthProvider } from "./contexts/AuthContext";
@@ -183,6 +185,17 @@ function App() {
                 </>
               }
             />
+            {/* Payment Return Callback */}
+            <Route
+              path="/payment/result"
+              element={
+                <>
+                  <Header />
+                  <PaymentResultPage />
+                  <Footer />
+                </>
+              }
+            />
             {/* --- Product Discovery --- */}
             <Route
               path="/search"
@@ -255,6 +268,18 @@ function App() {
                   <>
                     <Header />
                     <ScheduleInspectionPage />
+                    <Footer />
+                  </>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/seller/choose-plan/:listingId"
+              element={
+                <ProtectedRoute requiredRole="seller">
+                  <>
+                    <Header />
+                    <ChoosePlanPage />
                     <Footer />
                   </>
                 </ProtectedRoute>

@@ -58,6 +58,14 @@ export const API_ENDPOINTS = {
   INSPECTION_ASSIGN_INSPECTOR: `${API_BASE_URL}/inspection/assign-inspector`, // PUT assign inspector (Admin)
   INSPECTION_BY_LISTING: (listingId: string) => `${API_BASE_URL}/inspection/${listingId}`, // GET result by listing
   INSPECTION_SCORES: (inspectionId: string) => `${API_BASE_URL}/inspection/${inspectionId}/scores`, // POST submit scores
+  INSPECTION_AVAILABLE_INSPECTOR: `${API_BASE_URL}/inspection/available-inspector`, // GET available inspector
+
+  // Plan (Subscription pricing tiers)
+  PLAN: `${API_BASE_URL}/plan`,
+
+  // Subscription
+  SUBSCRIPTION: `${API_BASE_URL}/subscription`,
+  SUBSCRIPTION_BY_LISTING: (listingId: string) => `${API_BASE_URL}/subscription/${listingId}`,
 
   // Inspection Location (per Swagger — inspection company locations)
   LOCATION: `${API_BASE_URL}/location`,                          // GET all | POST create (Admin)
@@ -78,7 +86,9 @@ export const API_ENDPOINTS = {
   ORDER_ADMIN_LIST: `${API_BASE_URL}/order/admin`, // Admin only
 
   // Payment
-  PAYMENT_CREATE: `${API_BASE_URL}/payment/create`,
+  PAYMENT_CREATE_ORDER: `${API_BASE_URL}/payment/create/order`, // Link payment for bike order
+  PAYMENT_CREATE_SUBSCRIPTION: `${API_BASE_URL}/payment/create/subscription`, // Sub payment via PayOS
+  PAYMENT_ALL: `${API_BASE_URL}/payment/all`, // Get all payments
   PAYMENT_STATUS: (orderId: string) => `${API_BASE_URL}/payment/${orderId}/status`,
   PAYMENT_HISTORY: `${API_BASE_URL}/payment/history`,
   PAYMENT_REFUND: (paymentId: string) => `${API_BASE_URL}/payment/${paymentId}/refund`, // Admin only

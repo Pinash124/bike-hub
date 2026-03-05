@@ -134,4 +134,23 @@ export const inspectionService = {
             return false;
         }
     },
+
+    /**
+     * [ADMIN] Lấy inspector rảnh vào thời gian schedule
+     * GET /inspection/available-inspector?startTime=...
+     */
+    getAvailableInspectors: async (startTime: string): Promise<any[]> => {
+        try {
+            const response = await api.get(API_ENDPOINTS.INSPECTION_AVAILABLE_INSPECTOR, {
+                params: { startTime }
+            });
+            if (response.data?.code === 1000) {
+                return response.data.result ?? [];
+            }
+            return [];
+        } catch (error) {
+            console.error('Error fetching available inspectors:', error);
+            return [];
+        }
+    },
 };
