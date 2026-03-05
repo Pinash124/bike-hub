@@ -1086,7 +1086,7 @@ function PaymentsTab({
   const filtered =
     filter === "ALL" ? payments : payments.filter((p) => p.status === filter);
   const totalRevenue = payments.reduce(
-    (sum, p) => sum + (p.status === "SUCCESS" ? p.amount ?? 0 : 0),
+    (sum, p) => sum + (p.status === "SUCCESS" ? (p.amount ?? 0) : 0),
     0,
   );
 
@@ -1199,7 +1199,11 @@ function PaymentsTab({
                       </span>
                     </td>
                     <td className="px-6 py-3.5 text-sm text-slate-500">
-                      {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString("vi-VN") : "N/A"}
+                      {payment.createdAt
+                        ? new Date(payment.createdAt).toLocaleDateString(
+                            "vi-VN",
+                          )
+                        : "N/A"}
                     </td>
                   </tr>
                 ))}
