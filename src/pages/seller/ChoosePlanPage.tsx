@@ -1,11 +1,22 @@
 // src/pages/seller/ChoosePlanPage.tsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Fragment } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { planService, type Plan } from '../../services/plan.service';
 import { subscriptionService } from '../../services/subscription.service';
 import { paymentService } from '../../services/payment.service';
 import { listingService, type Listing } from '../../services/listing.service';
-import { Check, ShieldCheck, Zap, ArrowLeft, Loader2, AlertCircle, CreditCard } from 'lucide-react';
+import {
+    Check,
+    ShieldCheck,
+    Zap,
+    ArrowLeft,
+    Loader2,
+    AlertCircle,
+    CreditCard,
+    Bike,
+    Tag,
+    Clock
+} from 'lucide-react';
 
 export default function ChoosePlanPage() {
     const { listingId } = useParams<{ listingId: string }>();
@@ -28,7 +39,8 @@ export default function ChoosePlanPage() {
             return;
         }
         fetchData(listingId);
-    }, [listingId, navigate]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [listingId]);
 
     const fetchData = async (id: string) => {
         setIsLoading(true);
@@ -46,8 +58,7 @@ export default function ChoosePlanPage() {
                     throw new Error('Không tìm thấy thông tin xe: ' + msg);
                 }
             } else {
-                console.log('[ChoosePlan] Using listing from state:', listing.id);
-                // Optionally refresh listing data in background without blocking
+                // Silent refresh listing (non-blocking)
                 listingService.getListingById(id).then(setListing).catch(e => console.warn('Silent refresh failed:', e));
             }
 
@@ -58,9 +69,7 @@ export default function ChoosePlanPage() {
                     subscriptionService.getSubscriptionByListingId(id).catch(() => null)
                 ]);
 
-                console.log('[ChoosePlan] Raw Plans:', planData);
                 const activePlans = Array.isArray(planData) ? planData.filter(p => p.isActive !== false) : [];
-                console.log('[ChoosePlan] Active Plans:', activePlans.length);
                 setPlans(activePlans);
                 setCurrentSubscription(subData);
 
@@ -69,12 +78,6 @@ export default function ChoosePlanPage() {
                     const subPlan = activePlans.find(p => p.id === subData.planId);
                     if (subPlan) setSelectedPlanDetails(subPlan);
                     setShowConfirmation(true);
-                }
-
-                if (activePlans.length === 0 && Array.isArray(planData) && planData.length > 0) {
-                    console.warn('[ChoosePlan] Plans found but all filtered out (isActive).');
-                } else if (activePlans.length === 0) {
-                    console.warn('[ChoosePlan] No plans returned from API.');
                 }
             } catch (err: any) {
                 throw new Error('Lỗi tải gói dịch vụ và đăng ký: ' + (err.message || 'Lỗi không xác định'));
@@ -137,6 +140,51 @@ export default function ChoosePlanPage() {
         }
     };
 
+    const CoverImage = ({ src, alt }: { src?: string; alt: string }) => (
+        <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center ring-1 ring-slate-200">
+            {src ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={src} alt={alt} className="w-full h-full object-cover" />
+            ) : (
+                <Bike size={20} className="text-slate-400" />
+            )}
+        </div>
+    );
+
+    const ListingSummary = ({ data }: { data: Listing }) => {
+        const firstImage = data.images?.sort((a, b) => a.imageOrder - b.imageOrder)[0]?.secureUrl;
+        return (
+            <div className="max-w-6xl mx-auto px-6">
+                <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4 min-w-0">
+                        <CoverImage src={firstImage} alt={data.title} />
+                        <div className="min-w-0">
+                            <div className="flex items-center gap-2 text-xs text-slate-500 font-semibold">
+                                <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full ring-1 ring-slate-200">
+                                    <Tag size={12} /> {data.brand?.name || 'Thương hiệu'}</span>
+                                {data.bikeType && (
+                                    <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full ring-1 ring-slate-200">
+                                        <Bike size={12} /> {data.bikeType}
+                                    </span>
+                                )}
+                                <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full ring-1 ring-slate-200">
+                                    <Clock size={12} /> {new Date(data.createdAt).toLocaleDateString('vi-VN')}
+                                </span>
+                            </div>
+                            <h2 className="text-base md:text-lg font-bold text-slate-900 truncate">{data.title}</h2>
+                        </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                        <div className="text-xs text-slate-500 font-semibold mb-1">Giá niêm yết</div>
+                        <div className="text-lg font-black tracking-tight text-slate-900">
+                            {data.price?.toLocaleString('vi-VN')} ₫
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     if (isLoading) {
         return (
             <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
@@ -149,13 +197,13 @@ export default function ChoosePlanPage() {
     if (error || !listing) {
         return (
             <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-6">
-                <div className="bg-red-50 text-red-600 p-6 rounded-2xl max-w-md text-center border border-red-100">
-                    <AlertCircle size={48} className="mx-auto mb-4 text-red-500" />
-                    <h2 className="text-xl font-bold mb-2">Lỗi tải dữ liệu</h2>
-                    <p>{error || 'Không tìm thấy thông tin xe.'}</p>
+                <div className="bg-white border border-red-200 text-red-700 p-6 rounded-2xl max-w-md text-center shadow-sm">
+                    <AlertCircle size={40} className="mx-auto mb-3 text-red-500" />
+                    <h2 className="text-lg font-bold mb-1">Không thể tải dữ liệu</h2>
+                    <p className="text-sm">{error || 'Không tìm thấy thông tin xe.'}</p>
                     <button
                         onClick={() => navigate('/seller/dashboard')}
-                        className="mt-6 px-6 py-2 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition"
+                        className="mt-6 px-5 py-2.5 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition"
                     >
                         Quay lại Dashboard
                     </button>
@@ -166,53 +214,65 @@ export default function ChoosePlanPage() {
 
     return (
         <div className="min-h-screen bg-slate-50 font-sans pb-20">
-            {/* Header */}
-            <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
+            {/* Sticky Header */}
+            <div className="bg-white/80 backdrop-blur border-b border-slate-200 sticky top-0 z-20">
                 <div className="max-w-6xl mx-auto px-6 h-16 flex items-center gap-4">
                     <button
                         onClick={() => navigate(-1)}
                         className="w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition"
+                        aria-label="Quay lại"
                     >
                         <ArrowLeft size={20} />
                     </button>
-                    <div>
-                        <h1 className="text-lg font-black text-slate-800 tracking-tight leading-tight">Chọn Gói Dịch Vụ - Đăng Bán Xe</h1>
-                        <p className="text-xs font-semibold text-slate-500 truncate">Xe: {listing.title}</p>
+                    <div className="flex-1 min-w-0">
+                        <div className="text-[13px] font-semibold text-slate-500">Chọn gói hiển thị</div>
+                        <div className="text-base font-black text-slate-900 tracking-tight leading-tight">Đăng bán xe</div>
                     </div>
+                    {currentSubscription?.status && (
+                        <div className="hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold ring-1 ring-slate-200 bg-slate-50 text-slate-700">
+                            <ShieldCheck size={14} className="text-emerald-600" />
+                            <span>Trạng thái: {currentSubscription.status}</span>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            <div className="max-w-6xl mx-auto px-6 py-12">
+            {/* Listing summary */}
+            <div className="py-4 bg-white border-b border-slate-200">
+                <ListingSummary data={listing} />
+            </div>
+
+            <div className="max-w-6xl mx-auto px-6 py-10">
                 {showConfirmation && selectedPlanDetails ? (
-                    <div className="max-w-2xl mx-auto animate-in fade-in zoom-in duration-500">
-                        <div className="bg-white border-2 border-indigo-600 rounded-[2.5rem] shadow-2xl shadow-indigo-600/10 overflow-hidden">
-                            <div className="bg-indigo-600 p-8 text-center text-white">
-                                <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <Check size={32} className="text-white" strokeWidth={3} />
+                    <div className="max-w-2xl mx-auto">
+                        <div className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
+                            <div className="bg-gradient-to-r from-indigo-600 to-indigo-500 p-6 text-white">
+                                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-3">
+                                    <Check size={26} className="text-white" strokeWidth={3} />
                                 </div>
-                                <h3 className="text-2xl font-black uppercase tracking-tight">Đã ghi nhận gói đăng ký</h3>
-                                <p className="text-indigo-100 font-medium">Bạn đã sẵn sàng để đưa tin đăng này lên trang chủ.</p>
+                                <h3 className="text-xl font-black">Gói đăng ký đã được ghi nhận</h3>
+                                <p className="text-indigo-100 text-sm">Bạn đã sẵn sàng thanh toán để kích hoạt tin đăng.</p>
                             </div>
 
-                            <div className="p-8">
-                                <div className="flex justify-between items-center mb-6 pb-6 border-b border-slate-100">
+                            <div className="p-6">
+                                <div className="grid grid-cols-2 gap-4 mb-6 pb-6 border-b border-slate-100">
                                     <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Gói đã chọn</p>
-                                        <p className="text-xl font-black text-slate-900">{selectedPlanDetails.name}</p>
+                                        <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Gói đã chọn</div>
+                                        <div className="text-base font-bold text-slate-900">{selectedPlanDetails.name}</div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Thời hạn</p>
-                                        <p className="text-xl font-black text-slate-900">{selectedPlanDetails.durationDays} ngày</p>
+                                        <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Thời hạn</div>
+                                        <div className="text-base font-bold text-slate-900">{selectedPlanDetails.durationDays} ngày</div>
                                     </div>
                                 </div>
 
-                                <div className="flex justify-between items-center mb-8">
-                                    <p className="font-bold text-slate-600">Tổng phí thanh toán</p>
-                                    <p className="text-3xl font-black text-indigo-600">{selectedPlanDetails.price.toLocaleString('vi-VN')} ₫</p>
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="text-slate-600 font-semibold">Tổng phí thanh toán</div>
+                                    <div className="text-2xl font-black text-indigo-600">{selectedPlanDetails.price.toLocaleString('vi-VN')} ₫</div>
                                 </div>
 
                                 {isProcessing && (
-                                    <div className="mb-6 p-4 bg-indigo-50 rounded-2xl flex items-center justify-center gap-3 text-indigo-600 font-bold animate-pulse text-sm">
+                                    <div className="mb-6 p-4 bg-indigo-50 rounded-xl flex items-center justify-center gap-3 text-indigo-700 font-semibold animate-pulse text-sm">
                                         <Loader2 className="animate-spin" size={18} />
                                         Đang chuyển hướng đến PayOS...
                                     </div>
@@ -222,28 +282,28 @@ export default function ChoosePlanPage() {
                                     <button
                                         onClick={handleResumePayment}
                                         disabled={isProcessing}
-                                        className="w-full py-4 bg-indigo-600 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-3 disabled:opacity-50"
+                                        className="w-full py-3.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 disabled:opacity-60"
                                     >
-                                        <CreditCard size={20} /> Thanh toán ngay qua PayOS
+                                        <CreditCard size={18} /> Thanh toán qua PayOS
                                     </button>
 
                                     <div className="grid grid-cols-2 gap-3">
                                         <button
                                             onClick={() => navigate('/seller/dashboard')}
-                                            className="py-4 bg-slate-900 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-slate-800 transition flex items-center justify-center gap-2"
+                                            className="py-3.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition"
                                         >
                                             Hoàn thành
                                         </button>
                                         <button
                                             onClick={() => navigate('/seller/dashboard')}
-                                            className="py-4 bg-slate-100 text-slate-600 font-black uppercase tracking-widest rounded-2xl hover:bg-slate-200 transition"
+                                            className="py-3.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition"
                                         >
                                             Hủy
                                         </button>
                                     </div>
                                 </div>
 
-                                <p className="mt-8 text-center text-xs text-slate-400 font-medium">
+                                <p className="mt-6 text-center text-xs text-slate-500">
                                     * Tin đăng sẽ hiển thị chính thức sau khi Admin xác nhận thanh toán.
                                 </p>
                             </div>
@@ -254,45 +314,45 @@ export default function ChoosePlanPage() {
                                 setShowConfirmation(false);
                                 setCurrentSubscription(null); // allow re-select
                             }}
-                            className="mt-6 mx-auto flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-indigo-600 transition"
+                            className="mt-6 mx-auto flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-indigo-600 transition"
                         >
-                            <ArrowLeft size={16} /> Thay đổi gói dịch vụ khác
+                            <ArrowLeft size={16} /> Chọn gói khác
                         </button>
                     </div>
                 ) : (
-                    <>
-                        <div className="text-center max-w-2xl mx-auto mb-16">
-                            <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight mb-4">
-                                Nâng Tầm Tin Đăng Của Bạn
+                    <Fragment>
+                        <div className="text-center max-w-2xl mx-auto mb-10">
+                            <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-3">
+                                Nâng tầm tin đăng của bạn
                             </h2>
-                            <p className="text-lg text-slate-600 font-medium">
+                            <p className="text-slate-600">
                                 Xe đã được kiểm định. Hãy chọn gói hiển thị và thanh toán để xe được chính thức có mặt trên trang chủ BikeHub.
                             </p>
                         </div>
 
                         {currentSubscription && (
-                            <div className="max-w-2xl mx-auto mb-12 p-6 bg-white border border-slate-200 rounded-3xl shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div className="max-w-3xl mx-auto mb-10 p-5 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
-                                        <ShieldCheck size={24} />
+                                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
+                                        <ShieldCheck size={20} />
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-slate-800">Xe đã có gói đăng ký</h3>
-                                        <p className="text-sm text-slate-500 font-medium">
-                                            Trạng thái: <span className="font-bold text-emerald-600 uppercase italic">{currentSubscription.status}</span>
+                                        <h3 className="font-semibold text-slate-900">Xe đã có gói đăng ký</h3>
+                                        <p className="text-sm text-slate-600">
+                                            Trạng thái: <span className="font-semibold text-emerald-700">{currentSubscription.status}</span>
                                         </p>
                                     </div>
                                 </div>
                                 {currentSubscription.status === 'PENDING_PAYMENT' && (
                                     <button
                                         onClick={() => setShowConfirmation(true)}
-                                        className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-600/20 text-sm whitespace-nowrap"
+                                        className="px-5 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition shadow-sm"
                                     >
-                                        Tiếp tục Thanh toán
+                                        Tiếp tục thanh toán
                                     </button>
                                 )}
                                 {currentSubscription.status === 'ACTIVE' && (
-                                    <div className="text-sm font-bold text-emerald-600 bg-emerald-50 px-4 py-2 rounded-lg border border-emerald-100 italic">
+                                    <div className="text-sm font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
                                         Đã kích hoạt gói
                                     </div>
                                 )}
@@ -300,73 +360,77 @@ export default function ChoosePlanPage() {
                         )}
 
                         {plans.length === 0 ? (
-                            <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center max-w-md mx-auto">
-                                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
-                                    <Zap size={32} />
+                            <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center max-w-md mx-auto">
+                                <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
+                                    <Zap size={28} />
                                 </div>
-                                <h3 className="text-xl font-bold text-slate-800 mb-2">Hiện chưa có gói dịch vụ</h3>
-                                <p className="text-slate-500 mb-6">Hệ thống đang cập nhật các gói đăng tin mới. Vui lòng quay lại sau.</p>
+                                <h3 className="text-lg font-bold text-slate-900 mb-1">Hiện chưa có gói dịch vụ</h3>
+                                <p className="text-slate-600 mb-5 text-sm">Hệ thống đang cập nhật các gói đăng tin mới. Vui lòng quay lại sau.</p>
                                 <button
                                     onClick={() => navigate('/seller/dashboard')}
-                                    className="px-6 py-2 bg-slate-900 text-white font-bold rounded-xl hover:bg-black transition"
+                                    className="px-5 py-2.5 bg-slate-900 text-white font-semibold rounded-xl hover:bg-black transition"
                                 >
                                     Quay lại Dashboard
                                 </button>
                             </div>
                         ) : (
-                            <>
+                            <Fragment>
                                 {isProcessing && (
-                                    <div className="mb-12 p-6 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center gap-4 text-indigo-700 font-bold animate-pulse max-w-2xl mx-auto">
-                                        <Loader2 className="animate-spin" size={24} />
+                                    <div className="mb-8 p-4 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-center gap-3 text-indigo-700 font-semibold animate-pulse max-w-2xl mx-auto">
+                                        <Loader2 className="animate-spin" size={18} />
                                         Đang tạo giao dịch...
                                     </div>
                                 )}
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-start">
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
                                     {plans.map((plan) => {
-                                        const isPremium = plan.price > 100000;
+                                        const isRecommended = plan.price > 100000; // simple heuristic for spotlight
                                         return (
                                             <div
                                                 key={plan.id}
-                                                className={`relative flex flex-col p-8 rounded-3xl border-2 transition-all duration-300 ${isPremium ? 'border-indigo-600 shadow-2xl shadow-indigo-600/20 scale-105 bg-white z-10' : 'border-slate-200 bg-white hover:border-indigo-300 hover:shadow-xl hover:shadow-slate-200/50'}`}
+                                                className={`relative flex flex-col p-6 rounded-2xl border transition-all duration-300 bg-white ${
+                                                    isRecommended
+                                                        ? 'border-indigo-500 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-200'
+                                                        : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
+                                                }`}
                                             >
-                                                {isPremium && (
-                                                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest shadow-lg flex items-center gap-1.5">
-                                                        <Zap size={14} className="fill-white" /> Khuyên Dùng
+                                                {isRecommended && (
+                                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-3 py-0.5 rounded-full text-[11px] font-black tracking-wider shadow-sm flex items-center gap-1.5">
+                                                        <Zap size={12} className="fill-white" /> Khuyên dùng
                                                     </div>
                                                 )}
 
-                                                <div className="mb-8 text-center pt-2">
-                                                    <h3 className="text-xl font-black text-slate-900 tracking-tight mb-2">{plan.name}</h3>
-                                                    <p className="text-slate-500 font-medium text-sm h-10 mb-6">{plan.description}</p>
-
-                                                    <div className="flex items-baseline justify-center gap-1">
-                                                        <span className="text-4xl font-black tracking-tighter text-slate-900 flex items-start">
-                                                            {plan.price.toLocaleString('vi-VN')}
-                                                            <span className="text-sm font-bold text-slate-500 tracking-normal ml-1 mt-1">₫</span>
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-sm font-bold text-slate-400 mt-2 uppercase tracking-wider">/ {plan.durationDays} ngày</p>
+                                                <div className="mb-6 text-center">
+                                                    <h3 className="text-lg font-black text-slate-900 tracking-tight mb-1">{plan.name}</h3>
+                                                    <p className="text-slate-600 text-sm min-h-[40px]">{plan.description}</p>
                                                 </div>
 
-                                                <ul className="space-y-4 mb-8 flex-1">
-                                                    <li className="flex items-start gap-3">
-                                                        <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center ${isPremium ? 'bg-indigo-100 text-indigo-600' : 'bg-green-100 text-green-600'}`}>
+                                                <div className="mb-6 text-center">
+                                                    <div className="text-3xl font-black tracking-tight text-slate-900">
+                                                        {plan.price.toLocaleString('vi-VN')}<span className="text-sm font-semibold text-slate-500 ml-1">₫</span>
+                                                    </div>
+                                                    <div className="text-xs font-semibold text-slate-500 mt-1">/ {plan.durationDays} ngày</div>
+                                                </div>
+
+                                                <ul className="space-y-3 mb-6 flex-1">
+                                                    <li className="flex items-start gap-2">
+                                                        <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center ${isRecommended ? 'bg-indigo-100 text-indigo-600' : 'bg-emerald-100 text-emerald-600'}`}>
                                                             <Check size={12} strokeWidth={4} />
                                                         </div>
-                                                        <span className="text-sm font-semibold text-slate-700">Đăng bán công khai {plan.durationDays} ngày</span>
+                                                        <span className="text-sm text-slate-700">Đăng bán công khai {plan.durationDays} ngày</span>
                                                     </li>
-                                                    <li className="flex items-start gap-3">
-                                                        <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center ${isPremium ? 'bg-indigo-100 text-indigo-600' : 'bg-green-100 text-green-600'}`}>
+                                                    <li className="flex items-start gap-2">
+                                                        <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center ${isRecommended ? 'bg-indigo-100 text-indigo-600' : 'bg-emerald-100 text-emerald-600'}`}>
                                                             <Check size={12} strokeWidth={4} />
                                                         </div>
-                                                        <span className="text-sm font-semibold text-slate-700">Dấu tích xanh đã kiểm tra</span>
+                                                        <span className="text-sm text-slate-700">Dấu tích xanh đã kiểm tra</span>
                                                     </li>
-                                                    {isPremium && (
-                                                        <li className="flex items-start gap-3">
+                                                    {isRecommended && (
+                                                        <li className="flex items-start gap-2">
                                                             <div className="mt-0.5 w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center">
                                                                 <ShieldCheck size={14} strokeWidth={3} />
                                                             </div>
-                                                            <span className="text-sm font-bold text-indigo-900">Ưu tiên hiển thị Top tin</span>
+                                                            <span className="text-sm text-slate-700 font-semibold">Ưu tiên hiển thị Top tin</span>
                                                         </li>
                                                     )}
                                                 </ul>
@@ -374,10 +438,11 @@ export default function ChoosePlanPage() {
                                                 <button
                                                     onClick={() => handleSelectPlan(plan.id)}
                                                     disabled={isProcessing || currentSubscription?.status === 'ACTIVE'}
-                                                    className={`w-full py-4 text-sm font-black uppercase tracking-widest rounded-2xl transition-all duration-200 shadow-sm ${isPremium
-                                                        ? 'bg-indigo-600 hover:bg-indigo-700 text-white hover:shadow-lg hover:-translate-y-0.5'
-                                                        : 'bg-slate-100 hover:bg-slate-200 text-slate-800'
-                                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                    className={`w-full py-3 text-sm font-semibold rounded-xl transition-all ${
+                                                        isRecommended
+                                                            ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
+                                                            : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
+                                                    } disabled:opacity-60 disabled:cursor-not-allowed`}
                                                 >
                                                     {currentSubscription?.status === 'ACTIVE' ? 'Đã kích hoạt' : `Chọn ${plan.name}`}
                                                 </button>
@@ -385,9 +450,9 @@ export default function ChoosePlanPage() {
                                         );
                                     })}
                                 </div>
-                            </>
+                            </Fragment>
                         )}
-                    </>
+                    </Fragment>
                 )}
             </div>
         </div>
