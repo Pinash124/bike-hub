@@ -61,7 +61,7 @@ export const listingService = {
         }
     },
 
-    /** Admin & public: GET /listing — all listings */
+    /** Homepage & public: GET /listing — approved listings */
     getListings: async (page = 1, size = 1000): Promise<Listing[]> => {
         try {
             const response = await api.get(API_ENDPOINTS.LISTING, { params: { page, size } });
@@ -79,8 +79,20 @@ export const listingService = {
         }
     },
 
-    /** Alias used by admin listing tab */
-    getAllListings: async (): Promise<Listing[]> => listingService.getListings(),
+    /** Admin: GET /listing/all — all listings for moderation */
+    getAllListings: async (): Promise<Listing[]> => {
+        try {
+            const response = await api.get(API_ENDPOINTS.LISTING_ALL);
+            if (response.data?.code === 1000) {
+                const result = response.data.result;
+                if (Array.isArray(result)) return result;
+            }
+            return [];
+        } catch (error) {
+            console.error('Error fetching all listings:', error);
+            return [];
+        }
+    },
 
     /** [ADMIN] POST /listing/{id}/approve */
     approveListing: async (id: string): Promise<boolean> => {

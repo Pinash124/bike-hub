@@ -16,8 +16,8 @@ export default function SearchPage() {
   const fetchListings = async () => {
     try {
       const data = await listingService.getListings();
-      // Map API data to UI Product format. Only show 'LIVE' listings.
-      const liveListings = data.filter((listing) => listing.status === 'LIVE');
+      // Map API data to UI Product format. Only show 'LIVE' and 'APPROVED' listings.
+      const liveListings = data.filter((listing) => listing.status === 'LIVE' || listing.status === 'APPROVED');
       const mappedProducts: Product[] = liveListings.map((listing: Listing) => ({
         id: listing.id,
         name: listing.title,

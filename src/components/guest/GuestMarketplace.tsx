@@ -22,7 +22,7 @@ export const GuestMarketplace: React.FC = () => {
         listingService.getListings(),
         brandService.getAllBrands()
       ]);
-      setBikes(listingsData.filter((b) => b.status === 'LIVE'));
+      setBikes(listingsData.filter((b) => b.status === 'LIVE' || b.status === 'APPROVED'));
       setBrands(brandsData);
     } catch (error) {
       console.error('Failed to fetch marketplace data:', error);

@@ -22,8 +22,9 @@ export default function FilterSection() {
       setIsLoading(true)
       try {
         const data = await listingService.getListings();
+        const activeListings = data.filter((listing: Listing) => listing.status === 'LIVE' || listing.status === 'APPROVED');
         // Map API data to UI format
-        const mappedBikes = data.map((listing: Listing) => ({
+        const mappedBikes = activeListings.map((listing: Listing) => ({
           id: listing.id,
           image: listing.images?.[0]?.secureUrl || 'https://images.unsplash.com/photo-1532298229144-0ee050c99d2b?q=80&w=800',
           title: listing.title,
@@ -75,8 +76,8 @@ export default function FilterSection() {
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-3 px-8 py-3.5 rounded-full font-bold text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 shadow-sm ${showFilters
-                  ? 'bg-slate-900 text-white shadow-xl shadow-slate-200'
-                  : 'bg-white border border-slate-100 text-slate-500 hover:border-green-500 hover:text-green-600'
+                ? 'bg-slate-900 text-white shadow-xl shadow-slate-200'
+                : 'bg-white border border-slate-100 text-slate-500 hover:border-green-500 hover:text-green-600'
                 }`}
             >
               <Filter size={14} className={showFilters ? 'animate-pulse' : ''} />

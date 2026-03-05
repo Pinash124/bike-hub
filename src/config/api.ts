@@ -38,6 +38,7 @@ export const API_ENDPOINTS = {
 
   // Listing
   LISTING: `${API_BASE_URL}/listing`,
+  LISTING_ALL: `${API_BASE_URL}/listing/all`, // Admin only
   MY_LISTING: `${API_BASE_URL}/listing/my-list`,
   LISTING_DETAIL: (id: string) => `${API_BASE_URL}/listing/${id}`,
   LISTING_ACTIVATE: (id: string) => `${API_BASE_URL}/listing/${id}/activate`,
