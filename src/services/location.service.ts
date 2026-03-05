@@ -60,7 +60,7 @@ export const locationService = {
   getLocationById: async (id: string): Promise<InspectionLocation | null> => {
     try {
       const response = await api.get(API_ENDPOINTS.LOCATION_BY_ID(id));
-      if (response.data?.code === 0) {
+      if (response.data?.code === 1000) {
         return response.data.result;
       }
       return null;
