@@ -1086,7 +1086,7 @@ function PaymentsTab({
   const filtered =
     filter === "ALL" ? payments : payments.filter((p) => p.status === filter);
   const totalRevenue = payments.reduce(
-    (sum, p) => sum + (p.status === "SUCCESS" ? p.amount : 0),
+    (sum, p) => sum + (p.status === "SUCCESS" ? p.amount ?? 0 : 0),
     0,
   );
 
@@ -1175,13 +1175,13 @@ function PaymentsTab({
                     className="hover:bg-slate-50/60 transition"
                   >
                     <td className="px-6 py-3.5 text-sm font-semibold text-slate-800">
-                      {payment.paymentId.slice(0, 8)}
+                      {String(payment.paymentId ?? "").slice(0, 8)}
                     </td>
                     <td className="px-6 py-3.5 text-sm text-slate-600">
-                      {payment.orderId.slice(0, 8)}
+                      {String(payment.orderId ?? "").slice(0, 8)}
                     </td>
                     <td className="px-6 py-3.5 text-sm font-bold text-slate-800">
-                      {payment.amount.toLocaleString("vi-VN")} ₫
+                      {(payment.amount ?? 0).toLocaleString("vi-VN")} ₫
                     </td>
                     <td className="px-6 py-3.5">
                       <span
@@ -1199,7 +1199,7 @@ function PaymentsTab({
                       </span>
                     </td>
                     <td className="px-6 py-3.5 text-sm text-slate-500">
-                      {new Date(payment.createdAt).toLocaleDateString("vi-VN")}
+                      {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString("vi-VN") : "N/A"}
                     </td>
                   </tr>
                 ))}

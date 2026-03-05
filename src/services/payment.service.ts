@@ -13,6 +13,8 @@ export interface PaymentResult {
     paymentId?: string | number;
     status?: string;
     amount?: number;
+    orderId?: string | number;
+    createdAt?: string | Date;
 }
 
 export const paymentService = {
