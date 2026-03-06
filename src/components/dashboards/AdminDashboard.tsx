@@ -870,8 +870,10 @@ function KycTab({
               icon: Clock,
             };
             const Icon = st.icon;
-            const isProc = processing === kyc.id;
-            const canVerify = !String(kyc.id || '').startsWith('__no_id__');
+            const realId = String(kyc.id || '');
+            const effectiveId = realId.startsWith('__no_id__') ? (kyc.idNumber || '') : realId;
+            const isProc = processing === effectiveId;
+            const canVerify = !!effectiveId;
             return (
               <div
                 key={kyc.id || String(i)}
@@ -1004,14 +1006,14 @@ function KycTab({
                 {kyc.status === "PENDING" && (
                   <div className="flex gap-2 pt-1">
                     <button
-                      onClick={() => handleVerify(kyc.id, false)}
+                      onClick={() => handleVerify(effectiveId, false)}
                       disabled={isProc || !canVerify}
                       className="flex-1 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-bold uppercase tracking-wider transition disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <XCircle size={14} /> Từ chối
                     </button>
                     <button
-                      onClick={() => handleVerify(kyc.id, true)}
+                      onClick={() => handleVerify(effectiveId, true)}
                       disabled={isProc || !canVerify}
                       className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition disabled:opacity-50 flex items-center justify-center gap-1 shadow-md shadow-emerald-500/20"
                     >
