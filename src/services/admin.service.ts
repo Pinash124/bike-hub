@@ -85,18 +85,18 @@ export const adminService = {
             const response = await api.get(API_ENDPOINTS.KYC_GET_ALL);
             if (response.data?.code === 1000) {
                 const raw: any[] = response.data.result ?? [];
-                const normalized: KYCRequest[] = raw.map((item: any) => {
-                    // Backend may return either:
-                    //  (a) UserResponse (with kycProfile nested) — user is the root
-                    //  (b) KycResponse directly with nested user
-                    // Detect which shape we have:
+                const normalized: KYCRequest[] = raw.map((item: any, index: number) => {
+                    // Accept three shapes:
+                    //  (a) UserResponse with kycProfile
+                    //  (b) KycResponse with nested user
+                    //  (c) Bare KycResponse (no user/id/status)
                     const isUserShape = !!item.username && !!item.kycProfile;
+                    const hasNestedUser = !!item.user;
 
                     let user: KYCRequest['user'];
-                    let kyc: any;
+                    let kyc: any = {};
 
                     if (isUserShape) {
-                        // Shape (a): item IS the user, kyc data is in item.kycProfile
                         user = {
                             id: item.id ?? '',
                             username: item.username ?? '',
@@ -104,25 +104,29 @@ export const adminService = {
                             kyc: item.kyc === true,
                         };
                         kyc = item.kycProfile ?? {};
-                    } else {
-                        // Shape (b): item IS the kyc record, user nested inside
-                        user = item.user ? {
+                    } else if (hasNestedUser) {
+                        user = {
                             id: item.user.id ?? '',
                             username: item.user.username ?? '',
                             name: item.user.name ?? '',
                             kyc: item.user.kyc === true,
-                        } : undefined;
+                        };
                         kyc = item;
+                    } else {
+                        // (c) Bare KycResponse — fallback mapping
+                        user = undefined;
+                        kyc = item ?? {};
                     }
 
-                    // Status: derive from user.kyc boolean (backend KycResponse has no status field)
                     const status: 'PENDING' | 'VERIFIED' | 'REJECTED' =
                         kyc.status
                         ?? item.status
                         ?? (user?.kyc === true ? 'VERIFIED' : 'PENDING');
 
-                    // Use user.id as the record id (needed for POST /kyc/verify { id, approved })
-                    const id = user?.id || item.id || '';
+                    // Real ID is user.id or item.id. If missing, create a fallback to allow rendering.
+                    const realId = user?.id || item.id || '';
+                    const fallbackId = `__no_id__-${index}`;
+                    const id = realId || fallbackId;
 
                     return {
                         id,
@@ -140,10 +144,11 @@ export const adminService = {
                         user,
                     };
                 });
-                // Deduplicate by id (in case backend returns duplicates)
+                // If we have real IDs, de-duplicate them; keep fallback entries as is
                 const seen = new Set<string>();
                 return normalized.filter(k => {
-                    if (!k.id || seen.has(k.id)) return false;
+                    if (k.id.startsWith('__no_id__')) return true;
+                    if (seen.has(k.id)) return false;
                     seen.add(k.id);
                     return true;
                 });
