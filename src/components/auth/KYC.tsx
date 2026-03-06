@@ -174,7 +174,8 @@ export default function KYC() {
     setError('')
     try {
       await confirmKYC(draftId)
-      setIsCompleted(true)
+      // Điều hướng về trang hồ sơ để hiển thị trạng thái "Đang xử lý"
+      navigate('/profile')
     } catch (err: any) {
       console.error('Confirm failed:', err)
       setError(err.message || 'Xác nhận thất bại. Vui lòng thử lại.')

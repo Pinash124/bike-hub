@@ -283,8 +283,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         throw new Error(message || "Confirm KYC failed");
       }
 
-      // Update local user state if successful
-      setKYCVerified(false); // Likely pending approval, or true if auto-approved. Safest to assume pending or re-fetch my-info.
+      // Mark as processing (pending) immediately in local state for instant UX feedback
+      // This flag uses isKYCVerified=false to represent pending until admin approves.
+      setKYCVerified(false);
+      // Also persist immediately
+      if (user) {
+        const updatedUser = { ...user, isKYCVerified: false };
+        setUser(updatedUser);
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+      }
+
+      // Refresh from server to keep in sync (will keep verified=false while pending)
       await getMyInfo();
     } catch (error: any) {
       console.error("Confirm KYC failed:", error);
