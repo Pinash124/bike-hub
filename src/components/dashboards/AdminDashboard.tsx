@@ -871,6 +871,7 @@ function KycTab({
             };
             const Icon = st.icon;
             const isProc = processing === kyc.id;
+            const canVerify = !String(kyc.id || '').startsWith('__no_id__');
             return (
               <div
                 key={kyc.id || String(i)}
@@ -897,6 +898,16 @@ function KycTab({
 
                 {/* KYC Details */}
                 <div className="bg-slate-50 rounded-xl p-3 space-y-1.5 text-xs">
+                  {kyc.fullName && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-400 font-medium">
+                        Tên
+                      </span>
+                      <span className="font-bold text-slate-700">
+                        {kyc.fullName}
+                      </span>
+                    </div>
+                  )}
                   {kyc.idNumber && (
                     <div className="flex justify-between">
                       <span className="text-slate-400 font-medium">
@@ -937,6 +948,36 @@ function KycTab({
                       </span>
                     </div>
                   )}
+                  {kyc.placeOfOrigin && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-400 font-medium">
+                        Nguyên quán
+                      </span>
+                      <span className="font-bold text-slate-700">
+                        {kyc.placeOfOrigin}
+                      </span>
+                    </div>
+                  )}
+                  {kyc.placeOfResidence && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-400 font-medium">
+                        Thường trú
+                      </span>
+                      <span className="font-bold text-slate-700">
+                        {kyc.placeOfResidence}
+                      </span>
+                    </div>
+                  )}
+                  {kyc.expiryDate && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-400 font-medium">
+                        Hết hạn
+                      </span>
+                      <span className="font-bold text-slate-700">
+                        {kyc.expiryDate}
+                      </span>
+                    </div>
+                  )}
                   {kyc.submittedAt && (
                     <div className="flex justify-between">
                       <span className="text-slate-400 font-medium">
@@ -964,14 +1005,14 @@ function KycTab({
                   <div className="flex gap-2 pt-1">
                     <button
                       onClick={() => handleVerify(kyc.id, false)}
-                      disabled={isProc}
+                      disabled={isProc || !canVerify}
                       className="flex-1 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-bold uppercase tracking-wider transition disabled:opacity-50 flex items-center justify-center gap-1"
                     >
                       <XCircle size={14} /> Từ chối
                     </button>
                     <button
                       onClick={() => handleVerify(kyc.id, true)}
-                      disabled={isProc}
+                      disabled={isProc || !canVerify}
                       className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition disabled:opacity-50 flex items-center justify-center gap-1 shadow-md shadow-emerald-500/20"
                     >
                       {isProc ? (
