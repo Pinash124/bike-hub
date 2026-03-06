@@ -7,6 +7,91 @@ import { useNavigate } from 'react-router-dom'
 import { AuthCard } from './AuthLayout'
 import { useAuth } from '../../contexts/AuthContext'
 
+// Client-side constraints to improve OCR success
+const ALLOWED_TYPES = ['image/jpeg', 'image/png'] as const
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+const MAX_DIMENSION = 1600 // px (larger side will be scaled down to this)
+const MIN_WIDTH = 800 // px (reject images that are too small/blurred)
+const MIN_HEIGHT = 500 // px
+
+function isLikelyScreenshot(file: File) {
+  const name = file.name.toLowerCase()
+  return name.includes('screenshot') || name.includes('screen')
+}
+
+function loadImage(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = (e) => reject(e)
+    img.src = URL.createObjectURL(file)
+  })
+}
+
+async function processToJpeg(file: File): Promise<File> {
+  // Ensure type supported and downscale if necessary, convert to JPEG for consistency
+  const img = await loadImage(file)
+  const { width, height } = img
+
+  // Basic resolution gate — OCR often fails on tiny screenshots
+  if (width < MIN_WIDTH || height < MIN_HEIGHT) {
+    throw new Error('Ảnh quá nhỏ. Vui lòng chụp trực tiếp CMND/CCCD, đảm bảo rõ nét và đủ khung (>= 800x500px).')
+  }
+
+  // Determine target size (scale down if too large)
+  let targetW = width
+  let targetH = height
+  const larger = Math.max(width, height)
+  if (larger > MAX_DIMENSION) {
+    const scale = MAX_DIMENSION / larger
+    targetW = Math.round(width * scale)
+    targetH = Math.round(height * scale)
+  }
+
+  // If already JPEG/PNG and small enough, but file size > 5MB, still recompress to JPEG
+  const needCanvas = larger > MAX_DIMENSION || file.size > MAX_FILE_SIZE || file.type !== 'image/jpeg'
+
+  if (!needCanvas) {
+    return file
+  }
+
+  const canvas = document.createElement('canvas')
+  canvas.width = targetW
+  canvas.height = targetH
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Không thể xử lý ảnh trên trình duyệt. Hãy thử lại bằng ảnh JPG/PNG khác.')
+  ctx.drawImage(img, 0, 0, targetW, targetH)
+
+  const blob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85))
+  if (!blob) throw new Error('Nén ảnh thất bại. Hãy thử lại bằng ảnh JPG/PNG khác.')
+
+  const newName = file.name.replace(/\.[^.]+$/, '') + '-processed.jpg'
+  return new File([blob], newName, { type: 'image/jpeg' })
+}
+
+async function validateAndPrepare(file: File): Promise<File> {
+  // Type check — prefer JPG/PNG
+  if (!ALLOWED_TYPES.includes(file.type as any)) {
+    // Some browsers decode WEBP to canvas; to be safe, reject early with guidance
+    throw new Error('Định dạng không hỗ trợ. Vui lòng dùng ảnh JPG hoặc PNG (không dùng HEIC/WEBP).')
+  }
+
+  // Detect screenshot pattern and warn (but still allow). Real enforcement is by resolution above
+  if (isLikelyScreenshot(file)) {
+    // No throw — just informational. The UI will set an advisory message.
+    console.info('Ảnh có vẻ là ảnh chụp màn hình. OCR có thể thất bại — nên chụp trực tiếp giấy tờ.')
+  }
+
+  // Size gate — still attempt recompress via processToJpeg if too big
+  if (file.size > MAX_FILE_SIZE) {
+    // Try recompressing; if still >5MB, it will be smaller after recompress
+    return await processToJpeg(file)
+  }
+
+  // Process to JPEG to normalize and optionally scale down
+  return await processToJpeg(file)
+}
+
 interface KYCData {
   idNumber: string;
   fullName: string;
@@ -37,11 +122,27 @@ export default function KYC() {
   const [kycData, setKycData] = useState<KYCData | null>(null)
 
   // Handlers
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'front' | 'back') => {
-    if (e.target.files && e.target.files[0]) {
-      if (type === 'front') setFrontImage(e.target.files[0])
-      else setBackImage(e.target.files[0])
-      setError('') // Clear error on new selection
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'front' | 'back') => {
+    try {
+      if (!e.target.files || !e.target.files[0]) return
+      const raw = e.target.files[0]
+      const processed = await validateAndPrepare(raw)
+
+      // If it looked like a screenshot, provide advisory message once
+      if (isLikelyScreenshot(raw)) {
+        setError('Ảnh có vẻ là ảnh chụp màn hình. Vui lòng chụp trực tiếp CMND/CCCD để tăng tỉ lệ nhận dạng OCR.')
+      } else {
+        setError('')
+      }
+
+      if (type === 'front') setFrontImage(processed)
+      else setBackImage(processed)
+    } catch (err: any) {
+      console.error('Image validation/processing failed:', err)
+      setError(err.message || 'Ảnh không hợp lệ. Vui lòng dùng ảnh JPG/PNG rõ nét, đủ khung.')
+    } finally {
+      // Reset the input so the same file can be re-selected after error
+      if (e.target) e.target.value = ''
     }
   }
 
@@ -138,7 +239,7 @@ export default function KYC() {
                   <div className="space-y-2">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Mặt trước</p>
                     <label className={`block border-2 border-dashed rounded-2xl h-40 flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-slate-50 ${frontImage ? 'border-green-500 bg-green-50/10' : 'border-slate-200'}`}>
-                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'front')} />
+                      <input type="file" className="hidden" accept="image/jpeg,image/png" onChange={(e) => handleFileChange(e, 'front')} />
                       {frontImage ? (
                         <div className="flex flex-col items-center gap-2">
                           <CheckCircle size={32} className="text-green-500" />
@@ -158,7 +259,7 @@ export default function KYC() {
                   <div className="space-y-2">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Mặt sau</p>
                     <label className={`block border-2 border-dashed rounded-2xl h-40 flex flex-col items-center justify-center cursor-pointer transition-all hover:bg-slate-50 ${backImage ? 'border-green-500 bg-green-50/10' : 'border-slate-200'}`}>
-                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'back')} />
+                      <input type="file" className="hidden" accept="image/jpeg,image/png" onChange={(e) => handleFileChange(e, 'back')} />
                       {backImage ? (
                         <div className="flex flex-col items-center gap-2">
                           <CheckCircle size={32} className="text-green-500" />
