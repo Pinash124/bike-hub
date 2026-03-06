@@ -72,7 +72,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ addresses, listingIds }) => 
       const orderId = (firstOrder as any).id;
       const payment = await paymentService.createPayment({
         order_id: orderId,
-        description: notes || 'BikeHub Order Payment',
+        description: `Thanh toan don ${String(orderId).substring(0, 8)}`.substring(0, 25),
       });
 
       // Clear cart after successful order creation

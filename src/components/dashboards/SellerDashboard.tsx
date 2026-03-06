@@ -10,7 +10,7 @@ const STATUS_CONFIG: Record<string, { label: string, color: string, bg: string, 
   PENDING: { label: 'Chờ duyệt', color: 'text-amber-700', bg: 'bg-amber-100', border: 'border-amber-200' },
   RESERVED: { label: 'Đã đặt cọc', color: 'text-blue-700', bg: 'bg-blue-100', border: 'border-blue-200' },
   REJECTED: { label: 'Bị từ chối', color: 'text-red-700', bg: 'bg-red-100', border: 'border-red-200' },
-  APPROVED: { label: 'Đang bán', color: 'text-emerald-700', bg: 'bg-emerald-100', border: 'border-emerald-200' },
+  APPROVED: { label: 'Đã duyệt', color: 'text-indigo-700', bg: 'bg-indigo-100', border: 'border-indigo-200' },
   LIVE: { label: 'Đang bán', color: 'text-emerald-700', bg: 'bg-emerald-100', border: 'border-emerald-200' },
   SOLD: { label: 'Đã bán', color: 'text-slate-500', bg: 'bg-slate-100', border: 'border-slate-200' },
 }
@@ -36,7 +36,7 @@ export default function SellerDashboard() {
     }
   }
 
-  const liveCount = listings.filter(l => l.status === 'LIVE' || l.status === 'APPROVED').length
+  const liveCount = listings.filter(l => l.status === 'LIVE').length
   const soldCount = listings.filter(l => l.status === 'SOLD').length
   const pendingCount = listings.filter(l => l.status === 'PENDING').length
 
@@ -138,7 +138,7 @@ export default function SellerDashboard() {
                 {listings.map(listing => {
                   const thumbnail = listing.images?.[0]?.secureUrl
                   const config = STATUS_CONFIG[listing.status] || STATUS_CONFIG.DRAFT
-                  const needsPayment = listing.status === 'APPROVED' || listing.status === 'PENDING';
+                  const needsPayment = listing.status === 'APPROVED';
 
                   return (
                     <div key={listing.id} className="group border border-slate-100 rounded-2xl p-4 hover:border-green-200 hover:shadow-md transition-all flex gap-4 bg-slate-50/50">
@@ -179,12 +179,12 @@ export default function SellerDashboard() {
                       </div>
 
                       {needsPayment && (
-                        <div className="mt-3">
+                        <div className="mt-2 border-t border-slate-100/60 p-3">
                           <button
                             onClick={() => navigate(`/seller/choose-plan/${listing.id}`, { state: { listing } })}
-                            className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs uppercase tracking-widest flex items-center justify-center gap-1.5 transition shadow-sm"
+                            className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-black rounded-xl text-sm uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all shadow-lg shadow-green-500/30 hover:shadow-green-600/40 hover:-translate-y-0.5"
                           >
-                            <CreditCard size={14} /> Thanh toán & Đăng bài
+                            Thanh toán
                           </button>
                         </div>
                       )}

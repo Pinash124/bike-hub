@@ -160,8 +160,8 @@ const KYC_STATUS_MAP: Record<
 const LISTING_STATUS_MAP: Record<string, { label: string; color: string }> = {
   DRAFT: { label: "Nháp", color: "bg-slate-100 text-slate-600" },
   PENDING: { label: "Chờ duyệt", color: "bg-amber-100 text-amber-700" },
-  APPROVED: { label: "Đang bán", color: "bg-blue-100 text-blue-700" },
-  LIVE: { label: "Đang bán", color: "bg-blue-100 text-blue-700" },
+  APPROVED: { label: "Đã duyệt", color: "bg-indigo-100 text-indigo-700" },
+  LIVE: { label: "Đang bán", color: "bg-emerald-100 text-emerald-700" },
   REJECTED: { label: "Từ chối", color: "bg-red-100 text-red-700" },
   RESERVED: { label: "Đặt cọc", color: "bg-purple-100 text-purple-700" },
   SOLD: { label: "Đã bán", color: "bg-teal-100 text-teal-700" },
@@ -2022,7 +2022,7 @@ function ListingsTab({
   const [search, setSearch] = useState("");
 
   const filtered = listings.filter((l) => {
-    const matchStatus = filter === "ALL" || l.status === filter || (filter === "LIVE" && l.status === "APPROVED");
+    const matchStatus = filter === "ALL" || l.status === filter;
     // defensive: title may be undefined/null if backend returns malformed data
     const title = l.title || "";
     const matchSearch =
@@ -2057,6 +2057,7 @@ function ListingsTab({
   const filterTabs: { key: ListFilter; label: string }[] = [
     { key: "ALL", label: "Tất cả" },
     { key: "PENDING", label: "Chờ duyệt" },
+    { key: "APPROVED", label: "Đã duyệt" },
     { key: "LIVE", label: "Đang bán" },
     { key: "REJECTED", label: "Từ chối" },
     { key: "DRAFT", label: "Nháp" },

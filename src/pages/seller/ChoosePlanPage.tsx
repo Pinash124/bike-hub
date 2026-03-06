@@ -94,7 +94,10 @@ export default function ChoosePlanPage() {
         if (!currentSubscription?.id) return;
         setIsProcessing(true);
         try {
-            const desc = `Thanh toán gói cho xe: ${listing?.title || listingId}`;
+            // PayOS description limit is max 25 characters, no special accents allowed easily
+            // We use the first 8 characters of listingId or just a short string.
+            const shortId = listingId ? listingId.substring(0, 5) : '';
+            const desc = `Thanh toan goi ${shortId}`;
             const paymentResult = await paymentService.createSubscriptionPayment(currentSubscription.id, desc);
             if (paymentResult?.paymentUrl) {
                 window.location.href = paymentResult.paymentUrl;
@@ -388,11 +391,10 @@ export default function ChoosePlanPage() {
                                         return (
                                             <div
                                                 key={plan.id}
-                                                className={`relative flex flex-col p-6 rounded-2xl border transition-all duration-300 bg-white ${
-                                                    isRecommended
+                                                className={`relative flex flex-col p-6 rounded-2xl border transition-all duration-300 bg-white ${isRecommended
                                                         ? 'border-indigo-500 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-200'
                                                         : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
-                                                }`}
+                                                    }`}
                                             >
                                                 {isRecommended && (
                                                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-3 py-0.5 rounded-full text-[11px] font-black tracking-wider shadow-sm flex items-center gap-1.5">
@@ -438,11 +440,10 @@ export default function ChoosePlanPage() {
                                                 <button
                                                     onClick={() => handleSelectPlan(plan.id)}
                                                     disabled={isProcessing || currentSubscription?.status === 'ACTIVE'}
-                                                    className={`w-full py-3 text-sm font-semibold rounded-xl transition-all ${
-                                                        isRecommended
+                                                    className={`w-full py-3 text-sm font-semibold rounded-xl transition-all ${isRecommended
                                                             ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
                                                             : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
-                                                    } disabled:opacity-60 disabled:cursor-not-allowed`}
+                                                        } disabled:opacity-60 disabled:cursor-not-allowed`}
                                                 >
                                                     {currentSubscription?.status === 'ACTIVE' ? 'Đã kích hoạt' : `Chọn ${plan.name}`}
                                                 </button>
