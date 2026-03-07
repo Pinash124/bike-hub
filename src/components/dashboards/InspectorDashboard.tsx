@@ -7,7 +7,7 @@ import {
   Edit,
   Eye,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   inspectionService,
   type InspectionTask,
@@ -140,6 +140,15 @@ export default function InspectorDashboard() {
     setCurrentTask(task);
     setIsViewingLocation(true);
     setIsLoadingLocation(true);
+    // Ensure components are loaded for displaying score names in detail view
+    if (!components || components.length === 0) {
+      try {
+        const data = await componentService.getAllComponents();
+        setComponents(data);
+      } catch (e) {
+        // swallow; we'll fallback to generic labels if not available
+      }
+    }
     try {
       const location = await locationService.getLocationById(task.location.id);
       setCurrentLocation(location);
@@ -333,6 +342,25 @@ export default function InspectorDashboard() {
         ))}
       </div>
     );
+  };
+
+  // Fast lookup map for component id -> name to avoid undefined when scores use different shapes
+  const compNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of components) {
+      map.set(String(c.id), c.name);
+    }
+    return map;
+  }, [components]);
+
+  const getComponentName = (scoreItem: any) => {
+    // scoreItem.componentId can be: number | string | { id: number | string }
+    const raw =
+      (scoreItem && scoreItem.componentId && typeof scoreItem.componentId === "object"
+        ? scoreItem.componentId.id
+        : scoreItem?.componentId) ?? "";
+    const key = String(raw);
+    return compNameById.get(key) || `Bộ phận ${key}`;
   };
 
   return (
@@ -578,25 +606,19 @@ export default function InspectorDashboard() {
                           Điểm đánh giá các bộ phận xe
                         </div>
                         <div className="space-y-3">
-                          {currentTask.scores.map((scoreItem: any) => {
-                            const component = components.find(
-                              (c) => c.id === Number(scoreItem.componentId),
-                            );
-                            return (
-                              <div
-                                key={scoreItem.componentId}
-                                className="flex justify-between items-center py-2 border-b border-slate-100"
-                              >
-                                <span className="font-medium text-slate-600">
-                                  {component?.name ||
-                                    `Bộ phận ${scoreItem.componentId}`}
-                                </span>
-                                <span className="font-bold text-slate-800">
-                                  {scoreItem.score}/10
-                                </span>
-                              </div>
-                            );
-                          })}
+                          {currentTask.scores.map((scoreItem: any, idx: number) => (
+                            <div
+                              key={String(scoreItem.componentId ?? idx)}
+                              className="flex justify-between items-center py-2 border-b border-slate-100"
+                            >
+                              <span className="font-medium text-slate-600">
+                                {getComponentName(scoreItem)}
+                              </span>
+                              <span className="font-bold text-slate-800">
+                                {scoreItem.score}/10
+                              </span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
