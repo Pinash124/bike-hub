@@ -158,6 +158,29 @@ export default function CreateListingPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Basic client validations
+    const usage = Number.parseInt(formData.usageDuration || '0', 10);
+    const priceVal = Number.parseInt(formData.price || '0', 10);
+
+    if (Number.isNaN(usage) || usage < 0) {
+      setError("Thời gian sử dụng không hợp lệ. Vui lòng nhập số năm >= 0.");
+      return;
+    }
+    if (usage > 30) {
+      setError("Thời gian sử dụng quá lớn. Tối đa 30 năm.");
+      return;
+    }
+
+    const MIN_PRICE = 500000; // 500,000 VND
+    if (Number.isNaN(priceVal) || priceVal <= 0) {
+      setError("Giá bán phải lớn hơn 0.");
+      return;
+    }
+    if (priceVal < MIN_PRICE) {
+      setError(`Giá bán tối thiểu là ${MIN_PRICE.toLocaleString('vi-VN')} ₫.`);
+      return;
+    }
+
     if (addresses.length === 0) {
       setError("Vui lòng nhập thông tin liên hệ trước khi đăng tin.");
       setShowAddressForm(true);
@@ -174,14 +197,15 @@ export default function CreateListingPage() {
       const fd = new FormData();
 
       // Only append non-empty fields — backend rejects extra blank fields
-      if (formData.title) fd.append("title", formData.title);
+      if (formData.title) fd.append("title", formData.title.trim());
       if (formData.brandName) fd.append("brandName", formData.brandName);
       if (formData.bikeType) fd.append("bikeType", formData.bikeType);
-      if (formData.frameNumber) fd.append("frameNumber", formData.frameNumber);
-      if (formData.description) fd.append("description", formData.description);
-      if (formData.price) fd.append("price", formData.price);
-      if (formData.usageDuration)
-        fd.append("usageDuration", formData.usageDuration);
+      if (formData.frameNumber) fd.append("frameNumber", formData.frameNumber.trim());
+      if (formData.description) fd.append("description", formData.description.trim());
+
+      // append normalized numbers
+      fd.append("price", String(priceVal));
+      fd.append("usageDuration", String(usage));
 
       images.forEach((img) => fd.append("images", img));
 
@@ -476,11 +500,13 @@ export default function CreateListingPage() {
                       required
                       type="number"
                       min="0"
+                      max="30"
+                      step="1"
                       name="usageDuration"
                       value={formData.usageDuration}
                       onChange={handleInputChange}
                       className={inputCls}
-                      placeholder="Nhập số năm"
+                      placeholder="Nhập số năm (0 - 30)"
                     />
                   </Field>
                 </div>

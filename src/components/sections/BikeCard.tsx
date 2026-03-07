@@ -6,12 +6,13 @@ interface BikeCardProps {
   id: number | string; // Thêm id
   image: string; title: string; price: number; originalPrice?: number;
   year: number; location: string; mileage: number; size?: string; condition?: string;
+  mileageUnit?: 'nam';
   // Thêm các trường phụ để trang chi tiết hiển thị đầy đủ
   description?: string; brand?: string; material?: string; seller?: string; rating?: number; reviews?: number;
 }
 
 export default function BikeCard(props: BikeCardProps) {
-  const { id, image, title, price, year, location, mileage, size = 'M', condition = '99%' } = props;
+  const { id, image, title, price, year, location, mileage, size = 'M', condition = '99%', mileageUnit = 'nam' } = props;
   const navigate = useNavigate(); //
 
   // Hàm xử lý khi nhấn vào Card
@@ -80,7 +81,7 @@ export default function BikeCard(props: BikeCardProps) {
           </div>
           <div className="flex items-center gap-2 text-gray-400 justify-end">
             <Gauge size={14} />
-            <span className="text-[11px] font-bold uppercase tracking-wider">{mileage.toLocaleString()} KM</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider">{mileage.toLocaleString()} {mileageUnit === 'nam' ? 'năm' : ''}</span>
           </div>
         </div>
 

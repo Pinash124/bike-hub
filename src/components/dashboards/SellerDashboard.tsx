@@ -172,7 +172,7 @@ export default function SellerDashboard() {
                           </span>
                           {listing.usageDuration != null && (
                             <span className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-md border border-slate-200">
-                              <Calendar size={12} className="text-slate-400" /> {listing.usageDuration} tháng
+                              <Calendar size={12} className="text-slate-400" /> {listing.usageDuration} năm
                             </span>
                           )}
                         </div>

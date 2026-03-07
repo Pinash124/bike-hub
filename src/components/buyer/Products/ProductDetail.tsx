@@ -65,7 +65,7 @@ export const ProductDetail: React.FC<ListingDetailProps> = ({ listing }) => {
 
   const specs = [
     { label: 'Thương hiệu', value: listing.brand?.name ?? 'N/A', icon: <Tag size={14} /> },
-    { label: 'Thời gian sử dụng', value: listing.usageDuration ? `${listing.usageDuration} tháng` : 'N/A', icon: <Clock size={14} /> },
+    { label: 'Thời gian sử dụng', value: listing.usageDuration ? `${listing.usageDuration} năm` : 'N/A', icon: <Clock size={14} /> },
     { label: 'Tình trạng', value: listing.condition ?? 'N/A', icon: <Award size={14} /> },
     { label: 'Loại xe', value: listing.bikeType ?? 'N/A', icon: <Zap size={14} /> },
   ];

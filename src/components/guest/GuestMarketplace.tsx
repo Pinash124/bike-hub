@@ -69,6 +69,7 @@ export const GuestMarketplace: React.FC = () => {
                   year: new Date(bike.createdAt).getFullYear(),
                   location: bike.location || 'Toàn quốc',
                   mileage: bike.usageDuration || 0,
+                  mileageUnit: 'nam' as const,
                   size: 'N/A', // Listing missing size
                   condition: bike.condition || 'Đã qua sử dụng',
                   description: bike.description,

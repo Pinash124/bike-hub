@@ -24,6 +24,7 @@ export default function FeaturedBikes() {
         year: 2024, // Default or derived
         location: listing.location || 'Toàn quốc',
         mileage: listing.usageDuration || 0,
+        mileageUnit: 'nam' as const,
         size: 'N/A',
         condition: listing.condition || 'Used'
       }));
