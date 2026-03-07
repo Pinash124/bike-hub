@@ -1,7 +1,7 @@
 // src/components/auth/Login.tsx
 import { useState } from "react";
 import { User, Lock, Eye, EyeOff, X, Bike, Loader2 } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { AuthOverlay, AuthCard } from "./AuthLayout";
 import { useAuth } from "../../contexts/AuthContext"; // 1. Import useAuth
 
@@ -17,7 +17,6 @@ export default function LoginModal({
   onSwitchToRegister,
 }: LoginModalProps) {
   const navigate = useNavigate();
-  const location = useLocation(); // ← phải gọi trước mọi early return (Rules of Hooks)
   const { login } = useAuth();
 
   const [username, setUsername] = useState("");
@@ -49,12 +48,20 @@ export default function LoginModal({
 
       if (onClose) onClose();
 
-      // Navigate về trang trước hoặc trang chủ
-      // location.state could come from ProtectedRoute redirect
-      const redirectPath = (location.state as any)?.from?.pathname || "/";
+      // Always redirect based on role to avoid 403 when trying to access restricted pages after login
+      const currentRole = localStorage.getItem("role")?.toLowerCase();
+      let finalPath = "/";
 
-      // Safety check: don't redirect to login page itself
-      const finalPath = redirectPath === "/login" ? "/" : redirectPath;
+      if (currentRole === "seller") {
+        finalPath = "/seller/dashboard";
+      } else if (currentRole === "buyer") {
+        finalPath = "/buyer/dashboard";
+      } else if (currentRole === "admin") {
+        finalPath = "/admin/dashboard";
+      } else if (currentRole === "inspector") {
+        finalPath = "/inspector/dashboard";
+      }
+
       console.log("Redirecting after login to:", finalPath);
 
       navigate(finalPath, { replace: true });

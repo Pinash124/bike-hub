@@ -98,6 +98,7 @@ export default function ChoosePlanPage() {
             // We use the first 8 characters of listingId or just a short string.
             const shortId = listingId ? listingId.substring(0, 5) : '';
             const desc = `Thanh toan goi ${shortId}`;
+
             const paymentResult = await paymentService.createSubscriptionPayment(currentSubscription.id, desc);
             if (paymentResult?.paymentUrl) {
                 window.location.href = paymentResult.paymentUrl;
@@ -392,8 +393,8 @@ export default function ChoosePlanPage() {
                                             <div
                                                 key={plan.id}
                                                 className={`relative flex flex-col p-6 rounded-2xl border transition-all duration-300 bg-white ${isRecommended
-                                                        ? 'border-indigo-500 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-200'
-                                                        : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
+                                                    ? 'border-indigo-500 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-200'
+                                                    : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
                                                     }`}
                                             >
                                                 {isRecommended && (
@@ -441,8 +442,8 @@ export default function ChoosePlanPage() {
                                                     onClick={() => handleSelectPlan(plan.id)}
                                                     disabled={isProcessing || currentSubscription?.status === 'ACTIVE'}
                                                     className={`w-full py-3 text-sm font-semibold rounded-xl transition-all ${isRecommended
-                                                            ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
-                                                            : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
+                                                        ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
+                                                        : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
                                                         } disabled:opacity-60 disabled:cursor-not-allowed`}
                                                 >
                                                     {currentSubscription?.status === 'ACTIVE' ? 'Đã kích hoạt' : `Chọn ${plan.name}`}

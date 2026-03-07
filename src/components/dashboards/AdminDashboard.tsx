@@ -28,7 +28,6 @@ import {
 } from "lucide-react";
 import React, { useEffect, useState, useCallback } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
 import {
   adminService,
   getPrimaryRole,
@@ -2441,7 +2440,6 @@ function CreateInspectorTab({
 
 export default function AdminDashboard() {
   const { logout } = useAuth();
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>("overview");
 
   const handleLogout = async () => {
@@ -2450,7 +2448,6 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error("Logout failed", err);
     }
-    navigate("/");
   };
 
   const [users, setUsers] = useState<AdminUser[]>([]);

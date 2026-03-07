@@ -320,6 +320,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       localStorage.removeItem("role");
       localStorage.removeItem("token");
       setIsLoggingOut(false);
+      window.location.href = "/";
     }
   };
 

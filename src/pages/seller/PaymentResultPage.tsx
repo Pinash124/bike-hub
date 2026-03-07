@@ -13,6 +13,7 @@ export default function PaymentResultPage() {
     const isCancel = searchParams.get('cancel') === 'true';
     const hasCode = searchParams.get('code');
     const orderCode = searchParams.get('orderCode');
+    const orderId = searchParams.get('orderId'); // Passed from frontend payload
 
     const [isSuccess, setIsSuccess] = useState(false);
 
@@ -45,12 +46,20 @@ export default function PaymentResultPage() {
                         }
                     </p>
 
-                    {orderCode && (
-                        <div className="mb-8 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Mã đơn hàng</p>
-                            <p className="text-sm font-bold text-slate-700">{orderCode}</p>
-                        </div>
-                    )}
+                    <div className="flex flex-col gap-2 mb-8">
+                        {orderId && (
+                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Mã đơn hàng</p>
+                                <p className="text-sm font-bold text-slate-700">{orderId}</p>
+                            </div>
+                        )}
+                        {orderCode && !orderId && (
+                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Mã giao dịch PayOS</p>
+                                <p className="text-sm font-bold text-slate-700">{orderCode}</p>
+                            </div>
+                        )}
+                    </div>
 
                     <div className="flex flex-col gap-3">
                         <button
