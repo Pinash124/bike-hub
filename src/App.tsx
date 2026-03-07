@@ -4,6 +4,16 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Header from "./components/common/Header";
 import Footer from "./components/common/Footer";
 
+function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative min-h-screen flex flex-col">
+      <Header />
+      <main className="flex-1">{children}</main>
+      <Footer />
+    </div>
+  );
+}
+
 // --- Sections (Homepage) ---
 
 // --- Auth Components ---
@@ -67,11 +77,9 @@ function ProfileGuard() {
     return <Navigate to="/unauthorized" replace />;
   }
   return (
-    <>
-      <Header />
+    <AppLayout>
       <ProfilePage />
-      <Footer />
-    </>
+    </AppLayout>
   );
 }
 
@@ -103,13 +111,9 @@ function Home() {
 
   // For buyer, seller, and guest: show marketplace
   return (
-    <div className="relative">
-      <Header />
-      <main>
-        <GuestMarketplace />
-      </main>
-      <Footer />
-    </div>
+    <AppLayout>
+      <GuestMarketplace />
+    </AppLayout>
   );
 }
 
@@ -124,73 +128,53 @@ function App() {
             <Route
               path="/unauthorized"
               element={
-                <>
-                  <Header />
+                <AppLayout>
                   <Unauthorized />
-                  <Footer />
-                </>
+                </AppLayout>
               }
             />
             <Route path="/debug" element={<DebugPage />} />
             <Route
               path="/marketplace"
               element={
-                <>
-                  <Header />
+                <AppLayout>
                   <GuestMarketplace />
-                  <Footer />
-                </>
+                </AppLayout>
               }
             />
             {/* AUTH ROUTES */}
             <Route
               path="/login"
-              element={
-                <>
-                  <Home />
-                  <Login />
-                </>
-              }
+              element={<Login />}
             />
             <Route
               path="/register"
-              element={
-                <>
-                  <Home />
-                  <Register />
-                </>
-              }
+              element={<Register />}
             />
             {/* Payment Return Callback */}
             <Route
               path="/payment/result"
               element={
-                <>
-                  <Header />
+                <AppLayout>
                   <PaymentResultPage />
-                  <Footer />
-                </>
+                </AppLayout>
               }
             />
             {/* --- Product Discovery --- */}
             <Route
               path="/search"
               element={
-                <>
-                  <Header />
+                <AppLayout>
                   <SearchPage />
-                  <Footer />
-                </>
+                </AppLayout>
               }
             />
             <Route
               path="/product/:id"
               element={
-                <>
-                  <Header />
+                <AppLayout>
                   <ProductDetailPage />
-                  <Footer />
-                </>
+                </AppLayout>
               }
             />
             {/* --- KYC Route --- */}
@@ -217,11 +201,9 @@ function App() {
               path="/seller/dashboard"
               element={
                 <ProtectedRoute requiredRole="seller">
-                  <>
-                    <Header />
+                  <AppLayout>
                     <SellerDashboard />
-                    <Footer />
-                  </>
+                  </AppLayout>
                 </ProtectedRoute>
               }
             />
@@ -229,11 +211,9 @@ function App() {
               path="/seller/new-bike"
               element={
                 <ProtectedRoute requiredRole="seller">
-                  <>
-                    <Header />
+                  <AppLayout>
                     <CreateListingPage />
-                    <Footer />
-                  </>
+                  </AppLayout>
                 </ProtectedRoute>
               }
             />
@@ -241,11 +221,9 @@ function App() {
               path="/seller/schedule"
               element={
                 <ProtectedRoute requiredRole="seller">
-                  <>
-                    <Header />
+                  <AppLayout>
                     <ScheduleInspectionPage />
-                    <Footer />
-                  </>
+                  </AppLayout>
                 </ProtectedRoute>
               }
             />
@@ -253,11 +231,9 @@ function App() {
               path="/seller/choose-plan/:listingId"
               element={
                 <ProtectedRoute requiredRole="seller">
-                  <>
-                    <Header />
+                  <AppLayout>
                     <ChoosePlanPage />
-                    <Footer />
-                  </>
+                  </AppLayout>
                 </ProtectedRoute>
               }
             />
@@ -266,11 +242,9 @@ function App() {
               path="/buyer/cart"
               element={
                 <ProtectedRoute requiredRole="buyer">
-                  <>
-                    <Header />
+                  <AppLayout>
                     <CartPage />
-                    <Footer />
-                  </>
+                  </AppLayout>
                 </ProtectedRoute>
               }
             />
@@ -278,11 +252,9 @@ function App() {
               path="/buyer/checkout"
               element={
                 <ProtectedRoute requiredRole="buyer">
-                  <>
-                    <Header />
+                  <AppLayout>
                     <CheckoutPage />
-                    <Footer />
-                  </>
+                  </AppLayout>
                 </ProtectedRoute>
               }
             />
@@ -290,11 +262,9 @@ function App() {
               path="/buyer/orders"
               element={
                 <ProtectedRoute requiredRole="buyer">
-                  <>
-                    <Header />
+                  <AppLayout>
                     <OrderTrackingPage />
-                    <Footer />
-                  </>
+                  </AppLayout>
                 </ProtectedRoute>
               }
             />
@@ -303,7 +273,9 @@ function App() {
               path="/admin/dashboard"
               element={
                 <ProtectedRoute requiredRole="admin">
-                  <AdminDashboard />
+                  <AppLayout>
+                    <AdminDashboard />
+                  </AppLayout>
                 </ProtectedRoute>
               }
             />
@@ -311,11 +283,9 @@ function App() {
               path="/inspector/dashboard"
               element={
                 <ProtectedRoute requiredRole="inspector">
-                  <>
-                    <Header />
+                  <AppLayout>
                     <InspectorDashboard />
-                    <Footer />
-                  </>
+                  </AppLayout>
                 </ProtectedRoute>
               }
             />
@@ -323,13 +293,11 @@ function App() {
             <Route
               path="*"
               element={
-                <>
-                  <Header />
+                <AppLayout>
                   <div className="py-20 text-center font-bold text-slate-400">
                     404 - TRANG KHÔNG TỒN TẠI
                   </div>
-                  <Footer />
-                </>
+                </AppLayout>
               }
             />
           </Routes>
