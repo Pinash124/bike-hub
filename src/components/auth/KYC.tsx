@@ -111,7 +111,7 @@ export default function KYC() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [currentStep, setCurrentStep] = useState(1)
-  const [isCompleted, setIsCompleted] = useState(false)
+  const [isCompleted] = useState(false)
 
   // File States
   const [frontImage, setFrontImage] = useState<File | null>(null)

@@ -1,6 +1,6 @@
 // src/components/dashboards/SellerDashboard.tsx
 // Role: SELLER — shows real listings from API + inspection status
-import { Plus, Eye, TrendingUp, Package, Clock, CheckCircle, ChevronRight, Bike, Calendar, AlertCircle, CreditCard } from 'lucide-react'
+import { Plus, Eye, TrendingUp, Package, Clock, CheckCircle, ChevronRight, Bike, Calendar, AlertCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { listingService, type Listing } from '../../services/listing.service'
