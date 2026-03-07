@@ -1,18 +1,10 @@
-// src/App.tsx
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { brandService, type Brand } from "./services/brand.service";
 
 // --- Layout & Common Components ---
 import Header from "./components/common/Header";
 import Footer from "./components/common/Footer";
 
 // --- Sections (Homepage) ---
-import Banner from "./components/sections/Banner";
-import FilterSection from "./components/sections/FilterSection";
-import FeaturedBikes from "./components/sections/FeaturedBikes";
-import Categories from "./components/sections/Categories";
-import Features from "./components/sections/Features";
 
 // --- Auth Components ---
 import Login from "./components/auth/Login";
@@ -21,10 +13,11 @@ import KYC from "./components/auth/KYC"; // Bổ sung tệp KYC đã tạo
 
 // --- Dashboards & Pages ---
 import SellerDashboard from "./components/dashboards/SellerDashboard";
-import BuyerDashboardPage from "./components/buyer/BuyerDashboard";
+
 import AdminDashboard from "./components/dashboards/AdminDashboard";
 import InspectorDashboard from "./components/dashboards/InspectorDashboard";
 import ProfilePage from "./pages/ProfilePage"; // Bổ sung ProfilePage
+import CartPage from "./pages/CartPage"; // Bổ sung CartPage
 import SearchPage from "./pages/SearchPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import CheckoutPage from "./pages/CheckoutPage";
@@ -83,16 +76,7 @@ function ProfileGuard() {
 }
 
 function Home() {
-  const [selectedBrand, setSelectedBrand] = useState("Tất cả");
-  const [brands, setBrands] = useState<Brand[]>([]);
   const { role, isLoading } = useAuth();
-
-  useEffect(() => {
-    brandService
-      .getAllBrands()
-      .then(setBrands)
-      .catch(() => setBrands([]));
-  }, []);
 
   // Wait for auth to fully load before rendering role-based redirects
   if (isLoading) {
@@ -117,20 +101,12 @@ function Home() {
     return <Navigate to="/inspector/dashboard" replace />;
   }
 
-  // For buyer, seller, and guest: show normal homepage
+  // For buyer, seller, and guest: show marketplace
   return (
     <div className="relative">
       <Header />
       <main>
-        <Banner />
-        <FilterSection />
-        <FeaturedBikes />
-        <Categories
-          brands={brands}
-          onSelectBrand={setSelectedBrand}
-          selectedBrand={selectedBrand}
-        />
-        <Features />
+        <GuestMarketplace />
       </main>
       <Footer />
     </div>
@@ -285,14 +261,14 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            {/* --- Protected Routes - Buyer --- */}
+
             <Route
-              path="/buyer/dashboard"
+              path="/buyer/cart"
               element={
                 <ProtectedRoute requiredRole="buyer">
                   <>
                     <Header />
-                    <BuyerDashboardPage />
+                    <CartPage />
                     <Footer />
                   </>
                 </ProtectedRoute>

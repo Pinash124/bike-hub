@@ -55,7 +55,7 @@ export default function LoginModal({
       if (currentRole === "seller") {
         finalPath = "/seller/dashboard";
       } else if (currentRole === "buyer") {
-        finalPath = "/buyer/dashboard";
+        finalPath = "/profile";
       } else if (currentRole === "admin") {
         finalPath = "/admin/dashboard";
       } else if (currentRole === "inspector") {

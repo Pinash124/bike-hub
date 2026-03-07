@@ -90,7 +90,7 @@ export default function Header() {
 
             {(!user || user.role === 'buyer') && (
               <button
-                onClick={() => navigate('/buyer/dashboard?tab=cart')}
+                onClick={() => navigate('/buyer/cart')}
                 className={`relative p-3 transition-all rounded-full ${isScrolled ? 'text-gray-800 hover:bg-gray-100' : 'text-white hover:bg-white/10'
                   }`}
               >
