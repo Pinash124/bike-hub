@@ -242,18 +242,19 @@ export default function ProfilePage() {
 
               <button
                 onClick={handleLogout}
-                className="mb-2 flex items-center gap-2 rounded-full bg-red-50 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-red-600 transition-colors hover:bg-red-100"
+                className="mb-2 flex items-center gap-2 rounded-full bg-red-50 px-5 py-2.5 text-sm font-semibold text-red-600 transition-all hover:bg-red-100 hover:shadow-md hover:shadow-red-100/50"
               >
-                <LogOut size={16} /> Dang xuat
+                <LogOut size={16} />
+                Đăng xuất
               </button>
             </div>
 
             <div className="space-y-1">
               <h1 className="text-2xl font-black text-slate-900">{user.name}</h1>
-              <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-slate-500">
-                Vai tro:
-                <span className="rounded-md bg-green-50 px-2.5 py-1 text-green-600">
-                  {user.role}
+              <p className="flex items-center gap-2 text-sm font-semibold text-slate-500">
+                Vai trò:
+                <span className="rounded-md bg-green-50 px-2.5 py-1 text-sm font-medium text-green-600">
+                  {user.role === 'seller' ? 'Người bán' : user.role === 'buyer' ? 'Người mua' : user.role === 'admin' ? 'Quản trị viên' : 'Kiểm định viên'}
                 </span>
               </p>
             </div>
@@ -324,40 +325,41 @@ export default function ProfilePage() {
 
             {["seller", "buyer"].includes(user.role) && (
               <div className="space-y-6 rounded-3xl border border-slate-100 bg-white p-8 shadow-sm">
-                <h2 className="border-b border-slate-100 pb-4 text-sm font-black uppercase tracking-widest text-slate-800">
-                  Trang thai xac minh
+                <h2 className="border-b border-slate-100 pb-4 text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <ShieldCheck size={20} className="text-green-600" />
+                  Trạng thái xác minh
                 </h2>
 
                 {user.isKYCVerified ? (
-                  <div className="flex items-center gap-4 rounded-2xl border border-green-200 bg-green-50 p-5">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-                      <ShieldCheck size={24} className="text-green-600" />
+                  <div className="flex items-center gap-4 rounded-2xl border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-6">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
+                      <ShieldCheck size={28} className="text-green-600" />
                     </div>
-                    <div>
-                      <h3 className="font-bold text-green-900">Da xac minh</h3>
-                      <p className="mt-0.5 text-xs font-medium text-green-700">
-                        Tai khoan co day du quyen giao dich.
+                    <div className="flex-1">
+                      <h3 className="font-bold text-green-900 text-lg">Đã xác minh</h3>
+                      <p className="mt-1 text-sm font-medium text-green-700 leading-relaxed">
+                        Tài khoản của bạn đã được xác minh và có đầy đủ quyền giao dịch.
                       </p>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-5">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
-                      <AlertCircle size={24} className="text-amber-600" />
+                  <div className="flex items-center gap-4 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-6">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100">
+                      <AlertCircle size={28} className="text-amber-600" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-bold text-amber-900">
-                        Chua xac minh KYC
+                      <h3 className="font-bold text-amber-900 text-lg">
+                        Chưa xác minh KYC
                       </h3>
-                      <p className="mt-0.5 text-xs font-medium text-amber-700">
-                        Hay hoan tat KYC de mo day du quyen mua ban.
+                      <p className="mt-1 text-sm font-medium text-amber-700 leading-relaxed">
+                        Vui lòng hoàn tất xác minh danh tính để mở đầy đủ quyền mua bán và tăng độ tin cậy cho tài khoản.
                       </p>
                     </div>
                     <button
                       onClick={() => navigate("/kyc")}
-                      className="rounded-lg bg-amber-500 px-4 py-2 text-xs font-bold uppercase tracking-widest text-white transition hover:bg-amber-600"
+                      className="rounded-xl bg-amber-600 px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-amber-700 hover:shadow-lg hover:shadow-amber-600/20"
                     >
-                      Xac minh
+                      Xác minh ngay
                     </button>
                   </div>
                 )}
@@ -370,60 +372,90 @@ export default function ProfilePage() {
               <div className="rounded-3xl border border-slate-100 bg-white p-8 shadow-sm">
                 <div className="mb-6 flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
                   <div>
-                    <h2 className="text-sm font-black uppercase tracking-widest text-slate-800">
-                      Thong tin lien he
+                    <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                      <User size={20} className="text-green-600" />
+                      Thông tin liên hệ
                     </h2>
-                    <p className="mt-1 text-sm text-slate-500">
-                      Du lieu nay duoc dung cho kiem dinh tai noi ban.
+                    <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                      Thêm thông tin liên hệ để phục vụ cho việc kiểm định xe tại địa điểm của bạn.
                     </p>
                   </div>
                   {contacts.length > 0 && !editingContactId && (
                     <button
                       type="button"
                       onClick={resetContactForm}
-                      className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold uppercase tracking-widest text-slate-600"
+                      className="flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-green-700 hover:shadow-lg hover:shadow-green-600/20"
                     >
-                      Them moi
+                      <Plus size={16} />
+                      Thêm mới
                     </button>
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
                   <form
                     onSubmit={handleContactSubmit}
-                    className="space-y-4 rounded-2xl border border-slate-100 bg-slate-50 p-5"
+                    className="space-y-6 rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-8 shadow-sm"
                   >
-                    <div>
-                      <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">
-                        Nguoi lien he
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                        <User size={16} className="text-slate-400" />
+                        Người liên hệ
+                        <span className="text-red-500">*</span>
                       </label>
                       <input
                         required
                         name="nameContact"
                         value={contactForm.nameContact}
                         onChange={handleContactInputChange}
-                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                        placeholder="Ho va ten"
+                        className={`w-full rounded-xl border-2 bg-white px-4 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-500/20 ${
+                          validationErrors.nameContact
+                            ? "border-red-300 focus:border-red-500"
+                            : "border-slate-200 focus:border-green-500"
+                        }`}
+                        placeholder="Nhập họ và tên đầy đủ"
+                        aria-label="Nhập họ và tên người liên hệ"
                       />
+                      {validationErrors.nameContact && (
+                        <p className="flex items-center gap-1 text-xs text-red-600 mt-1">
+                          <AlertTriangle size={12} />
+                          {validationErrors.nameContact}
+                        </p>
+                      )}
                     </div>
 
-                    <div>
-                      <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">
-                        So dien thoai
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                        <Phone size={16} className="text-slate-400" />
+                        Số điện thoại
+                        <span className="text-red-500">*</span>
                       </label>
                       <input
                         required
                         name="phoneContact"
                         value={contactForm.phoneContact}
                         onChange={handleContactInputChange}
-                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                        placeholder="09xxxxxxxx"
+                        className={`w-full rounded-xl border-2 bg-white px-4 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-500/20 ${
+                          validationErrors.phoneContact
+                            ? "border-red-300 focus:border-red-500"
+                            : "border-slate-200 focus:border-green-500"
+                        }`}
+                        placeholder="09xxxxxxxx hoặc +84xxxxxxxx"
+                        aria-label="Nhập số điện thoại liên hệ"
                       />
+                      {validationErrors.phoneContact && (
+                        <p className="flex items-center gap-1 text-xs text-red-600 mt-1">
+                          <AlertTriangle size={12} />
+                          {validationErrors.phoneContact}
+                        </p>
+                      )}
                     </div>
 
-                    <div>
-                      <label className="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-500">
-                        Dia chi lien he
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                        <MapPin size={16} className="text-slate-400" />
+                        Địa chỉ liên hệ
+                        <span className="text-red-500">*</span>
                       </label>
                       <textarea
                         required
@@ -431,85 +463,187 @@ export default function ProfilePage() {
                         value={contactForm.addressLine}
                         onChange={handleContactInputChange}
                         rows={4}
-                        className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                        placeholder="So nha, duong, phuong/xa, quan/huyen, tinh/thanh"
+                        className={`w-full resize-none rounded-xl border-2 bg-white px-4 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-500/20 ${
+                          validationErrors.addressLine
+                            ? "border-red-300 focus:border-red-500"
+                            : "border-slate-200 focus:border-green-500"
+                        }`}
+                        placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố"
+                        aria-label="Nhập địa chỉ đầy đủ"
                       />
+                      {validationErrors.addressLine && (
+                        <p className="flex items-center gap-1 text-xs text-red-600 mt-1">
+                          <AlertTriangle size={12} />
+                          {validationErrors.addressLine}
+                        </p>
+                      )}
                     </div>
 
-                    {contactError && (
-                      <p className="text-sm text-red-600">{contactError}</p>
-                    )}
-                    {contactSuccess && (
-                      <p className="text-sm text-green-600">{contactSuccess}</p>
+                    {(contactError || contactSuccess) && (
+                      <div className={`rounded-xl p-4 flex items-center gap-3 ${
+                        contactError 
+                          ? "bg-red-50 border border-red-200 text-red-700" 
+                          : "bg-green-50 border border-green-200 text-green-700"
+                      }`}>
+                        {contactError ? <AlertTriangle size={16} /> : <Check size={16} />}
+                        <p className="text-sm font-medium">
+                          {contactError || contactSuccess}
+                        </p>
+                      </div>
                     )}
 
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 pt-2">
                       <button
                         type="submit"
                         disabled={isSavingContact}
-                        className="rounded-xl bg-green-600 px-4 py-3 text-xs font-bold uppercase tracking-widest text-white transition hover:bg-green-700 disabled:bg-green-300"
+                        className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3.5 text-sm font-semibold text-white transition-all hover:bg-green-700 hover:shadow-lg hover:shadow-green-600/20 disabled:bg-slate-300 disabled:cursor-not-allowed"
                       >
-                        {isSavingContact
-                          ? "Dang luu..."
-                          : editingContactId
-                            ? "Cap nhat contact"
-                            : "Luu contact"}
+                        {isSavingContact ? (
+                          <>
+                            <RefreshCw size={16} className="animate-spin" />
+                            Đang lưu...
+                          </>
+                        ) : (
+                          <>
+                            <Save size={16} />
+                            {editingContactId ? "Cập nhật" : "Lưu thông tin"}
+                          </>
+                        )}
                       </button>
                       {(editingContactId !== null || hasContactFormValue) && (
                         <button
                           type="button"
                           onClick={resetContactForm}
-                          className="rounded-xl border border-slate-200 px-4 py-3 text-xs font-bold uppercase tracking-widest text-slate-600"
+                          className="rounded-xl border-2 border-slate-200 px-6 py-3.5 text-sm font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50"
                         >
-                          Huy
+                          Hủy
                         </button>
                       )}
                     </div>
                   </form>
 
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {isLoadingContacts ? (
-                      <p className="text-sm text-slate-500">
-                        Dang tai thong tin lien he...
-                      </p>
+                      <div className="flex items-center justify-center py-12">
+                        <div className="flex items-center gap-3 text-slate-500">
+                          <RefreshCw size={20} className="animate-spin" />
+                          <span className="text-sm font-medium">Đang tải thông tin liên hệ...</span>
+                        </div>
+                      </div>
                     ) : contacts.length === 0 ? (
-                      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800">
-                        Chua co thong tin lien he. Hay them it nhat mot contact
-                        de dung cho luong kiem dinh tai noi ban.
+                      <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-8 text-center">
+                        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
+                          <MapPin size={32} className="text-amber-600" />
+                        </div>
+                        <h3 className="mb-2 text-lg font-semibold text-amber-900">
+                          Chưa có thông tin liên hệ
+                        </h3>
+                        <p className="mb-4 text-sm text-amber-700 leading-relaxed">
+                          Vui lòng thêm ít nhất một địa chỉ liên hệ để phục vụ cho quy trình kiểm định xe tại địa điểm của bạn.
+                        </p>
+                        {!editingContactId && (
+                          <button
+                            type="button"
+                            onClick={resetContactForm}
+                            className="mx-auto flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-amber-700 hover:shadow-lg hover:shadow-amber-600/20"
+                          >
+                            <Plus size={16} />
+                            Thêm địa chỉ đầu tiên
+                          </button>
+                        )}
                       </div>
                     ) : (
-                      contacts.map((contact) => (
-                        <div
-                          key={contact.id}
-                          className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm"
-                        >
-                          <p className="font-bold text-slate-800">
-                            {contact.nameContact}
-                          </p>
-                          <p className="mt-1 text-sm text-slate-500">
-                            {contact.phoneContact}
-                          </p>
-                          <p className="mt-1 text-sm text-slate-500">
-                            {contact.addressLine}
-                          </p>
-                          <div className="mt-4 flex gap-3">
-                            <button
-                              type="button"
-                              onClick={() => handleEditContact(contact)}
-                              className="text-sm font-semibold text-green-600"
-                            >
-                              Chinh sua
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteContact(contact.id)}
-                              className="text-sm font-semibold text-red-600"
-                            >
-                              Xoa
-                            </button>
-                          </div>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-sm font-semibold text-slate-700">
+                            Danh sách địa chỉ ({contacts.length})
+                          </h3>
                         </div>
-                      ))
+                        {contacts.map((contact) => (
+                          <div
+                            key={contact.id}
+                            className={`group rounded-2xl border bg-white p-5 transition-all hover:shadow-md ${
+                              editingContactId === contact.id
+                                ? "border-green-500 ring-2 ring-green-500/20"
+                                : "border-slate-200 hover:border-slate-300"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+                                    <User size={16} className="text-green-600" />
+                                  </div>
+                                  <h4 className="font-semibold text-slate-900">
+                                    {contact.nameContact}
+                                  </h4>
+                                  {editingContactId === contact.id && (
+                                    <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
+                                      Đang chỉnh sửa
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                <div className="ml-10 space-y-1">
+                                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                                    <Phone size={14} className="text-slate-400" />
+                                    {contact.phoneContact}
+                                  </div>
+                                  <div className="flex items-start gap-2 text-sm text-slate-600">
+                                    <MapPin size={14} className="text-slate-400 mt-0.5" />
+                                    <span className="leading-relaxed">{contact.addressLine}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                                <button
+                                  type="button"
+                                  onClick={() => handleEditContact(contact)}
+                                  className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition-all hover:border-green-500 hover:text-green-600 hover:bg-green-50"
+                                  aria-label="Chỉnh sửa địa chỉ"
+                                >
+                                  <Edit2 size={14} />
+                                  <span className="hidden sm:inline">Sửa</span>
+                                </button>
+                                
+                                {showDeleteConfirm === contact.id ? (
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteContact(contact.id)}
+                                      className="flex items-center gap-1 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white transition-all hover:bg-red-700"
+                                      aria-label="Xác nhận xóa"
+                                    >
+                                      <Check size={14} />
+                                      <span className="hidden sm:inline">Xác nhận</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowDeleteConfirm(null)}
+                                      className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50"
+                                      aria-label="Hủy xóa"
+                                    >
+                                      <X size={14} />
+                                      <span className="hidden sm:inline">Hủy</span>
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowDeleteConfirm(contact.id)}
+                                    className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-red-600 transition-all hover:border-red-500 hover:bg-red-50"
+                                    aria-label="Xóa địa chỉ"
+                                  >
+                                    <Trash2 size={14} />
+                                    <span className="hidden sm:inline">Xóa</span>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -517,11 +651,12 @@ export default function ProfilePage() {
             )}
 
             <div className="rounded-3xl border border-slate-100 bg-white p-8 shadow-sm">
-              <h2 className="mb-6 border-b border-slate-100 pb-4 text-sm font-black uppercase tracking-widest text-slate-800">
-                Bao mat
+              <h2 className="mb-6 border-b border-slate-100 pb-4 text-lg font-bold text-slate-900 flex items-center gap-2">
+                <ShieldCheck size={20} className="text-slate-600" />
+                Bảo mật tài khoản
               </h2>
-              <button className="w-full rounded-xl border-2 border-slate-100 py-3.5 text-xs font-bold uppercase tracking-widest text-slate-700 transition-colors hover:border-green-200 hover:text-green-700">
-                Doi mat khau
+              <button className="w-full rounded-xl border-2 border-slate-200 py-4 text-sm font-semibold text-slate-700 transition-all hover:border-green-500 hover:bg-green-50 hover:text-green-700 hover:shadow-sm hover:shadow-green-500/10">
+                Đổi mật khẩu
               </button>
             </div>
           </div>
