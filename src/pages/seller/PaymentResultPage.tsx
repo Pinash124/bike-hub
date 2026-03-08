@@ -1,5 +1,4 @@
 // src/pages/seller/PaymentResultPage.tsx
-import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle2, XCircle, Home, FileText } from 'lucide-react';
 
@@ -15,17 +14,11 @@ export default function PaymentResultPage() {
     const orderCode = searchParams.get('orderCode');
     const orderId = searchParams.get('orderId'); // Passed from frontend payload
 
-    const [isSuccess, setIsSuccess] = useState(false);
-
-    useEffect(() => {
-        if (paymentStatus === 'PAID' && !isCancel) {
-            setIsSuccess(true);
-        } else if (hasCode === '00' && !isCancel) {
-            setIsSuccess(true);
-        } else {
-            setIsSuccess(false);
-        }
-    }, [paymentStatus, isCancel, hasCode]);
+    const isSuccess = (() => {
+        if (paymentStatus === 'PAID' && !isCancel) return true;
+        if (hasCode === '00' && !isCancel) return true;
+        return false;
+    })();
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 font-sans">

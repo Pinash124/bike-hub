@@ -9,6 +9,16 @@ import {
   Mail,
   Phone,
   ShieldCheck,
+  User,
+  MapPin,
+  Edit2,
+  Trash2,
+  Plus,
+  Check,
+  X,
+  AlertTriangle,
+  Save,
+  RefreshCw,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import {
@@ -22,6 +32,20 @@ const makeEmptyContact = (): AddressPayload => ({
   phoneContact: "",
   addressLine: "",
 });
+
+// Validation utilities
+const validatePhone = (phone: string): boolean => {
+  const phoneRegex = /^(0[3-9][0-9]{8}|\+84[3-9][0-9]{8})$/;
+  return phoneRegex.test(phone.replace(/\s/g, ""));
+};
+
+const validateName = (name: string): boolean => {
+  return name.trim().length >= 2 && name.trim().length <= 50;
+};
+
+const validateAddress = (address: string): boolean => {
+  return address.trim().length >= 10 && address.trim().length <= 200;
+};
 
 export default function ProfilePage() {
   const { user, logout } = useAuth();
@@ -37,6 +61,8 @@ export default function ProfilePage() {
   const [contactSuccess, setContactSuccess] = useState("");
   const [editingContactId, setEditingContactId] = useState<number | null>(null);
   const [contactForm, setContactForm] = useState<AddressPayload>(makeEmptyContact);
+  const [validationErrors, setValidationErrors] = useState<Partial<AddressPayload>>({});
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
 
   const isSellerOrBuyer = useMemo(
     () => !!user && ["seller", "buyer"].includes(user.role),
@@ -66,6 +92,28 @@ export default function ProfilePage() {
   const resetContactForm = () => {
     setEditingContactId(null);
     setContactForm(makeEmptyContact());
+    setValidationErrors({});
+    setContactError("");
+    setContactSuccess("");
+  };
+
+  const validateContactForm = (): boolean => {
+    const errors: Partial<AddressPayload> = {};
+    
+    if (!validateName(contactForm.nameContact)) {
+      errors.nameContact = "Họ tên phải từ 2-50 ký tự";
+    }
+    
+    if (!validatePhone(contactForm.phoneContact)) {
+      errors.phoneContact = "Số điện thoại không hợp lệ (ví dụ: 09xxxxxxxx)";
+    }
+    
+    if (!validateAddress(contactForm.addressLine)) {
+      errors.addressLine = "Địa chỉ phải từ 10-200 ký tự";
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const hasContactFormValue =
@@ -76,6 +124,17 @@ export default function ProfilePage() {
   ) => {
     const { name, value } = e.target;
     setContactForm((prev) => ({ ...prev, [name]: value }));
+    
+    // Clear validation error for this field when user starts typing
+    if (validationErrors[name as keyof AddressPayload]) {
+      setValidationErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+    
+    // Clear general errors when user starts typing
+    if (contactError || contactSuccess) {
+      setContactError("");
+      setContactSuccess("");
+    }
   };
 
   const refreshContacts = async () => {
@@ -85,6 +144,11 @@ export default function ProfilePage() {
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateContactForm()) {
+      return;
+    }
+    
     setContactError("");
     setContactSuccess("");
     setIsSavingContact(true);
@@ -98,7 +162,7 @@ export default function ProfilePage() {
 
       await refreshContacts();
       resetContactForm();
-      setContactSuccess("Da luu thong tin lien he.");
+      setContactSuccess(editingContactId ? "Đã cập nhật thông tin liên hệ thành công!" : "Đã thêm thông tin liên hệ thành công!");
     } catch (error: unknown) {
       const message =
         typeof error === "object" &&
@@ -109,7 +173,7 @@ export default function ProfilePage() {
           ?.message
           ? (error as { response?: { data?: { message?: string } } }).response!
               .data!.message!
-          : "Khong the luu thong tin lien he.";
+          : "Không thể lưu thông tin liên hệ. Vui lòng thử lại.";
       setContactError(message);
     } finally {
       setIsSavingContact(false);
@@ -133,7 +197,8 @@ export default function ProfilePage() {
 
     const ok = await addressService.deleteAddress(contactId);
     if (!ok) {
-      setContactError("Khong the xoa thong tin lien he.");
+      setContactError("Không thể xóa thông tin liên hệ. Vui lòng thử lại.");
+      setShowDeleteConfirm(null);
       return;
     }
 
@@ -141,7 +206,8 @@ export default function ProfilePage() {
     if (editingContactId === contactId) {
       resetContactForm();
     }
-    setContactSuccess("Da xoa thong tin lien he.");
+    setContactSuccess("Đã xóa thông tin liên hệ thành công!");
+    setShowDeleteConfirm(null);
   };
 
   const handleReturnToSchedule = () => {
