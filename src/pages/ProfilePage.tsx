@@ -3,28 +3,25 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   AlertCircle,
-  Calendar,
   Camera,
   LogOut,
   Mail,
   Phone,
+  Calendar,
   ShieldCheck,
   User,
-  MapPin,
-  Edit2,
-  Trash2,
-  Plus,
-  Check,
-  X,
-  AlertTriangle,
-  Save,
   RefreshCw,
+  MapPin,
+  AlertTriangle,
+  Check,
+  Save,
+  Edit2
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import {
-  addressService,
-  type Address,
-  type AddressPayload,
+import { 
+  addressService, 
+  type Address, 
+  type AddressPayload 
 } from "../services/address.service";
 
 const makeEmptyContact = (): AddressPayload => ({
@@ -33,7 +30,6 @@ const makeEmptyContact = (): AddressPayload => ({
   addressLine: "",
 });
 
-// Validation utilities
 const validatePhone = (phone: string): boolean => {
   const phoneRegex = /^(0[3-9][0-9]{8}|\+84[3-9][0-9]{8})$/;
   return phoneRegex.test(phone.replace(/\s/g, ""));
@@ -56,13 +52,12 @@ export default function ProfilePage() {
 
   const [contacts, setContacts] = useState<Address[]>([]);
   const [isLoadingContacts, setIsLoadingContacts] = useState(false);
-  const [isSavingContact, setIsSavingContact] = useState(false);
-  const [contactError, setContactError] = useState("");
-  const [contactSuccess, setContactSuccess] = useState("");
-  const [editingContactId, setEditingContactId] = useState<number | null>(null);
-  const [contactForm, setContactForm] = useState<AddressPayload>(makeEmptyContact);
-  const [validationErrors, setValidationErrors] = useState<Partial<AddressPayload>>({});
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null);
+  const [contactForm, setContactForm] = useState<AddressPayload>(makeEmptyContact)
+  const [validationErrors, setValidationErrors] = useState<Partial<AddressPayload>>({})
+  const [contactError, setContactError] = useState("")
+  const [contactSuccess, setContactSuccess] = useState("")
+  const [editingContactId, setEditingContactId] = useState<number | null>(null)
+  const [isSavingContact, setIsSavingContact] = useState(false)
 
   const isSellerOrBuyer = useMemo(
     () => !!user && ["seller", "buyer"].includes(user.role),
@@ -181,33 +176,15 @@ export default function ProfilePage() {
   };
 
   const handleEditContact = (contact: Address) => {
-    setEditingContactId(contact.id);
     setContactForm({
       nameContact: contact.nameContact,
       phoneContact: contact.phoneContact,
       addressLine: contact.addressLine,
-    });
-    setContactError("");
-    setContactSuccess("");
-  };
-
-  const handleDeleteContact = async (contactId: number) => {
-    setContactError("");
-    setContactSuccess("");
-
-    const ok = await addressService.deleteAddress(contactId);
-    if (!ok) {
-      setContactError("Không thể xóa thông tin liên hệ. Vui lòng thử lại.");
-      setShowDeleteConfirm(null);
-      return;
-    }
-
-    await refreshContacts();
-    if (editingContactId === contactId) {
-      resetContactForm();
-    }
-    setContactSuccess("Đã xóa thông tin liên hệ thành công!");
-    setShowDeleteConfirm(null);
+    })
+    setEditingContactId(contact.id)
+    setValidationErrors({})
+    setContactError("")
+    setContactSuccess("")
   };
 
   const handleReturnToSchedule = () => {
@@ -285,25 +262,11 @@ export default function ProfilePage() {
 
                 <div className="flex items-center gap-4">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-50">
-                    <Phone size={18} className="text-slate-400" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                      So dien thoai tai khoan
-                    </p>
-                    <p className="text-sm font-semibold text-slate-800">
-                      {user.phone || "Chua cap nhat"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-50">
                     <Calendar size={18} className="text-slate-400" />
                   </div>
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                      Ngay tham gia
+                      Ngày tham gia
                     </p>
                     <p className="text-sm font-semibold text-slate-800">
                       {new Date(user.createdAt).toLocaleDateString("vi-VN")}
@@ -370,167 +333,28 @@ export default function ProfilePage() {
           <div className="space-y-6 lg:col-span-2">
             {isSellerOrBuyer && (
               <div className="rounded-3xl border border-slate-100 bg-white p-8 shadow-sm">
-                <div className="mb-6 flex items-start justify-between gap-4 border-b border-slate-100 pb-4">
+                <div className="mb-6 border-b border-slate-100 pb-4">
                   <div>
                     <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                       <User size={20} className="text-green-600" />
                       Thông tin liên hệ
                     </h2>
                     <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-                      Thêm thông tin liên hệ để phục vụ cho việc kiểm định xe tại địa điểm của bạn.
+                      Cập nhật thông tin liên hệ để phục vụ cho việc kiểm định xe tại địa điểm của bạn.
                     </p>
                   </div>
-                  {contacts.length > 0 && !editingContactId && (
-                    <button
-                      type="button"
-                      onClick={resetContactForm}
-                      className="flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-green-700 hover:shadow-lg hover:shadow-green-600/20"
-                    >
-                      <Plus size={16} />
-                      Thêm mới
-                    </button>
-                  )}
                 </div>
 
-                <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
-                  <form
-                    onSubmit={handleContactSubmit}
-                    className="space-y-6 rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-8 shadow-sm"
-                  >
-                    <div className="space-y-2">
-                      <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                        <User size={16} className="text-slate-400" />
-                        Người liên hệ
-                        <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        required
-                        name="nameContact"
-                        value={contactForm.nameContact}
-                        onChange={handleContactInputChange}
-                        className={`w-full rounded-xl border-2 bg-white px-4 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-500/20 ${
-                          validationErrors.nameContact
-                            ? "border-red-300 focus:border-red-500"
-                            : "border-slate-200 focus:border-green-500"
-                        }`}
-                        placeholder="Nhập họ và tên đầy đủ"
-                        aria-label="Nhập họ và tên người liên hệ"
-                      />
-                      {validationErrors.nameContact && (
-                        <p className="flex items-center gap-1 text-xs text-red-600 mt-1">
-                          <AlertTriangle size={12} />
-                          {validationErrors.nameContact}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                        <Phone size={16} className="text-slate-400" />
-                        Số điện thoại
-                        <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        required
-                        name="phoneContact"
-                        value={contactForm.phoneContact}
-                        onChange={handleContactInputChange}
-                        className={`w-full rounded-xl border-2 bg-white px-4 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-500/20 ${
-                          validationErrors.phoneContact
-                            ? "border-red-300 focus:border-red-500"
-                            : "border-slate-200 focus:border-green-500"
-                        }`}
-                        placeholder="09xxxxxxxx hoặc +84xxxxxxxx"
-                        aria-label="Nhập số điện thoại liên hệ"
-                      />
-                      {validationErrors.phoneContact && (
-                        <p className="flex items-center gap-1 text-xs text-red-600 mt-1">
-                          <AlertTriangle size={12} />
-                          {validationErrors.phoneContact}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                        <MapPin size={16} className="text-slate-400" />
-                        Địa chỉ liên hệ
-                        <span className="text-red-500">*</span>
-                      </label>
-                      <textarea
-                        required
-                        name="addressLine"
-                        value={contactForm.addressLine}
-                        onChange={handleContactInputChange}
-                        rows={4}
-                        className={`w-full resize-none rounded-xl border-2 bg-white px-4 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-500/20 ${
-                          validationErrors.addressLine
-                            ? "border-red-300 focus:border-red-500"
-                            : "border-slate-200 focus:border-green-500"
-                        }`}
-                        placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố"
-                        aria-label="Nhập địa chỉ đầy đủ"
-                      />
-                      {validationErrors.addressLine && (
-                        <p className="flex items-center gap-1 text-xs text-red-600 mt-1">
-                          <AlertTriangle size={12} />
-                          {validationErrors.addressLine}
-                        </p>
-                      )}
-                    </div>
-
-                    {(contactError || contactSuccess) && (
-                      <div className={`rounded-xl p-4 flex items-center gap-3 ${
-                        contactError 
-                          ? "bg-red-50 border border-red-200 text-red-700" 
-                          : "bg-green-50 border border-green-200 text-green-700"
-                      }`}>
-                        {contactError ? <AlertTriangle size={16} /> : <Check size={16} />}
-                        <p className="text-sm font-medium">
-                          {contactError || contactSuccess}
-                        </p>
+                <div className="space-y-6">
+                  {isLoadingContacts ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="flex items-center gap-3 text-slate-500">
+                        <RefreshCw size={20} className="animate-spin" />
+                        <span className="text-sm font-medium">Đang tải thông tin liên hệ...</span>
                       </div>
-                    )}
-
-                    <div className="flex gap-3 pt-2">
-                      <button
-                        type="submit"
-                        disabled={isSavingContact}
-                        className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3.5 text-sm font-semibold text-white transition-all hover:bg-green-700 hover:shadow-lg hover:shadow-green-600/20 disabled:bg-slate-300 disabled:cursor-not-allowed"
-                      >
-                        {isSavingContact ? (
-                          <>
-                            <RefreshCw size={16} className="animate-spin" />
-                            Đang lưu...
-                          </>
-                        ) : (
-                          <>
-                            <Save size={16} />
-                            {editingContactId ? "Cập nhật" : "Lưu thông tin"}
-                          </>
-                        )}
-                      </button>
-                      {(editingContactId !== null || hasContactFormValue) && (
-                        <button
-                          type="button"
-                          onClick={resetContactForm}
-                          className="rounded-xl border-2 border-slate-200 px-6 py-3.5 text-sm font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50"
-                        >
-                          Hủy
-                        </button>
-                      )}
                     </div>
-                  </form>
-
-                  <div className="space-y-4">
-                    {isLoadingContacts ? (
-                      <div className="flex items-center justify-center py-12">
-                        <div className="flex items-center gap-3 text-slate-500">
-                          <RefreshCw size={20} className="animate-spin" />
-                          <span className="text-sm font-medium">Đang tải thông tin liên hệ...</span>
-                        </div>
-                      </div>
-                    ) : contacts.length === 0 ? (
+                  ) : contacts.length === 0 ? (
+                    <div className="space-y-6">
                       <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-8 text-center">
                         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
                           <MapPin size={32} className="text-amber-600" />
@@ -539,113 +363,322 @@ export default function ProfilePage() {
                           Chưa có thông tin liên hệ
                         </h3>
                         <p className="mb-4 text-sm text-amber-700 leading-relaxed">
-                          Vui lòng thêm ít nhất một địa chỉ liên hệ để phục vụ cho quy trình kiểm định xe tại địa điểm của bạn.
+                          Vui lòng thêm thông tin liên hệ để phục vụ cho quy trình kiểm định xe tại địa điểm của bạn.
                         </p>
-                        {!editingContactId && (
-                          <button
-                            type="button"
-                            onClick={resetContactForm}
-                            className="mx-auto flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-amber-700 hover:shadow-lg hover:shadow-amber-600/20"
-                          >
-                            <Plus size={16} />
-                            Thêm địa chỉ đầu tiên
-                          </button>
-                        )}
                       </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-sm font-semibold text-slate-700">
-                            Danh sách địa chỉ ({contacts.length})
-                          </h3>
-                        </div>
-                        {contacts.map((contact) => (
-                          <div
-                            key={contact.id}
-                            className={`group rounded-2xl border bg-white p-5 transition-all hover:shadow-md ${
-                              editingContactId === contact.id
-                                ? "border-green-500 ring-2 ring-green-500/20"
-                                : "border-slate-200 hover:border-slate-300"
+                      
+                      <form
+                        onSubmit={handleContactSubmit}
+                        className="space-y-6 rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-8 shadow-sm"
+                      >
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                            <User size={16} className="text-slate-400" />
+                            Người liên hệ
+                            <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            required
+                            name="nameContact"
+                            value={contactForm.nameContact}
+                            onChange={handleContactInputChange}
+                            className={`w-full rounded-xl border-2 bg-white px-4 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-500/20 ${
+                              validationErrors.nameContact
+                                ? "border-red-300 focus:border-red-500"
+                                : "border-slate-200 focus:border-green-500"
                             }`}
+                            placeholder="Nhập họ và tên đầy đủ"
+                            aria-label="Nhập họ và tên người liên hệ"
+                          />
+                          {validationErrors.nameContact && (
+                            <p className="flex items-center gap-1 text-xs text-red-600 mt-1">
+                              <AlertTriangle size={12} />
+                              {validationErrors.nameContact}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                            <Phone size={16} className="text-slate-400" />
+                            Số điện thoại
+                            <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            required
+                            name="phoneContact"
+                            value={contactForm.phoneContact}
+                            onChange={handleContactInputChange}
+                            className={`w-full rounded-xl border-2 bg-white px-4 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-500/20 ${
+                              validationErrors.phoneContact
+                                ? "border-red-300 focus:border-red-500"
+                                : "border-slate-200 focus:border-green-500"
+                            }`}
+                            placeholder="09xxxxxxxx hoặc +84xxxxxxxx"
+                            aria-label="Nhập số điện thoại liên hệ"
+                          />
+                          {validationErrors.phoneContact && (
+                            <p className="flex items-center gap-1 text-xs text-red-600 mt-1">
+                              <AlertTriangle size={12} />
+                              {validationErrors.phoneContact}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                            <MapPin size={16} className="text-slate-400" />
+                            Địa chỉ liên hệ
+                            <span className="text-red-500">*</span>
+                          </label>
+                          <textarea
+                            required
+                            name="addressLine"
+                            value={contactForm.addressLine}
+                            onChange={handleContactInputChange}
+                            rows={4}
+                            className={`w-full resize-none rounded-xl border-2 bg-white px-4 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-500/20 ${
+                              validationErrors.addressLine
+                                ? "border-red-300 focus:border-red-500"
+                                : "border-slate-200 focus:border-green-500"
+                            }`}
+                            placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố"
+                            aria-label="Nhập địa chỉ đầy đủ"
+                          />
+                          {validationErrors.addressLine && (
+                            <p className="flex items-center gap-1 text-xs text-red-600 mt-1">
+                              <AlertTriangle size={12} />
+                              {validationErrors.addressLine}
+                            </p>
+                          )}
+                        </div>
+
+                        {(contactError || contactSuccess) && (
+                          <div className={`rounded-xl p-4 flex items-center gap-3 ${
+                            contactError 
+                              ? "bg-red-50 border border-red-200 text-red-700" 
+                              : "bg-green-50 border border-green-200 text-green-700"
+                          }`}>
+                            {contactError ? <AlertTriangle size={16} /> : <Check size={16} />}
+                            <p className="text-sm font-medium">
+                              {contactError || contactSuccess}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="flex gap-3 pt-2">
+                          <button
+                            type="submit"
+                            disabled={isSavingContact}
+                            className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3.5 text-sm font-semibold text-white transition-all hover:bg-green-700 hover:shadow-lg hover:shadow-green-600/20 disabled:bg-slate-300 disabled:cursor-not-allowed"
                           >
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1 space-y-2">
-                                <div className="flex items-center gap-2">
-                                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
-                                    <User size={16} className="text-green-600" />
-                                  </div>
-                                  <h4 className="font-semibold text-slate-900">
-                                    {contact.nameContact}
-                                  </h4>
-                                  {editingContactId === contact.id && (
-                                    <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
-                                      Đang chỉnh sửa
-                                    </span>
-                                  )}
+                            {isSavingContact ? (
+                              <>
+                                <RefreshCw size={16} className="animate-spin" />
+                                Đang lưu...
+                              </>
+                            ) : (
+                              <>
+                                <Save size={16} />
+                                Lưu thông tin
+                              </>
+                            )}
+                          </button>
+                          {hasContactFormValue && (
+                            <button
+                              type="button"
+                              onClick={resetContactForm}
+                              className="rounded-xl border-2 border-slate-200 px-6 py-3.5 text-sm font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50"
+                            >
+                              Hủy
+                            </button>
+                          )}
+                        </div>
+                      </form>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      <div className="rounded-2xl border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-6">
+                        <div className="flex items-start gap-4">
+                          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
+                            <MapPin size={28} className="text-green-600" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-bold text-green-900 text-lg mb-4">Thông tin liên hệ hiện tại</h3>
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+                                  <User size={16} className="text-green-600" />
                                 </div>
-                                
-                                <div className="ml-10 space-y-1">
-                                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                                    <Phone size={14} className="text-slate-400" />
-                                    {contact.phoneContact}
-                                  </div>
-                                  <div className="flex items-start gap-2 text-sm text-slate-600">
-                                    <MapPin size={14} className="text-slate-400 mt-0.5" />
-                                    <span className="leading-relaxed">{contact.addressLine}</span>
-                                  </div>
+                                <div>
+                                  <p className="text-sm font-semibold text-slate-700">Người liên hệ</p>
+                                  <p className="text-slate-900">{contacts[0].nameContact}</p>
                                 </div>
                               </div>
-                              
-                              <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                                <button
-                                  type="button"
-                                  onClick={() => handleEditContact(contact)}
-                                  className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition-all hover:border-green-500 hover:text-green-600 hover:bg-green-50"
-                                  aria-label="Chỉnh sửa địa chỉ"
-                                >
-                                  <Edit2 size={14} />
-                                  <span className="hidden sm:inline">Sửa</span>
-                                </button>
-                                
-                                {showDeleteConfirm === contact.id ? (
-                                  <div className="flex items-center gap-1">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDeleteContact(contact.id)}
-                                      className="flex items-center gap-1 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white transition-all hover:bg-red-700"
-                                      aria-label="Xác nhận xóa"
-                                    >
-                                      <Check size={14} />
-                                      <span className="hidden sm:inline">Xác nhận</span>
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => setShowDeleteConfirm(null)}
-                                      className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50"
-                                      aria-label="Hủy xóa"
-                                    >
-                                      <X size={14} />
-                                      <span className="hidden sm:inline">Hủy</span>
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() => setShowDeleteConfirm(contact.id)}
-                                    className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-red-600 transition-all hover:border-red-500 hover:bg-red-50"
-                                    aria-label="Xóa địa chỉ"
-                                  >
-                                    <Trash2 size={14} />
-                                    <span className="hidden sm:inline">Xóa</span>
-                                  </button>
-                                )}
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+                                  <Phone size={16} className="text-green-600" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-semibold text-slate-700">Số điện thoại</p>
+                                  <p className="text-slate-900">{contacts[0].phoneContact}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-start gap-3">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 mt-0.5">
+                                  <MapPin size={16} className="text-green-600" />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-sm font-semibold text-slate-700">Địa chỉ</p>
+                                  <p className="text-slate-900 leading-relaxed">{contacts[0].addressLine}</p>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        ))}
+                        </div>
                       </div>
-                    )}
-                  </div>
+                      
+                      <div className="flex justify-center">
+                        <button
+                          type="button"
+                          onClick={() => handleEditContact(contacts[0])}
+                          className="flex items-center gap-2 rounded-xl bg-green-600 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-green-700 hover:shadow-lg hover:shadow-green-600/20"
+                        >
+                          <Edit2 size={16} />
+                          Cập nhật thông tin
+                        </button>
+                      </div>
+                      
+                      {editingContactId && (
+                        <form
+                          onSubmit={handleContactSubmit}
+                          className="space-y-6 rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-8 shadow-sm"
+                        >
+                          <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                              <User size={16} className="text-slate-400" />
+                              Người liên hệ
+                              <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              required
+                              name="nameContact"
+                              value={contactForm.nameContact}
+                              onChange={handleContactInputChange}
+                              className={`w-full rounded-xl border-2 bg-white px-4 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-500/20 ${
+                                validationErrors.nameContact
+                                  ? "border-red-300 focus:border-red-500"
+                                  : "border-slate-200 focus:border-green-500"
+                              }`}
+                              placeholder="Nhập họ và tên đầy đủ"
+                              aria-label="Nhập họ và tên người liên hệ"
+                            />
+                            {validationErrors.nameContact && (
+                              <p className="flex items-center gap-1 text-xs text-red-600 mt-1">
+                                <AlertTriangle size={12} />
+                                {validationErrors.nameContact}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                              <Phone size={16} className="text-slate-400" />
+                              Số điện thoại
+                              <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              required
+                              name="phoneContact"
+                              value={contactForm.phoneContact}
+                              onChange={handleContactInputChange}
+                              className={`w-full rounded-xl border-2 bg-white px-4 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-500/20 ${
+                                validationErrors.phoneContact
+                                  ? "border-red-300 focus:border-red-500"
+                                  : "border-slate-200 focus:border-green-500"
+                              }`}
+                              placeholder="09xxxxxxxx hoặc +84xxxxxxxx"
+                              aria-label="Nhập số điện thoại liên hệ"
+                            />
+                            {validationErrors.phoneContact && (
+                              <p className="flex items-center gap-1 text-xs text-red-600 mt-1">
+                                <AlertTriangle size={12} />
+                                {validationErrors.phoneContact}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                              <MapPin size={16} className="text-slate-400" />
+                              Địa chỉ liên hệ
+                              <span className="text-red-500">*</span>
+                            </label>
+                            <textarea
+                              required
+                              name="addressLine"
+                              value={contactForm.addressLine}
+                              onChange={handleContactInputChange}
+                              rows={4}
+                              className={`w-full resize-none rounded-xl border-2 bg-white px-4 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-500/20 ${
+                                validationErrors.addressLine
+                                  ? "border-red-300 focus:border-red-500"
+                                  : "border-slate-200 focus:border-green-500"
+                              }`}
+                              placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố"
+                              aria-label="Nhập địa chỉ đầy đủ"
+                            />
+                            {validationErrors.addressLine && (
+                              <p className="flex items-center gap-1 text-xs text-red-600 mt-1">
+                                <AlertTriangle size={12} />
+                                {validationErrors.addressLine}
+                              </p>
+                            )}
+                          </div>
+
+                          {(contactError || contactSuccess) && (
+                            <div className={`rounded-xl p-4 flex items-center gap-3 ${
+                              contactError 
+                                ? "bg-red-50 border border-red-200 text-red-700" 
+                                : "bg-green-50 border border-green-200 text-green-700"
+                            }`}>
+                              {contactError ? <AlertTriangle size={16} /> : <Check size={16} />}
+                              <p className="text-sm font-medium">
+                                {contactError || contactSuccess}
+                              </p>
+                            </div>
+                          )}
+
+                          <div className="flex gap-3 pt-2">
+                            <button
+                              type="submit"
+                              disabled={isSavingContact}
+                              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3.5 text-sm font-semibold text-white transition-all hover:bg-green-700 hover:shadow-lg hover:shadow-green-600/20 disabled:bg-slate-300 disabled:cursor-not-allowed"
+                            >
+                              {isSavingContact ? (
+                                <>
+                                  <RefreshCw size={16} className="animate-spin" />
+                                  Đang cập nhật...
+                                </>
+                              ) : (
+                                <>
+                                  <Save size={16} />
+                                  Cập nhật thông tin
+                                </>
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={resetContactForm}
+                              className="rounded-xl border-2 border-slate-200 px-6 py-3.5 text-sm font-semibold text-slate-600 transition-all hover:border-slate-300 hover:bg-slate-50"
+                            >
+                              Hủy
+                            </button>
+                          </div>
+                        </form>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
