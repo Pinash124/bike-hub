@@ -1,6 +1,6 @@
 // src/components/dashboards/SellerDashboard.tsx
 // Role: SELLER — shows real listings from API + inspection status
-import { Plus, Eye, TrendingUp, Package, Clock, CheckCircle, ChevronRight, Bike, Calendar, AlertCircle, RefreshCw, Search, Edit2, Trash2, BarChart3, DollarSign } from 'lucide-react'
+import { Plus, Eye, TrendingUp, Package, Clock, CheckCircle, ChevronRight, Bike, Calendar, AlertCircle, RefreshCw, Search, Trash2, BarChart3, DollarSign } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState, useMemo } from 'react'
 import { listingService, type Listing } from '../../services/listing.service'
@@ -56,7 +56,7 @@ export default function SellerDashboard() {
 
     // Filter by search query
     if (searchQuery) {
-      filtered = filtered.filter(l => 
+      filtered = filtered.filter(l =>
         l.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         l.brand?.name.toLowerCase().includes(searchQuery.toLowerCase())
       )
@@ -95,7 +95,7 @@ export default function SellerDashboard() {
         <div className="absolute inset-0 bg-black/5"></div>
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -mr-48 -mt-48"></div>
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full -ml-32 -mb-32"></div>
-        
+
         <div className="relative max-w-7xl mx-auto">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
             <div className="text-white">
@@ -140,9 +140,8 @@ export default function SellerDashboard() {
                   <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${stat.bg} group-hover:scale-110 transition-transform duration-300`}>
                     <Icon size={28} className={stat.color} />
                   </div>
-                  <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                    stat.trend.startsWith('+') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                  }`}>
+                  <span className={`text-xs font-semibold px-2 py-1 rounded-full ${stat.trend.startsWith('+') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}>
                     {stat.trend}
                   </span>
                 </div>
@@ -192,7 +191,7 @@ export default function SellerDashboard() {
                 Xem tất cả <ChevronRight size={18} />
               </button>
             </div>
-            
+
             {/* Search and Filters */}
             <div className="mt-6 flex flex-col lg:flex-row gap-4">
               <div className="relative flex-1 max-w-md">
@@ -205,7 +204,7 @@ export default function SellerDashboard() {
                   className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all"
                 />
               </div>
-              
+
               <div className="flex items-center gap-3">
                 <select
                   value={statusFilter}
@@ -219,7 +218,7 @@ export default function SellerDashboard() {
                   <option value="APPROVED">Đã duyệt</option>
                   <option value="DRAFT">Nháp</option>
                 </select>
-                
+
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
@@ -251,7 +250,7 @@ export default function SellerDashboard() {
                   {searchQuery || statusFilter !== 'all' ? 'Không tìm thấy xe nào' : 'Chưa có xe nào được đăng'}
                 </h3>
                 <p className="text-slate-600 text-base mt-2 max-w-md leading-relaxed">
-                  {searchQuery || statusFilter !== 'all' 
+                  {searchQuery || statusFilter !== 'all'
                     ? 'Thử thay đổi bộ lọc hoặc tìm kiếm với từ khóa khác.'
                     : 'Hãy bắt đầu hành trình bán hàng của bạn bằng cách đăng chiếc xe đầu tiên lên BikeHub.'
                   }
@@ -275,17 +274,17 @@ export default function SellerDashboard() {
                       {/* Image Section */}
                       <div className="relative h-48 bg-slate-100 overflow-hidden">
                         {thumbnail ? (
-                          <img 
-                            src={thumbnail} 
-                            alt={listing.title} 
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                          <img
+                            src={thumbnail}
+                            alt={listing.title}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-slate-100 to-slate-200">
                             🚴
                           </div>
                         )}
-                        
+
                         {/* Status Badge */}
                         <div className="absolute top-4 left-4">
                           <span className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border backdrop-blur-sm ${config.bg} ${config.color} ${config.border}`}>
@@ -293,17 +292,14 @@ export default function SellerDashboard() {
                             {config.label}
                           </span>
                         </div>
-                        
+
                         {/* Action Buttons */}
                         <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-lg flex items-center justify-center hover:bg-white transition-colors shadow-lg">
-                            <Edit2 size={16} className="text-slate-600" />
-                          </button>
                           <button className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-lg flex items-center justify-center hover:bg-white transition-colors shadow-lg">
                             <Trash2 size={16} className="text-red-500" />
                           </button>
                         </div>
-                        
+
                         {listing.status === 'SOLD' && (
                           <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                             <span className="bg-slate-800 text-white text-sm font-bold px-4 py-2 rounded-full uppercase tracking-widest">Đã bán</span>
@@ -330,12 +326,12 @@ export default function SellerDashboard() {
 
                         <div className="flex flex-wrap gap-2 mb-4">
                           <span className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600">
-                            <Package size={12} className="text-slate-400" /> 
+                            <Package size={12} className="text-slate-400" />
                             {listing.brand?.name || 'Khác'}
                           </span>
                           {listing.usageDuration != null && (
                             <span className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600">
-                              <Calendar size={12} className="text-slate-400" /> 
+                              <Calendar size={12} className="text-slate-400" />
                               {listing.usageDuration} năm
                             </span>
                           )}

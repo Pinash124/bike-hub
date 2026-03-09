@@ -152,32 +152,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Extract role - handle both singular 'role' and 'roles' array
       let rawRole: string | undefined;
+      console.log('User raw data from server:', result);
+
       if (result.role) {
-        rawRole = String(result.role);
+        rawRole = typeof result.role === 'object' ? result.role.name : String(result.role);
       } else if (
         result.roles &&
         Array.isArray(result.roles) &&
         result.roles.length > 0
       ) {
         const first = result.roles[0];
-        rawRole = String(first?.name || first);
+        rawRole = typeof first === 'object' && first !== null ? first.name : String(first);
       }
 
       const extractedRole = (rawRole || "buyer").toLowerCase();
+      console.log('Extracted raw role string before mapping:', rawRole, 'Lowercased:', extractedRole);
 
       // Map backend role strings to our canonical roles
       let normalized: UserRole;
       if (extractedRole.includes("admin")) normalized = "admin";
       else if (extractedRole.includes("seller")) normalized = "seller";
       else if (extractedRole.includes("inspector")) normalized = "inspector";
-      else if (extractedRole.includes("buyer")) normalized = "buyer";
+      else if (extractedRole.includes("buyer") || extractedRole.includes("user")) normalized = "buyer";
       else normalized = "buyer";
 
       console.log(
-        "Raw role from server:",
-        rawRole,
-        "normalized to",
-        normalized,
+        "Final Role Mapping:",
+        { raw: rawRole, extracted: extractedRole, finalNormalized: normalized }
       );
 
       const userData: UserProfile = {

@@ -50,6 +50,21 @@ export const listingService = {
         }
     },
 
+
+
+    updateListing: async (id: string, formData: FormData): Promise<Listing | null> => {
+        try {
+            const response = await api.put(API_ENDPOINTS.LISTING_DETAIL(id), formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            if (response.data?.code === 1000) return response.data.result;
+            throw new Error(response.data?.message || 'Update listing failed');
+        } catch (error) {
+            console.error('Error updating listing:', error);
+            throw error;
+        }
+    },
+
     getMyListings: async (): Promise<Listing[]> => {
         try {
             const response = await api.get(API_ENDPOINTS.MY_LISTING);

@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-const RAILWAY_API = 'https://bikehub-production-c470.up.railway.app'
+const RAILWAY_API = 'https://bikehub-production-1c50.up.railway.app'
 
 // https://vite.dev/config/
 export default defineConfig({
