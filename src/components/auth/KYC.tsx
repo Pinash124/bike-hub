@@ -111,7 +111,7 @@ export default function KYC() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [currentStep, setCurrentStep] = useState(1)
-  const [isCompleted] = useState(false)
+  const [isCompleted, setIsCompleted] = useState(false)
 
   // File States
   const [frontImage, setFrontImage] = useState<File | null>(null)
@@ -174,8 +174,7 @@ export default function KYC() {
     setError('')
     try {
       await confirmKYC(draftId)
-      // Điều hướng về trang hồ sơ để hiển thị trạng thái "Đang xử lý"
-      navigate('/profile')
+      setIsCompleted(true)
     } catch (err: any) {
       console.error('Confirm failed:', err)
       setError(err.message || 'Xác nhận thất bại. Vui lòng thử lại.')
@@ -191,9 +190,12 @@ export default function KYC() {
           <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
             <ShieldCheck size={44} className="text-green-600" />
           </div>
-          <h2 className="text-xl font-bold uppercase mb-2 text-slate-800">Đã gửi yêu cầu</h2>
-          <p className="text-sm text-slate-500 mb-6 px-8">Thông tin xác minh của bạn đã được gửi thành công và đang chờ duyệt.</p>
-          <button onClick={() => navigate('/')} className="text-green-600 font-bold text-xs uppercase tracking-widest hover:text-green-700">Về trang chủ</button>
+          <h2 className="text-xl font-bold uppercase mb-2 text-slate-800">Xác nhận thành công</h2>
+          <p className="text-sm text-slate-500 mb-6 px-8">Yêu cầu KYC đã được ghi nhận. Trạng thái hiện tại: đang chờ duyệt.</p>
+          <div className="flex items-center justify-center gap-4">
+            <button onClick={() => navigate('/profile')} className="text-green-600 font-bold text-xs uppercase tracking-widest hover:text-green-700">Xem hồ sơ</button>
+            <button onClick={() => navigate('/')} className="text-slate-500 font-bold text-xs uppercase tracking-widest hover:text-slate-700">Về trang chủ</button>
+          </div>
         </div>
       </AuthCard>
     </div>

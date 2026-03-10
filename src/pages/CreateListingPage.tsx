@@ -31,12 +31,6 @@ const BIKE_TYPES = [
     emoji: "🚴",
     description: "Nhanh nhẹ trên đường bằng, đua xe",
   },
-  {
-    value: "CITY_BIKE",
-    label: "Xe thành phố",
-    emoji: "🚲",
-    description: "Tiện lợi cho đi lại hàng ngày",
-  },
 ];
 
 interface FieldProps {
@@ -130,10 +124,23 @@ export default function CreateListingPage() {
       return;
     }
 
-    setImages((prev) => [...prev, ...validFiles]);
-    const newPreviews = validFiles.map((file) => URL.createObjectURL(file));
+    const remainingSlots = Math.max(0, 5 - images.length);
+    if (remainingSlots === 0) {
+      setError("Chỉ được tải tối đa 5 ảnh.");
+      return;
+    }
+
+    const filesToAdd = validFiles.slice(0, remainingSlots);
+    let limitError = false;
+    if (filesToAdd.length < validFiles.length) {
+      setError("Chỉ được tải tối đa 5 ảnh.");
+      limitError = true;
+    }
+
+    setImages((prev) => [...prev, ...filesToAdd]);
+    const newPreviews = filesToAdd.map((file) => URL.createObjectURL(file));
     setImagePreviews((prev) => [...prev, ...newPreviews]);
-    setError("");
+    if (!limitError) setError("");
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -158,9 +165,23 @@ export default function CreateListingPage() {
     });
 
     if (validFiles.length > 0) {
-      setImages((prev) => [...prev, ...validFiles]);
-      const newPreviews = validFiles.map((file) => URL.createObjectURL(file));
+      const remainingSlots = Math.max(0, 5 - images.length);
+      if (remainingSlots === 0) {
+        setError("Chỉ được tải tối đa 5 ảnh.");
+        return;
+      }
+
+      const filesToAdd = validFiles.slice(0, remainingSlots);
+      let limitError = false;
+      if (filesToAdd.length < validFiles.length) {
+        setError("Chỉ được tải tối đa 5 ảnh.");
+        limitError = true;
+      }
+
+      setImages((prev) => [...prev, ...filesToAdd]);
+      const newPreviews = filesToAdd.map((file) => URL.createObjectURL(file));
       setImagePreviews((prev) => [...prev, ...newPreviews]);
+      if (!limitError) setError("");
     }
   };
 
@@ -195,8 +216,8 @@ export default function CreateListingPage() {
     }
 
     const usage = Number.parseInt(formData.usageDuration || "0", 10);
-    if (Number.isNaN(usage) || usage < 0 || usage > 30) {
-      errors.usageDuration = "Thời gian sử dụng phải từ 0-30 năm";
+    if (Number.isNaN(usage) || usage < 0 || usage > 10) {
+      errors.usageDuration = "Thời gian sử dụng phải từ 0-10 năm";
     }
 
     if (formData.description.length < 10) {
@@ -207,7 +228,7 @@ export default function CreateListingPage() {
     }
 
     const priceVal = Number.parseInt(formData.price || "0", 10);
-    const MIN_PRICE = 500000;
+    const MIN_PRICE = 100000;
     if (Number.isNaN(priceVal) || priceVal < MIN_PRICE) {
       errors.price = `Giá bán tối thiểu là ${MIN_PRICE.toLocaleString("vi-VN")} VNĐ`;
     }
@@ -217,6 +238,9 @@ export default function CreateListingPage() {
 
     if (images.length < 3) {
       errors.images = "Vui lòng tải lên ít nhất 3 ảnh";
+    }
+    if (images.length > 5) {
+      errors.images = "Chỉ được tải tối đa 5 ảnh";
     }
 
     return errors;
@@ -330,12 +354,12 @@ export default function CreateListingPage() {
             </div>
             <div
               className={`rounded-full px-3 py-1.5 text-xs font-bold transition-all ${
-                images.length >= 3
+                images.length >= 3 && images.length <= 5
                   ? "bg-green-100 text-green-700"
                   : "bg-amber-100 text-amber-700"
               }`}
             >
-              {images.length}/3+ ảnh
+              {images.length}/3-5 ảnh
             </div>
           </div>
         </div>
@@ -556,13 +580,13 @@ export default function CreateListingPage() {
                         required
                         type="number"
                         min="0"
-                        max="30"
+                        max="10"
                         step="1"
                         name="usageDuration"
                         value={formData.usageDuration}
                         onChange={handleInputChange}
                         className={`${inputCls} ${formValidation.usageDuration ? "border-red-300 focus:border-red-500" : ""}`}
-                        placeholder="0 - 30"
+                        placeholder="0 - 10"
                       />
                       <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">
                         năm
@@ -619,20 +643,22 @@ export default function CreateListingPage() {
                       Hình ảnh
                     </h2>
                     <p className="text-sm text-slate-600">
-                      Tải lên ít nhất 3 ảnh chất lượng cao
+                      Tải lên từ 3 đến 5 ảnh chất lượng cao
                     </p>
                   </div>
                 </div>
                 <span
                   className={`rounded-full px-3 py-1.5 text-xs font-bold transition-all ${
-                    images.length >= 3
+                    images.length >= 3 && images.length <= 5
                       ? "bg-green-100 text-green-700 border border-green-200"
                       : "bg-amber-100 text-amber-700 border border-amber-200"
                   }`}
                 >
-                  {images.length >= 3
+                  {images.length >= 3 && images.length <= 5
                     ? "✅ Đủ ảnh"
-                    : `⚠️ Cần ${3 - images.length} ảnh nữa`}
+                    : images.length < 3
+                      ? `⚠️ Cần ${3 - images.length} ảnh nữa`
+                      : "⚠️ Quá số ảnh tối đa"}
                 </span>
               </div>
               <div className="p-8">
@@ -694,7 +720,7 @@ export default function CreateListingPage() {
                           Thêm ảnh
                         </span>
                         <span className="text-[10px] text-slate-300 block">
-                          hoặc kéo thả
+                          hoặc kéo thả (tối đa 5)
                         </span>
                       </div>
                     </div>
@@ -723,7 +749,7 @@ export default function CreateListingPage() {
                       <li>• Chụp nhiều góc: trước, sau, hai bên, số khung</li>
                       <li>• Ánh sáng tốt, không bị mờ</li>
                       <li>• Ảnh đầu tiên sẽ làm ảnh bìa</li>
-                      <li>• Kích thước tối đa: 5MB/ảnh</li>
+                      <li>• Kích thước tối đa: 5MB/ảnh, tối đa 5 ảnh</li>
                     </ul>
                   </div>
                 </div>
@@ -755,7 +781,7 @@ export default function CreateListingPage() {
                       required
                       type="number"
                       name="price"
-                      min="500000"
+                      min="100000"
                       max="100000000"
                       value={formData.price}
                       onChange={handleInputChange}
@@ -817,14 +843,14 @@ export default function CreateListingPage() {
                     },
                     {
                       ok:
-                        Number(formData.price) >= 500000 &&
+                        Number(formData.price) >= 100000 &&
                         !formValidation.price,
                       label: "Giá bán",
                       icon: "💰",
                     },
                     {
                       ok: images.length >= 3 && !formValidation.images,
-                      label: `Ảnh (${images.length}/3+)`,
+                      label: `Ảnh (${images.length}/3-5)`,
                       icon: "📸",
                     },
                   ].map((item) => (
@@ -929,3 +955,6 @@ export default function CreateListingPage() {
     </div>
   );
 }
+
+
+

@@ -160,13 +160,13 @@ export default function ScheduleInspectionPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-4xl p-6">
-        <h2 className="mb-4 text-xl font-bold">Chon lich kiem tra</h2>
+        <h2 className="mb-4 text-xl font-bold">Chọn lịch kiểm tra</h2>
         {error && <div className="mb-3 text-red-600">{error}</div>}
 
         <div className="rounded-lg bg-white p-6 shadow">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium">Loai kiem tra</label>
+              <label className="block text-sm font-medium">Loại kiểm tra</label>
               <select
                 className="mt-1 w-full rounded border p-2"
                 value={inspectionType}
@@ -176,51 +176,51 @@ export default function ScheduleInspectionPage() {
                   )
                 }
               >
-                <option value="ONSITE">Tai noi ban (ONSITE)</option>
-                <option value="COMPANY">Tai trung tam (COMPANY)</option>
+                <option value="ONSITE">Tại nhà (kiểm tra tại nơi bán)</option>
+                <option value="COMPANY">Tại trung tâm</option>
               </select>
             </div>
 
             {inspectionType === "ONSITE" && (
               <div className="space-y-3">
                 <div className="rounded border border-blue-200 bg-blue-50 p-4 text-sm text-blue-700">
-                  <p className="font-semibold">Kiem tra tai noi ban</p>
+                  <p className="font-semibold">Kiểm tra tại nhà</p>
                   <p className="mt-1">
-                    Kiem tra vien se den dia chi ban da luu trong Profile.
+                    Kiểm tra viên sẽ đến địa chỉ bạn đã lưu trong Profile.
                   </p>
                 </div>
 
                 <div className="rounded border p-4">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <label className="block text-sm font-medium">
-                      Thong tin lien he
+                      Thông tin liên hệ
                     </label>
                     <button
                       type="button"
                       onClick={goToProfile}
                       className="text-sm font-semibold text-green-600"
                     >
-                      Cap nhat trong Profile
+                      Cập nhật trong Profile
                     </button>
                   </div>
 
                   {isLoadingAddresses ? (
-                    <p>Dang tai thong tin lien he...</p>
+                    <p>Đang tải thông tin liên hệ...</p>
                   ) : addresses.length === 0 ? (
                     <div className="rounded border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
                       <p className="font-semibold">
-                        Chua co thong tin lien he cho kiem dinh tai noi ban.
+                        Chưa có thông tin liên hệ cho kiểm định tại nhà.
                       </p>
                       <p className="mt-1">
-                        Vui long vao Profile de them ten lien he, so dien thoai
-                        va dia chi truoc khi tiep tuc.
+                        Vui lòng vào Profile để thêm tên liên hệ, số điện thoại
+                        và địa chỉ trước khi tiếp tục.
                       </p>
                       <button
                         type="button"
                         onClick={goToProfile}
                         className="mt-3 rounded bg-amber-500 px-3 py-2 text-xs font-bold uppercase tracking-widest text-white"
                       >
-                        Di toi Profile
+                        Đi tới Profile
                       </button>
                     </div>
                   ) : (
@@ -240,18 +240,18 @@ export default function ScheduleInspectionPage() {
                         ))}
                       </select>
 
-                      {selectedAddress && (
+                        {selectedAddress && (
                         <div className="space-y-1 text-sm text-slate-700">
                           <p>
-                            <span className="font-semibold">Ten:</span>{" "}
+                            <span className="font-semibold">Tên:</span>{" "}
                             {selectedAddress.nameContact}
                           </p>
                           <p>
-                            <span className="font-semibold">Dien thoai:</span>{" "}
+                            <span className="font-semibold">Điện thoại:</span>{" "}
                             {selectedAddress.phoneContact}
                           </p>
                           <p>
-                            <span className="font-semibold">Dia chi:</span>{" "}
+                            <span className="font-semibold">Địa chỉ:</span>{" "}
                             {selectedAddress.addressLine}
                           </p>
                         </div>
@@ -265,17 +265,17 @@ export default function ScheduleInspectionPage() {
             {inspectionType === "COMPANY" && (
               <div>
                 <label className="block text-sm font-medium">
-                  Chon dia diem kiem tra
+                  Chọn địa điểm kiểm tra
                 </label>
                 {isLoadingLocations ? (
-                  <p>Dang tai dia diem...</p>
+                  <p>Đang tải địa điểm...</p>
                 ) : (
                   <select
                     className="mt-1 w-full rounded border p-2"
                     value={inspectionLocationId}
                     onChange={(e) => setInspectionLocationId(e.target.value)}
                   >
-                    <option value="">-- Chon dia diem --</option>
+                    <option value="">-- Chọn địa điểm --</option>
                     {locations.map((location) => (
                       <option key={location.id} value={location.id}>
                         {location.addressLine || location.contactName || location.id}
@@ -288,7 +288,7 @@ export default function ScheduleInspectionPage() {
 
             <div>
               <label className="block text-sm font-medium">
-                Thoi gian du kien
+                Thời gian dự kiến
               </label>
               <input
                 className="mt-1 w-full rounded border p-2"
@@ -304,13 +304,13 @@ export default function ScheduleInspectionPage() {
                 className="rounded bg-green-600 px-4 py-2 text-white"
                 onClick={handleSubmit}
               >
-                Xac nhan va dat lich
+                Xác nhận và đặt lịch
               </button>
               <button
                 className="rounded border px-4 py-2"
                 onClick={() => navigate("/seller/dashboard")}
               >
-                Huy
+                Hủy
               </button>
             </div>
           </div>

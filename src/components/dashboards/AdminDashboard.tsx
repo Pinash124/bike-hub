@@ -1533,11 +1533,10 @@ function PaymentsTab({
   );
 }
 
-// ─── Catalog Tab (Brands + Components) ───────────────────────────────────────
+// ─── Catalog Tab (Brands) ───────────────────────────────────────────────────
 
 function CatalogTab() {
   const [brands, setBrands] = useState<Brand[]>([]);
-  const [components, setComponents] = useState<InspectionComponent[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Brand form
@@ -1546,20 +1545,10 @@ function CatalogTab() {
   const [brandName, setBrandName] = useState("");
   const [brandSaving, setBrandSaving] = useState(false);
 
-  // Component form
-  const [compModal, setCompModal] = useState(false);
-  const [editComp, setEditComp] = useState<InspectionComponent | null>(null);
-  const [compName, setCompName] = useState("");
-  const [compSaving, setCompSaving] = useState(false);
-
   const fetch = useCallback(async () => {
     setLoading(true);
-    const [b, c] = await Promise.all([
-      brandService.getAllBrands(),
-      componentService.getAllComponents(),
-    ]);
+    const b = await brandService.getAllBrands();
     setBrands(b);
-    setComponents(c);
     setLoading(false);
   }, []);
 
@@ -1571,11 +1560,6 @@ function CatalogTab() {
     setEditBrand(b ?? null);
     setBrandName(b?.name ?? "");
     setBrandModal(true);
-  };
-  const openComp = (c?: InspectionComponent) => {
-    setEditComp(c ?? null);
-    setCompName(c?.name ?? "");
-    setCompModal(true);
   };
 
   const saveBrand = async (e: React.FormEvent) => {
@@ -1609,41 +1593,10 @@ function CatalogTab() {
     }
   };
 
-  const saveComp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCompSaving(true);
-    try {
-      if (editComp) {
-        await componentService.updateComponent(editComp.id, { name: compName });
-        alert("Cập nhật thành công!");
-      } else {
-        await componentService.createComponent({ name: compName });
-        alert("Thêm hạng mục thành công!");
-      }
-      setCompModal(false);
-      fetch();
-    } catch {
-      alert("Có lỗi xảy ra.");
-    } finally {
-      setCompSaving(false);
-    }
-  };
-
-  const deleteComp = async (id: number) => {
-    if (!confirm("Bạn có chắc muốn xóa hạng mục này?")) return;
-    const ok = await componentService.deleteComponent(id);
-    if (ok) {
-      alert("Đã xóa!");
-      fetch();
-    } else {
-      alert("Xóa thất bại!");
-    }
-  };
-
   if (loading) return <Spinner />;
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
+    <div className="grid gap-6">
       {/* Brands Panel */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
@@ -1700,62 +1653,6 @@ function CatalogTab() {
         )}
       </div>
 
-      {/* Components Panel */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <div className="flex items-center gap-2">
-            <Wrench size={18} className="text-indigo-500" />
-            <h3 className="font-bold text-slate-800">
-              Hạng Mục KĐ{" "}
-              <span className="text-slate-400 font-normal text-sm">
-                ({components.length})
-              </span>
-            </h3>
-          </div>
-          <button
-            onClick={() => openComp()}
-            className="flex items-center gap-1 px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold transition shadow-sm"
-          >
-            <Plus size={13} /> Thêm
-          </button>
-        </div>
-        {components.length === 0 ? (
-          <EmptyState message="Chưa có hạng mục nào." />
-        ) : (
-          <ul className="divide-y divide-slate-50 max-h-80 overflow-y-auto">
-            {components.map((c) => (
-              <li
-                key={c.id}
-                className="flex items-center justify-between px-5 py-3 hover:bg-slate-50/60 transition group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <span className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center">
-                    <Wrench size={14} className="text-indigo-500" />
-                  </span>
-                  <span className="text-sm font-semibold text-slate-700">
-                    {c.name}
-                  </span>
-                </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
-                  <button
-                    onClick={() => openComp(c)}
-                    className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition"
-                  >
-                    <Edit size={14} />
-                  </button>
-                  <button
-                    onClick={() => deleteComp(c.id)}
-                    className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
       {/* Brand Modal */}
       {brandModal && (
         <Modal
@@ -1786,42 +1683,6 @@ function CatalogTab() {
                 className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition shadow-md disabled:opacity-50"
               >
                 {brandSaving ? "Đang lưu..." : "Lưu"}
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
-
-      {/* Component Modal */}
-      {compModal && (
-        <Modal
-          title={editComp ? "Sửa Hạng Mục" : "Thêm Hạng Mục"}
-          onClose={() => setCompModal(false)}
-        >
-          <form onSubmit={saveComp} className="space-y-4">
-            <FormField label="Tên hạng mục">
-              <input
-                required
-                value={compName}
-                onChange={(e) => setCompName(e.target.value)}
-                placeholder="VD: Khung xe, Bộ truyền động..."
-                className={inputCls}
-              />
-            </FormField>
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setCompModal(false)}
-                className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-wider transition"
-              >
-                Hủy
-              </button>
-              <button
-                type="submit"
-                disabled={compSaving}
-                className="flex-1 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition shadow-md disabled:opacity-50"
-              >
-                {compSaving ? "Đang lưu..." : "Lưu"}
               </button>
             </div>
           </form>
@@ -2791,7 +2652,7 @@ export default function AdminDashboard() {
         badge: undefined,
       },
       { tab: "create-inspector", label: "Tạo Kiểm Định Viên", icon: UserPlus },
-      { tab: "catalog", label: "Thương Hiệu & Hạng Mục", icon: Wrench },
+      { tab: "catalog", label: "Thương Hiệu", icon: Wrench },
       { tab: "locations", label: "Cơ Sở Kiểm Định", icon: MapPin },
       { tab: "plans", label: "Quản Lý Gói", icon: Zap },
     ];
