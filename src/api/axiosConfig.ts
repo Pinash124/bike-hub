@@ -12,10 +12,13 @@ const api = axios.create({
 // Interceptor: Tự động thêm Bearer token vào mỗi request nếu có
 api.interceptors.request.use(
   (config) => {
-    // Lấy token trực tiếp từ localStorage (cách AuthContext lưu)
     const token = localStorage.getItem('token');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    // If sending FormData, remove Content-Type so browser auto-sets it with the correct multipart boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
     }
     return config;
   },

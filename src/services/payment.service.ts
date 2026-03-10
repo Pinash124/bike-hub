@@ -42,14 +42,12 @@ export const paymentService = {
 
   /**
    * Tạo payment link cho Đăng Ký Gói (Subscription) qua PayOS
-   * POST /payment/create/subscription
+   * POST /payment/subscription
    */
-  createSubscriptionPayment: async (subscriptionId: string, description?: string): Promise<PaymentResult | null> => {
+  createSubscriptionPayment: async (subscriptionId: string): Promise<PaymentResult | null> => {
     try {
-      // Swagger: POST /payment/create/subscription (Nhận subscriptionId)
       const response = await api.post(API_ENDPOINTS.PAYMENT_CREATE_SUBSCRIPTION, {
-        subscriptionId: subscriptionId,
-        description: description || 'Thanh toán gói đăng ký BikeHub'
+        subscriptionId,
       });
       if (response.data?.code === 1000) {
         return response.data.result;

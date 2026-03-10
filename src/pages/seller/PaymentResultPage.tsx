@@ -29,12 +29,12 @@ export default function PaymentResultPage() {
                     </div>
 
                     <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">
-                        {isSuccess ? 'Thanh toán thành công' : 'Thanh toán thất bại'}
+                        {isSuccess ? 'Thanh toán thành công! 🎉' : 'Thanh toán thất bại'}
                     </h1>
 
                     <p className="text-slate-500 font-medium text-lg mb-4">
                         {isSuccess
-                            ? 'Cảm ơn bạn! Bài đăng của bạn sẽ sớm được đưa lên trạng thái Đang Bán (LIVE).'
+                            ? 'Cảm ơn bạn đã thanh toán! Bài đăng đã được gửi đến Admin. Admin sẽ phân công kiểm định viên xem xét xe của bạn — sau khi hoàn thành, xe sẽ tự động hiển thị trên trang chủ.'
                             : 'Giao dịch đã bị hủy hoặc xảy ra lỗi. Hệ thống chưa ghi nhận gói cước của bài đăng.'
                         }
                     </p>

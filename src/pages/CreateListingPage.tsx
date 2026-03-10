@@ -31,12 +31,6 @@ const BIKE_TYPES = [
     emoji: "🚴",
     description: "Nhanh nhẹ trên đường bằng, đua xe",
   },
-  {
-    value: "CITY_BIKE",
-    label: "Xe thành phố",
-    emoji: "🚲",
-    description: "Tiện lợi cho đi lại hàng ngày",
-  },
 ];
 
 interface FieldProps {
@@ -195,8 +189,8 @@ export default function CreateListingPage() {
     }
 
     const usage = Number.parseInt(formData.usageDuration || "0", 10);
-    if (Number.isNaN(usage) || usage < 0 || usage > 30) {
-      errors.usageDuration = "Thời gian sử dụng phải từ 0-30 năm";
+    if (Number.isNaN(usage) || usage < 0 || usage > 10) {
+      errors.usageDuration = "Thời gian sử dụng phải từ 0-10 năm";
     }
 
     if (formData.description.length < 10) {
@@ -207,7 +201,7 @@ export default function CreateListingPage() {
     }
 
     const priceVal = Number.parseInt(formData.price || "0", 10);
-    const MIN_PRICE = 500000;
+    const MIN_PRICE = 100000;
     if (Number.isNaN(priceVal) || priceVal < MIN_PRICE) {
       errors.price = `Giá bán tối thiểu là ${MIN_PRICE.toLocaleString("vi-VN")} VNĐ`;
     }
@@ -262,8 +256,8 @@ export default function CreateListingPage() {
         setSuccess(true);
         setTimeout(
           () =>
-            navigate("/seller/schedule", { state: { listingId: created.id } }),
-          2000,
+            navigate(`/seller/choose-plan/${created.id}`, { state: { listing: created } }),
+          1800,
         );
         return;
       }
@@ -294,11 +288,10 @@ export default function CreateListingPage() {
             <CheckCircle size={40} className="text-green-600" />
           </div>
           <h2 className="mb-3 text-2xl font-black text-slate-900">
-            Đăng tin thành công! 🎉
+            Tạo tin thành công! 🎉
           </h2>
           <p className="mb-6 text-slate-600 leading-relaxed">
-            Xe của bạn đang chờ kiểm duyệt. Chúng tôi sẽ thông báo khi tin được
-            duyệt.
+            Xe đã được tạo. Đang chuyển sang trang chọn gói đăng bài...
           </p>
           <div className="flex animate-pulse items-center justify-center gap-2 text-sm font-semibold text-green-600">
             <Loader2 size={16} className="animate-spin" />
@@ -329,11 +322,10 @@ export default function CreateListingPage() {
               </span>
             </div>
             <div
-              className={`rounded-full px-3 py-1.5 text-xs font-bold transition-all ${
-                images.length >= 3
-                  ? "bg-green-100 text-green-700"
-                  : "bg-amber-100 text-amber-700"
-              }`}
+              className={`rounded-full px-3 py-1.5 text-xs font-bold transition-all ${images.length >= 3
+                ? "bg-green-100 text-green-700"
+                : "bg-amber-100 text-amber-700"
+                }`}
             >
               {images.length}/3+ ảnh
             </div>
@@ -471,11 +463,10 @@ export default function CreateListingPage() {
                       {BIKE_TYPES.map((type) => (
                         <label
                           key={type.value}
-                          className={`flex items-center gap-3 rounded-xl border-2 p-4 cursor-pointer transition-all ${
-                            formData.bikeType === type.value
-                              ? "border-green-500 bg-green-50"
-                              : "border-slate-200 hover:border-slate-300"
-                          }`}
+                          className={`flex items-center gap-3 rounded-xl border-2 p-4 cursor-pointer transition-all ${formData.bikeType === type.value
+                            ? "border-green-500 bg-green-50"
+                            : "border-slate-200 hover:border-slate-300"
+                            }`}
                         >
                           <input
                             type="radio"
@@ -556,13 +547,13 @@ export default function CreateListingPage() {
                         required
                         type="number"
                         min="0"
-                        max="30"
+                        max="10"
                         step="1"
                         name="usageDuration"
                         value={formData.usageDuration}
                         onChange={handleInputChange}
                         className={`${inputCls} ${formValidation.usageDuration ? "border-red-300 focus:border-red-500" : ""}`}
-                        placeholder="0 - 30"
+                        placeholder="0 - 10"
                       />
                       <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">
                         năm
@@ -624,11 +615,10 @@ export default function CreateListingPage() {
                   </div>
                 </div>
                 <span
-                  className={`rounded-full px-3 py-1.5 text-xs font-bold transition-all ${
-                    images.length >= 3
-                      ? "bg-green-100 text-green-700 border border-green-200"
-                      : "bg-amber-100 text-amber-700 border border-amber-200"
-                  }`}
+                  className={`rounded-full px-3 py-1.5 text-xs font-bold transition-all ${images.length >= 3
+                    ? "bg-green-100 text-green-700 border border-green-200"
+                    : "bg-amber-100 text-amber-700 border border-amber-200"
+                    }`}
                 >
                   {images.length >= 3
                     ? "✅ Đủ ảnh"
@@ -637,11 +627,10 @@ export default function CreateListingPage() {
               </div>
               <div className="p-8">
                 <div
-                  className={`mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 ${
-                    isDragging
-                      ? "border-2 border-dashed border-purple-400 bg-purple-50"
-                      : ""
-                  }`}
+                  className={`mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 ${isDragging
+                    ? "border-2 border-dashed border-purple-400 bg-purple-50"
+                    : ""
+                    }`}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
@@ -755,7 +744,7 @@ export default function CreateListingPage() {
                       required
                       type="number"
                       name="price"
-                      min="500000"
+                      min="100000"
                       max="100000000"
                       value={formData.price}
                       onChange={handleInputChange}
@@ -830,11 +819,10 @@ export default function CreateListingPage() {
                   ].map((item) => (
                     <div key={item.label} className="flex items-center gap-3">
                       <div
-                        className={`flex h-6 w-6 items-center justify-center rounded-full text-sm ${
-                          item.ok
-                            ? "bg-green-100 text-green-600 border border-green-200"
-                            : "bg-slate-100 text-slate-400 border border-slate-200"
-                        }`}
+                        className={`flex h-6 w-6 items-center justify-center rounded-full text-sm ${item.ok
+                          ? "bg-green-100 text-green-600 border border-green-200"
+                          : "bg-slate-100 text-slate-400 border border-slate-200"
+                          }`}
                       >
                         {item.ok ? (
                           "✓"
@@ -845,9 +833,8 @@ export default function CreateListingPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm">{item.icon}</span>
                         <span
-                          className={`text-sm font-medium ${
-                            item.ok ? "text-slate-700" : "text-slate-400"
-                          }`}
+                          className={`text-sm font-medium ${item.ok ? "text-slate-700" : "text-slate-400"
+                            }`}
                         >
                           {item.label}
                         </span>
