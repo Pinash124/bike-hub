@@ -31,6 +31,12 @@ const BIKE_TYPES = [
     emoji: "🚴",
     description: "Nhanh nhẹ trên đường bằng, đua xe",
   },
+  {
+    value: "CITY_BIKE",
+    label: "Xe thành phố",
+    emoji: "🚲",
+    description: "Tiện lợi cho đi lại hàng ngày",
+  },
 ];
 
 interface FieldProps {

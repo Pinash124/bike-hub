@@ -10,13 +10,15 @@ export interface InspectionTask {
     scheduledAt?: string;
     inspector?: any;
     location?: any;
-    scores?: any[];
+    score?: number;
+    comment?: string;
+    images?: { url: string; type: string }[];
 }
 
-export interface ComponentScore {
-    componentId: number;
+export interface InspectionScorePayload {
+    comment?: string;
     score: number;
-    note?: string;
+    files: File[];
 }
 
 export const inspectionService = {
@@ -108,12 +110,21 @@ export const inspectionService = {
     },
 
     /**
-     * [INSPECTOR] Nộp điểm kiểm tra từng hạng mục
+     * [INSPECTOR] Nộp kết quả kiểm tra (điểm + nhận xét + 4 ảnh)
      * POST /inspection/{inspectionId}/scores
      */
-    submitScores: async (inspectionId: string, scores: ComponentScore[]): Promise<boolean> => {
+    submitScores: async (inspectionId: string, payload: InspectionScorePayload): Promise<boolean> => {
         try {
-            const response = await api.post(API_ENDPOINTS.INSPECTION_SCORES(inspectionId), scores);
+            const formData = new FormData();
+            formData.append('comment', payload.comment ?? '');
+            formData.append('score', String(payload.score));
+            payload.files.forEach((file) => formData.append('files', file));
+
+            const response = await api.post(
+                API_ENDPOINTS.INSPECTION_SCORES(inspectionId),
+                formData,
+                { headers: { 'Content-Type': 'multipart/form-data' } }
+            );
             return response.data?.code === 1000;
         } catch (error) {
             console.error('Error submitting inspection scores:', error);

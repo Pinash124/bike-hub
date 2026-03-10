@@ -7,15 +7,11 @@ import {
   Edit,
   Eye,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   inspectionService,
   type InspectionTask,
 } from "../../services/inspection.service";
-import {
-  componentService,
-  type InspectionComponent,
-} from "../../services/component.service";
 import {
   locationService,
   type InspectionLocation,
@@ -40,6 +36,15 @@ const STATUS_COLOR: Record<string, string> = {
   REJECTED: "bg-red-100 text-red-800",
 };
 
+type ScoreImageType = "LEFT_VIEW" | "RIGHT_VIEW" | "FRONT_VIEW" | "REAR_VIEW";
+
+const SCORE_IMAGE_ORDER: { key: ScoreImageType; label: string }[] = [
+  { key: "LEFT_VIEW", label: "Góc trái (LEFT_VIEW)" },
+  { key: "RIGHT_VIEW", label: "Góc phải (RIGHT_VIEW)" },
+  { key: "FRONT_VIEW", label: "Góc trước (FRONT_VIEW)" },
+  { key: "REAR_VIEW", label: "Góc sau (REAR_VIEW)" },
+];
+
 export default function InspectorDashboard() {
   const { user } = useAuth();
   const [myTasks, setMyTasks] = useState<InspectionTask[]>([]);
@@ -50,8 +55,16 @@ export default function InspectorDashboard() {
   // Scoring Modal
   const [isScoring, setIsScoring] = useState(false);
   const [currentTask, setCurrentTask] = useState<InspectionTask | null>(null);
-  const [components, setComponents] = useState<InspectionComponent[]>([]);
-  const [scores, setScores] = useState<Record<number, number>>({});
+  const [scoreValue, setScoreValue] = useState("");
+  const [comment, setComment] = useState("");
+  const [scoreImages, setScoreImages] = useState<
+    Record<ScoreImageType, File | null>
+  >({
+    LEFT_VIEW: null,
+    RIGHT_VIEW: null,
+    FRONT_VIEW: null,
+    REAR_VIEW: null,
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Location Modal
@@ -63,7 +76,6 @@ export default function InspectorDashboard() {
   useEffect(() => {
     fetchMyAssigned();
     fetchPending();
-    fetchComponents();
   }, []);
 
   const fetchMyAssigned = async () => {
@@ -85,15 +97,6 @@ export default function InspectorDashboard() {
       console.error("Failed to fetch pending inspections:", error);
     } finally {
       setIsLoadingPending(false);
-    }
-  };
-
-  const fetchComponents = async () => {
-    try {
-      const data = await componentService.getAllComponents();
-      setComponents(data);
-    } catch (error) {
-      console.error("Failed to fetch components:", error);
     }
   };
 
@@ -122,14 +125,28 @@ export default function InspectorDashboard() {
 
   const openScoreModal = (task: InspectionTask) => {
     setCurrentTask(task);
-    setScores({});
+    setScoreValue("");
+    setComment("");
+    setScoreImages({
+      LEFT_VIEW: null,
+      RIGHT_VIEW: null,
+      FRONT_VIEW: null,
+      REAR_VIEW: null,
+    });
     setIsScoring(true);
   };
 
   const closeScoreModal = () => {
     setIsScoring(false);
     setCurrentTask(null);
-    setScores({});
+    setScoreValue("");
+    setComment("");
+    setScoreImages({
+      LEFT_VIEW: null,
+      RIGHT_VIEW: null,
+      FRONT_VIEW: null,
+      REAR_VIEW: null,
+    });
   };
 
   const openLocationModal = async (task: InspectionTask) => {
@@ -140,15 +157,6 @@ export default function InspectorDashboard() {
     setCurrentTask(task);
     setIsViewingLocation(true);
     setIsLoadingLocation(true);
-    // Ensure components are loaded for displaying score names in detail view
-    if (!components || components.length === 0) {
-      try {
-        const data = await componentService.getAllComponents();
-        setComponents(data);
-      } catch (e) {
-        // swallow; we'll fallback to generic labels if not available
-      }
-    }
     try {
       const location = await locationService.getLocationById(task.location.id);
       setCurrentLocation(location);
@@ -165,28 +173,28 @@ export default function InspectorDashboard() {
     setCurrentLocation(null);
   };
 
-  const handleScoreChange = (componentId: number, score: number) => {
-    setScores((prev) => ({ ...prev, [componentId]: score }));
+  const handleScoreImageChange = (
+    type: ScoreImageType,
+    file: File | null,
+  ) => {
+    setScoreImages((prev) => ({ ...prev, [type]: file }));
   };
 
   const handleSubmitScores = async () => {
     if (!currentTask) return;
 
-    // Validate if all components have scores
-    if (Object.keys(scores).length !== components.length) {
-      const confirmed = window.confirm(
-        "Bạn chưa chấm điểm tất cả các hạng mục. Bạn có chắc chắn muốn nộp kết quả?",
-      );
-      if (!confirmed) return;
+    const numericScore = Number.parseInt(scoreValue, 10);
+    if (Number.isNaN(numericScore)) {
+      alert("Vui lòng nhập điểm số hợp lệ.");
+      return;
     }
 
-    const payload = Object.entries(scores).map(([compId, score]) => ({
-      componentId: Number(compId),
-      score,
-    }));
-
-    if (payload.length === 0) {
-      alert("Vui lòng nhập ít nhất 1 điểm số.");
+    const orderedFiles = SCORE_IMAGE_ORDER.map(
+      (item) => scoreImages[item.key],
+    );
+    const hasAllImages = orderedFiles.every((file) => file instanceof File);
+    if (!hasAllImages) {
+      alert("Vui lòng tải đủ 4 ảnh theo đúng thứ tự yêu cầu.");
       return;
     }
 
@@ -194,7 +202,11 @@ export default function InspectorDashboard() {
     try {
       const success = await inspectionService.submitScores(
         currentTask.inspectionId,
-        payload,
+        {
+          comment: comment.trim(),
+          score: numericScore,
+          files: orderedFiles as File[],
+        },
       );
       if (success) {
         alert("Nộp kết quả kiểm tra thành công!");
@@ -219,6 +231,9 @@ export default function InspectorDashboard() {
       t.status === "ASSIGNED",
   ).length;
   const rejectedCount = myTasks.filter((t) => t.status === "REJECTED").length;
+  const canSubmitScores =
+    scoreValue.trim() !== "" &&
+    SCORE_IMAGE_ORDER.every((item) => scoreImages[item.key]);
 
   const stats = [
     {
@@ -344,25 +359,6 @@ export default function InspectorDashboard() {
     );
   };
 
-  // Fast lookup map for component id -> name to avoid undefined when scores use different shapes
-  const compNameById = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const c of components) {
-      map.set(String(c.id), c.name);
-    }
-    return map;
-  }, [components]);
-
-  const getComponentName = (scoreItem: any) => {
-    // scoreItem.componentId can be: number | string | { id: number | string }
-    const raw =
-      (scoreItem && scoreItem.componentId && typeof scoreItem.componentId === "object"
-        ? scoreItem.componentId.id
-        : scoreItem?.componentId) ?? "";
-    const key = String(raw);
-    return compNameById.get(key) || `Bộ phận ${key}`;
-  };
-
   return (
     <div className="bg-slate-50 min-h-[calc(100vh-80px)] font-sans">
       <div className="max-w-6xl mx-auto px-6 py-8">
@@ -447,7 +443,7 @@ export default function InspectorDashboard() {
             <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <div>
                 <h3 className="text-lg font-black text-slate-800">
-                  Bảng Chấm Điểm Linh Kiện
+                  Nộp kết quả kiểm tra
                 </h3>
                 <p className="text-xs font-medium text-slate-500 mt-1">
                   Mã đơn: {currentTask.inspectionId}
@@ -461,50 +457,137 @@ export default function InspectorDashboard() {
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto flex-1">
-              <div className="bg-indigo-50 text-indigo-800 text-xs font-medium p-4 rounded-xl mb-6">
-                Vui lòng đánh giá tình trạng từng bộ phận của xe theo thang điểm
-                từ 1 đến 10 (10 = Hoàn hảo).
+            <div className="p-6 overflow-y-auto flex-1 space-y-6">
+              <div className="bg-indigo-50 text-indigo-800 text-xs font-medium p-4 rounded-xl">
+                Vui lòng nhập điểm tổng, nhận xét và tải đủ 4 ảnh theo đúng thứ tự:
+                LEFT_VIEW, RIGHT_VIEW, FRONT_VIEW, REAR_VIEW.
               </div>
 
-              <div className="space-y-4">
-                {components.length === 0 ? (
-                  <div className="text-center py-8 text-slate-500 border-2 border-dashed border-slate-200 rounded-xl">
-                    Hệ thống chưa thiết lập danh sách linh kiện.
+              <div className="border border-slate-200 rounded-2xl overflow-hidden">
+                <div className="bg-slate-50 px-4 py-3 text-xs font-bold text-slate-600 uppercase tracking-widest">
+                  Bảng đánh giá tình trạng xe (0–10)
+                </div>
+                <div className="divide-y divide-slate-100 text-sm">
+                  <div className="px-4 py-3">
+                    <div className="font-bold text-slate-800">10 – Like New</div>
+                    <p className="text-slate-600 mt-1">
+                      Xe gần như mới hoàn toàn, sơn hoàn hảo, không vết trầy xước.
+                      Mọi bộ phận vận hành trơn tru tuyệt đối.
+                    </p>
                   </div>
-                ) : (
-                  components.map((comp) => (
+                  <div className="px-4 py-3">
+                    <div className="font-bold text-slate-800">9 – Excellent</div>
+                    <p className="text-slate-600 mt-1">
+                      Ngoại hình đẹp, rất ít vết trầy xước nhỏ khó thấy. Phanh, bánh
+                      và khung sườn hoạt động rất tốt.
+                    </p>
+                  </div>
+                  <div className="px-4 py-3">
+                    <div className="font-bold text-slate-800">8 – Very Good</div>
+                    <p className="text-slate-600 mt-1">
+                      Có vài vết trầy nhẹ, màu sơn còn giữ độ bóng tốt. Xe vận
+                      hành ổn định trong điều kiện bình thường.
+                    </p>
+                  </div>
+                  <div className="px-4 py-3">
+                    <div className="font-bold text-slate-800">7 – Good</div>
+                    <p className="text-slate-600 mt-1">
+                      Vết trầy xước thấy rõ bằng mắt thường nhưng không ảnh hưởng
+                      đến khả năng vận hành.
+                    </p>
+                  </div>
+                  <div className="px-4 py-3">
+                    <div className="font-bold text-slate-800">6 – Fair</div>
+                    <p className="text-slate-600 mt-1">
+                      Có dấu hiệu hao mòn tự nhiên: sơn bắt đầu phai màu nhẹ,
+                      lốp xe hơi mòn.
+                    </p>
+                  </div>
+                  <div className="px-4 py-3">
+                    <div className="font-bold text-slate-800">5 – Acceptable</div>
+                    <p className="text-slate-600 mt-1">
+                      Máy móc vẫn chạy tốt nhưng ngoại hình xuống cấp
+                      (sơn xấu, trầy xước nhiều hoặc xỉn màu).
+                    </p>
+                  </div>
+                  <div className="px-4 py-3">
+                    <div className="font-bold text-slate-800">4 – Poor</div>
+                    <p className="text-slate-600 mt-1">
+                      Xe bắt đầu có vấn đề kỹ thuật cần sửa chữa
+                      (phanh yếu, vành bánh hơi lệch/đảo).
+                    </p>
+                  </div>
+                  <div className="px-4 py-3">
+                    <div className="font-bold text-slate-800">3 – Very Poor</div>
+                    <p className="text-slate-600 mt-1">
+                      Cần thay thế nhiều phụ tùng mới có thể sử dụng.
+                    </p>
+                  </div>
+                  <div className="px-4 py-3">
+                    <div className="font-bold text-slate-800">0–2 – Scrap/Parts Only</div>
+                    <p className="text-slate-600 mt-1">
+                      Xe nát, chỉ có thể lấy linh kiện hoặc bán sắt vụn.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-widest shrink-0">
+                    Điểm tổng
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={scoreValue}
+                    onChange={(e) => setScoreValue(e.target.value)}
+                    placeholder="Nhập điểm"
+                    className="w-full sm:w-40 px-3 py-2 border-2 border-slate-200 rounded-lg text-center font-black text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                    Nhận xét
+                  </label>
+                  <textarea
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="Ghi chú tình trạng xe (tùy chọn)"
+                    rows={3}
+                    className="mt-2 w-full px-3 py-2 border-2 border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">
+                  Ảnh hiện trạng xe (4 ảnh)
+                </p>
+                <div className="space-y-3">
+                  {SCORE_IMAGE_ORDER.map((item) => (
                     <div
-                      key={comp.id}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between bg-white border border-slate-200 p-4 rounded-xl hover:border-indigo-200 transition-colors"
+                      key={item.key}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-slate-200 rounded-xl p-3"
                     >
-                      <div className="mb-3 sm:mb-0">
-                        <p className="font-bold text-slate-800">{comp.name}</p>
-                        {comp.description && (
-                          <p className="text-[11px] text-slate-500 mt-1 leading-relaxed max-w-sm">
-                            {comp.description}
-                          </p>
-                        )}
+                      <div className="text-sm font-semibold text-slate-700">
+                        {item.label}
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest shrink-0">
-                          Điểm:
-                        </span>
-                        <input
-                          type="number"
-                          min="1"
-                          max="10"
-                          value={scores[comp.id] || ""}
-                          onChange={(e) =>
-                            handleScoreChange(comp.id, parseInt(e.target.value))
-                          }
-                          placeholder="0-10"
-                          className="w-20 px-3 py-2 border-2 border-slate-200 rounded-lg text-center font-black text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition"
-                        />
-                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) =>
+                          handleScoreImageChange(
+                            item.key,
+                            e.target.files?.[0] ?? null,
+                          )
+                        }
+                        className="text-sm text-slate-600"
+                      />
                     </div>
-                  ))
-                )}
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -518,7 +601,7 @@ export default function InspectorDashboard() {
               </button>
               <button
                 onClick={handleSubmitScores}
-                disabled={isSubmitting || Object.keys(scores).length === 0}
+                disabled={isSubmitting || !canSubmitScores}
                 className="px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-md shadow-indigo-600/20 flex items-center gap-2"
               >
                 {isSubmitting ? "Đang gửi..." : "Xác nhận & Hoàn thành"}
@@ -598,30 +681,52 @@ export default function InspectorDashboard() {
                     </div>
                   </div>
 
-                  {currentTask?.status === "COMPLETED" &&
-                    currentTask.scores &&
-                    currentTask.scores.length > 0 && (
-                      <div>
-                        <div className="bg-green-50 text-green-800 text-xs font-medium p-4 rounded-xl mb-4">
-                          Điểm đánh giá các bộ phận xe
-                        </div>
-                        <div className="space-y-3">
-                          {currentTask.scores.map((scoreItem: any, idx: number) => (
-                            <div
-                              key={String(scoreItem.componentId ?? idx)}
-                              className="flex justify-between items-center py-2 border-b border-slate-100"
-                            >
-                              <span className="font-medium text-slate-600">
-                                {getComponentName(scoreItem)}
-                              </span>
-                              <span className="font-bold text-slate-800">
-                                {scoreItem.score}/10
-                              </span>
-                            </div>
-                          ))}
-                        </div>
+                  {currentTask?.status === "COMPLETED" && (
+                    <div>
+                      <div className="bg-green-50 text-green-800 text-xs font-medium p-4 rounded-xl mb-4">
+                        Kết quả kiểm tra
                       </div>
-                    )}
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                          <span className="font-medium text-slate-600">Điểm</span>
+                          <span className="font-bold text-slate-800">
+                            {currentTask.score ?? "—"}
+                          </span>
+                        </div>
+                        <div className="py-2 border-b border-slate-100">
+                          <p className="font-medium text-slate-600 mb-1">Nhận xét</p>
+                          <p className="text-sm text-slate-800">
+                            {currentTask.comment || "Chưa có nhận xét."}
+                          </p>
+                        </div>
+                        {currentTask.images && currentTask.images.length > 0 && (
+                          <div className="space-y-2">
+                            <p className="font-medium text-slate-600">Ảnh hiện trạng</p>
+                            <div className="space-y-2">
+                              {currentTask.images.map((img: any, idx: number) => (
+                                <div
+                                  key={`${img.type ?? "IMG"}-${idx}`}
+                                  className="flex items-center justify-between text-sm text-slate-700 border-b border-slate-100 py-2"
+                                >
+                                  <span className="font-semibold">
+                                    {img.type ?? "Ảnh"}
+                                  </span>
+                                  <a
+                                    href={img.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-blue-600 hover:text-blue-700 font-semibold"
+                                  >
+                                    Xem ảnh
+                                  </a>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-8 text-slate-500">
