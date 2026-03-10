@@ -1,12 +1,13 @@
 // src/components/dashboards/SellerDashboard.tsx
 // Role: SELLER — shows real listings from API + inspection status
-import { Plus, Eye, TrendingUp, Package, Clock, CheckCircle, ChevronRight, Bike, Calendar, AlertCircle, RefreshCw, Search, Trash2, BarChart3, DollarSign } from 'lucide-react'
+import { Plus, Eye, TrendingUp, Package, CheckCircle, ChevronRight, Bike, Calendar, AlertCircle, RefreshCw, Search, Trash2, BarChart3, DollarSign, CreditCard } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState, useMemo } from 'react'
 import { listingService, type Listing } from '../../services/listing.service'
 
 const STATUS_CONFIG: Record<string, { label: string, color: string, bg: string, border: string, icon: string }> = {
   DRAFT: { label: 'Nháp', color: 'text-slate-700', bg: 'bg-slate-100', border: 'border-slate-200', icon: '📝' },
+  WAITING_FOR_PAYMENT: { label: 'Chờ thanh toán', color: 'text-orange-700', bg: 'bg-orange-100', border: 'border-orange-300', icon: '💳' },
   PENDING: { label: 'Chờ duyệt', color: 'text-amber-700', bg: 'bg-amber-100', border: 'border-amber-200', icon: '⏳' },
   RESERVED: { label: 'Đã đặt cọc', color: 'text-blue-700', bg: 'bg-blue-100', border: 'border-blue-200', icon: '💰' },
   REJECTED: { label: 'Bị từ chối', color: 'text-red-700', bg: 'bg-red-100', border: 'border-red-200', icon: '❌' },
@@ -78,13 +79,13 @@ export default function SellerDashboard() {
 
   const liveCount = listings.filter(l => l.status === 'LIVE').length
   const soldCount = listings.filter(l => l.status === 'SOLD').length
-  const pendingCount = listings.filter(l => l.status === 'PENDING').length
+  const awaitingPaymentCount = listings.filter(l => l.status === 'WAITING_FOR_PAYMENT').length
   const totalRevenue = listings.filter(l => l.status === 'SOLD').reduce((sum, l) => sum + l.price, 0)
 
   const stats = [
     { label: 'Xe đang bán', value: liveCount.toString(), icon: Package, color: 'text-emerald-600', bg: 'bg-emerald-100', trend: '+12%' },
     { label: 'Xe đã bán', value: soldCount.toString(), icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-100', trend: '+8%' },
-    { label: 'Chờ duyệt', value: pendingCount.toString(), icon: Clock, color: 'text-amber-600', bg: 'bg-amber-100', trend: '-2%' },
+    { label: 'Chờ thanh toán', value: awaitingPaymentCount.toString(), icon: CreditCard, color: 'text-orange-600', bg: 'bg-orange-100', trend: '' },
     { label: 'Doanh thu', value: `${(totalRevenue / 1000000).toFixed(1)}M`, icon: DollarSign, color: 'text-purple-600', bg: 'bg-purple-100', trend: '+25%' },
   ]
 
@@ -216,6 +217,7 @@ export default function SellerDashboard() {
                   <option value="SOLD">Đã bán</option>
                   <option value="PENDING">Chờ duyệt</option>
                   <option value="APPROVED">Đã duyệt</option>
+                  <option value="WAITING_FOR_PAYMENT">Chờ thanh toán</option>
                   <option value="DRAFT">Nháp</option>
                 </select>
 
@@ -267,7 +269,7 @@ export default function SellerDashboard() {
                 {filteredAndSortedListings.map(listing => {
                   const thumbnail = listing.images?.[0]?.secureUrl
                   const config = STATUS_CONFIG[listing.status] || STATUS_CONFIG.DRAFT
-                  const needsPayment = listing.status === 'APPROVED';
+                  const needsPayment = listing.status === 'WAITING_FOR_PAYMENT' || listing.status === 'DRAFT';
 
                   return (
                     <div key={listing.id} className="group border border-slate-200 rounded-3xl overflow-hidden hover:border-green-300 hover:shadow-2xl transition-all duration-300 bg-white">
@@ -338,13 +340,16 @@ export default function SellerDashboard() {
                         </div>
 
                         {needsPayment && (
-                          <div className="border-t border-slate-100 pt-4">
+                          <div className="border-t border-orange-100 pt-4">
+                            <div className="mb-3 p-3 bg-orange-50 rounded-xl border border-orange-200 text-xs text-orange-700 font-medium">
+                              💳 Xe chờ thanh toán gói đăng bài. Nhấn để tiếp tục thanh toán.
+                            </div>
                             <button
                               onClick={() => navigate(`/seller/choose-plan/${listing.id}`, { state: { listing } })}
-                              className="w-full py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold rounded-xl text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                              className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-xl text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 animate-pulse"
                             >
-                              <DollarSign size={16} />
-                              Thanh toán để hiển thị
+                              <CreditCard size={16} />
+                              Tiếp tục thanh toán
                             </button>
                           </div>
                         )}

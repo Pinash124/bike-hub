@@ -86,8 +86,8 @@ export const API_ENDPOINTS = {
   ORDER_ADMIN_LIST: `${API_BASE_URL}/order/admin`, // Admin only
 
   // Payment
-  PAYMENT_CREATE_ORDER: `${API_BASE_URL}/payment/create/order`, // Link payment for bike order
-  PAYMENT_CREATE_SUBSCRIPTION: `${API_BASE_URL}/payment/create/subscription`, // Sub payment via PayOS
+  PAYMENT_CREATE_ORDER: `${API_BASE_URL}/payment/order`,         // POST /payment/order
+  PAYMENT_CREATE_SUBSCRIPTION: `${API_BASE_URL}/payment/subscription`, // POST /payment/subscription
   PAYMENT_ALL: `${API_BASE_URL}/payment/all`, // Get all payments
   PAYMENT_STATUS: (orderId: string) => `${API_BASE_URL}/payment/${orderId}/status`,
   PAYMENT_HISTORY: `${API_BASE_URL}/payment/history`,

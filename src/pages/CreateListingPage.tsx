@@ -286,8 +286,10 @@ export default function CreateListingPage() {
         setSuccess(true);
         setTimeout(
           () =>
-            navigate("/seller/schedule", { state: { listingId: created.id } }),
-          2000,
+            navigate(`/seller/choose-plan/${created.id}`, {
+              state: { listing: created },
+            }),
+          1800,
         );
         return;
       }
@@ -318,11 +320,10 @@ export default function CreateListingPage() {
             <CheckCircle size={40} className="text-green-600" />
           </div>
           <h2 className="mb-3 text-2xl font-black text-slate-900">
-            Đăng tin thành công! 🎉
+            Tạo tin thành công! 🎉
           </h2>
           <p className="mb-6 text-slate-600 leading-relaxed">
-            Xe của bạn đang chờ kiểm duyệt. Chúng tôi sẽ thông báo khi tin được
-            duyệt.
+            Xe đã được tạo. Đang chuyển sang trang chọn gói đăng bài...
           </p>
           <div className="flex animate-pulse items-center justify-center gap-2 text-sm font-semibold text-green-600">
             <Loader2 size={16} className="animate-spin" />
@@ -354,7 +355,7 @@ export default function CreateListingPage() {
             </div>
             <div
               className={`rounded-full px-3 py-1.5 text-xs font-bold transition-all ${
-                images.length >= 3 && images.length <= 5
+                images.length >= 3
                   ? "bg-green-100 text-green-700"
                   : "bg-amber-100 text-amber-700"
               }`}
@@ -649,7 +650,7 @@ export default function CreateListingPage() {
                 </div>
                 <span
                   className={`rounded-full px-3 py-1.5 text-xs font-bold transition-all ${
-                    images.length >= 3 && images.length <= 5
+                    images.length >= 3
                       ? "bg-green-100 text-green-700 border border-green-200"
                       : "bg-amber-100 text-amber-700 border border-amber-200"
                   }`}
@@ -955,6 +956,3 @@ export default function CreateListingPage() {
     </div>
   );
 }
-
-
-

@@ -94,12 +94,7 @@ export default function ChoosePlanPage() {
         if (!currentSubscription?.id) return;
         setIsProcessing(true);
         try {
-            // PayOS description limit is max 25 characters, no special accents allowed easily
-            // We use the first 8 characters of listingId or just a short string.
-            const shortId = listingId ? listingId.substring(0, 5) : '';
-            const desc = `Thanh toan goi ${shortId}`;
-
-            const paymentResult = await paymentService.createSubscriptionPayment(currentSubscription.id, desc);
+            const paymentResult = await paymentService.createSubscriptionPayment(currentSubscription.id);
             if (paymentResult?.paymentUrl) {
                 window.location.href = paymentResult.paymentUrl;
             } else {
