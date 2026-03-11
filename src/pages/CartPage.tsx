@@ -1,4 +1,3 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingCartView } from '../components/buyer/Cart/ShoppingCart';
 import type { CartItem } from '../contexts/CartContext';

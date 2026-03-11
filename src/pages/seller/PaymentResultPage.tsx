@@ -1,6 +1,8 @@
 // src/pages/seller/PaymentResultPage.tsx
+import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { CheckCircle2, XCircle, Home, FileText } from 'lucide-react';
+import { CheckCircle2, XCircle, Home, FileText, Loader2 } from 'lucide-react';
+import { paymentService } from '../../services/payment.service';
 
 export default function PaymentResultPage() {
     const [searchParams] = useSearchParams();
@@ -14,28 +16,84 @@ export default function PaymentResultPage() {
     const orderCode = searchParams.get('orderCode');
     const orderId = searchParams.get('orderId'); // Passed from frontend payload
 
-    const isSuccess = (() => {
+    const baseSuccess = (() => {
         if (paymentStatus === 'PAID' && !isCancel) return true;
         if (hasCode === '00' && !isCancel) return true;
         return false;
     })();
 
+    const [displayStatus, setDisplayStatus] = useState<'success' | 'failed' | 'pending'>(
+        baseSuccess ? 'success' : isCancel ? 'failed' : 'pending'
+    );
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const verifyFromPayments = async () => {
+            if (baseSuccess) {
+                if (isMounted) setDisplayStatus('success');
+                return;
+            }
+            if (isCancel) {
+                if (isMounted) setDisplayStatus('failed');
+                return;
+            }
+
+            try {
+                const pendingSubscriptionId = localStorage.getItem('pendingSubscriptionId');
+                const payments = await paymentService.getMyPayments();
+                const match = pendingSubscriptionId
+                    ? payments.find((p) => String(p.referenceId || '') === pendingSubscriptionId)
+                    : payments.find((p) => p.type === 'SUBSCRIPTION');
+
+                const status = String(match?.status || '').toUpperCase();
+                const isSuccessStatus = ['PAID', 'SUCCESS', 'COMPLETED'].includes(status);
+                const isFailedStatus = ['FAILED', 'CANCELLED', 'CANCELED', 'REFUNDED', 'EXPIRED'].includes(status);
+
+                if (!isMounted) return;
+
+                if (isSuccessStatus) {
+                    setDisplayStatus('success');
+                    localStorage.removeItem('pendingSubscriptionId');
+                    localStorage.removeItem('pendingListingId');
+                } else if (isFailedStatus) {
+                    setDisplayStatus('failed');
+                } else {
+                    setDisplayStatus('pending');
+                }
+            } catch {
+                if (isMounted) setDisplayStatus('pending');
+            }
+        };
+
+        verifyFromPayments();
+        return () => {
+            isMounted = false;
+        };
+    }, [baseSuccess, isCancel]);
+
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 font-sans">
-            <div className={`w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden border-t-8 ${isSuccess ? 'border-green-500 shadow-green-500/10' : 'border-red-500 shadow-red-500/10'}`}>
+            <div className={`w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden border-t-8 ${displayStatus === 'success' ? 'border-green-500 shadow-green-500/10' : displayStatus === 'failed' ? 'border-red-500 shadow-red-500/10' : 'border-amber-500 shadow-amber-500/10'}`}>
                 <div className="p-10 text-center">
-                    <div className={`w-24 h-24 rounded-full mx-auto flex items-center justify-center mb-6 animate-in zoom-in duration-500 ${isSuccess ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                        {isSuccess ? <CheckCircle2 size={48} strokeWidth={2.5} /> : <XCircle size={48} strokeWidth={2.5} />}
+                    <div className={`w-24 h-24 rounded-full mx-auto flex items-center justify-center mb-6 animate-in zoom-in duration-500 ${displayStatus === 'success' ? 'bg-green-100 text-green-600' : displayStatus === 'failed' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
+                        {displayStatus === 'success'
+                            ? <CheckCircle2 size={48} strokeWidth={2.5} />
+                            : displayStatus === 'failed'
+                                ? <XCircle size={48} strokeWidth={2.5} />
+                                : <Loader2 size={48} className="animate-spin" />}
                     </div>
 
                     <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">
-                        {isSuccess ? 'Thanh toán thành công! 🎉' : 'Thanh toán thất bại'}
+                        {displayStatus === 'success' ? 'Thanh toán thành công! 🎉' : displayStatus === 'failed' ? 'Thanh toán thất bại' : 'Đang xác nhận thanh toán'}
                     </h1>
 
                     <p className="text-slate-500 font-medium text-lg mb-4">
-                        {isSuccess
+                        {displayStatus === 'success'
                             ? 'Cảm ơn bạn đã thanh toán! Bài đăng đã được gửi đến Admin. Admin sẽ phân công kiểm định viên xem xét xe của bạn — sau khi hoàn thành, xe sẽ tự động hiển thị trên trang chủ.'
-                            : 'Giao dịch đã bị hủy hoặc xảy ra lỗi. Hệ thống chưa ghi nhận gói cước của bài đăng.'
+                            : displayStatus === 'failed'
+                                ? 'Giao dịch đã bị hủy hoặc xảy ra lỗi. Hệ thống chưa ghi nhận gói cước của bài đăng.'
+                                : 'Hệ thống đang xác nhận thanh toán. Bạn có thể chờ vài giây hoặc quay lại Dashboard để kiểm tra trạng thái.'
                         }
                     </p>
 

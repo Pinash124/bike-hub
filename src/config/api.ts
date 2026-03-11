@@ -91,5 +91,6 @@ export const API_ENDPOINTS = {
   PAYMENT_ALL: `${API_BASE_URL}/payment/all`, // Get all payments
   PAYMENT_STATUS: (orderId: string) => `${API_BASE_URL}/payment/${orderId}/status`,
   PAYMENT_HISTORY: `${API_BASE_URL}/payment/history`,
+  PAYMENT_MY: `${API_BASE_URL}/payment/my-payment`,
   PAYMENT_REFUND: (paymentId: string) => `${API_BASE_URL}/payment/${paymentId}/refund`, // Admin only
 };

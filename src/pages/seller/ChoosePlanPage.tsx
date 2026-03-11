@@ -74,7 +74,7 @@ export default function ChoosePlanPage() {
                 setCurrentSubscription(subData);
 
                 // Nếu đã có sub đang chờ thanh toán, chuyển thẳng sang bước xác nhận
-                if (subData?.status === 'PENDING_PAYMENT') {
+                if (subData?.status === 'PENDING_PAYMENT' || subData?.status === 'PENDING') {
                     const subPlan = activePlans.find(p => p.id === subData.planId);
                     if (subPlan) setSelectedPlanDetails(subPlan);
                     setShowConfirmation(true);
@@ -94,6 +94,8 @@ export default function ChoosePlanPage() {
         if (!currentSubscription?.id) return;
         setIsProcessing(true);
         try {
+            localStorage.setItem('pendingSubscriptionId', String(currentSubscription.id));
+            if (listingId) localStorage.setItem('pendingListingId', String(listingId));
             const paymentResult = await paymentService.createSubscriptionPayment(currentSubscription.id);
             if (paymentResult?.paymentUrl) {
                 window.location.href = paymentResult.paymentUrl;
@@ -127,6 +129,8 @@ export default function ChoosePlanPage() {
             }
 
             setCurrentSubscription(sub);
+            localStorage.setItem('pendingSubscriptionId', String(sub.id));
+            if (listingId) localStorage.setItem('pendingListingId', String(listingId));
             const plan = plans.find(p => p.id === planId);
             if (plan) setSelectedPlanDetails(plan);
             setShowConfirmation(true);
@@ -342,7 +346,7 @@ export default function ChoosePlanPage() {
                                         </p>
                                     </div>
                                 </div>
-                                {currentSubscription.status === 'PENDING_PAYMENT' && (
+                                {(currentSubscription.status === 'PENDING_PAYMENT' || currentSubscription.status === 'PENDING') && (
                                     <button
                                         onClick={() => setShowConfirmation(true)}
                                         className="px-5 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition shadow-sm"

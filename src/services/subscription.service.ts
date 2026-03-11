@@ -14,7 +14,7 @@ export interface Subscription {
     startDate: string;
     endDate: string;
     userId: string;
-    status: 'ACTIVE' | 'EXPIRED' | 'PENDING_PAYMENT';
+    status: 'ACTIVE' | 'EXPIRED' | 'PENDING_PAYMENT' | 'PENDING';
 }
 
 export const subscriptionService = {
@@ -44,7 +44,9 @@ export const subscriptionService = {
         try {
             const response = await api.get(API_ENDPOINTS.SUBSCRIPTION_BY_LISTING(listingId));
             if (response.data?.code === 1000) {
-                return response.data.result;
+                const result = response.data.result;
+                if (Array.isArray(result)) return result[0] ?? null;
+                return result ?? null;
             }
             return null;
         } catch (error) {
