@@ -23,19 +23,13 @@ const BIKE_TYPES = [
     value: "MTB_BIKE",
     label: "Xe địa hình (MTB)",
     emoji: "🚵",
-    description: "Phù hợp cho địa hình gồ ghề, off-road",
+    description: "Tiện lợi cho đi lại hàng ngày",
   },
   {
     value: "ROAD_BIKE",
     label: "Xe đua (Road)",
     emoji: "🚴",
-    description: "Nhanh nhẹ trên đường bằng, đua xe",
-  },
-  {
-    value: "CITY_BIKE",
-    label: "Xe thành phố",
-    emoji: "🚲",
-    description: "Tiện lợi cho đi lại hàng ngày",
+    description: "Nhanh nhẹ trên đường bằng, đua xe đúng chuẩn api",
   },
 ];
 
