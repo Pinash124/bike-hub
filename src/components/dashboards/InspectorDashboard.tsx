@@ -173,10 +173,7 @@ export default function InspectorDashboard() {
     setCurrentLocation(null);
   };
 
-  const handleScoreImageChange = (
-    type: ScoreImageType,
-    file: File | null,
-  ) => {
+  const handleScoreImageChange = (type: ScoreImageType, file: File | null) => {
     setScoreImages((prev) => ({ ...prev, [type]: file }));
   };
 
@@ -189,9 +186,7 @@ export default function InspectorDashboard() {
       return;
     }
 
-    const orderedFiles = SCORE_IMAGE_ORDER.map(
-      (item) => scoreImages[item.key],
-    );
+    const orderedFiles = SCORE_IMAGE_ORDER.map((item) => scoreImages[item.key]);
     const hasAllImages = orderedFiles.every((file) => file instanceof File);
     if (!hasAllImages) {
       alert("Vui lòng tải đủ 4 ảnh theo đúng thứ tự yêu cầu.");
@@ -459,8 +454,8 @@ export default function InspectorDashboard() {
 
             <div className="p-6 overflow-y-auto flex-1 space-y-6">
               <div className="bg-indigo-50 text-indigo-800 text-xs font-medium p-4 rounded-xl">
-                Vui lòng nhập điểm tổng, nhận xét và tải đủ 4 ảnh theo đúng thứ tự:
-                LEFT_VIEW, RIGHT_VIEW, FRONT_VIEW, REAR_VIEW.
+                Vui lòng nhập điểm tổng, nhận xét và tải đủ 4 ảnh theo đúng thứ
+                tự: LEFT_VIEW, RIGHT_VIEW, FRONT_VIEW, REAR_VIEW.
               </div>
 
               <div className="border border-slate-200 rounded-2xl overflow-hidden">
@@ -469,21 +464,27 @@ export default function InspectorDashboard() {
                 </div>
                 <div className="divide-y divide-slate-100 text-sm">
                   <div className="px-4 py-3">
-                    <div className="font-bold text-slate-800">10 – Like New</div>
+                    <div className="font-bold text-slate-800">
+                      10 – Like New
+                    </div>
                     <p className="text-slate-600 mt-1">
-                      Xe gần như mới hoàn toàn, sơn hoàn hảo, không vết trầy xước.
-                      Mọi bộ phận vận hành trơn tru tuyệt đối.
+                      Xe gần như mới hoàn toàn, sơn hoàn hảo, không vết trầy
+                      xước. Mọi bộ phận vận hành trơn tru tuyệt đối.
                     </p>
                   </div>
                   <div className="px-4 py-3">
-                    <div className="font-bold text-slate-800">9 – Excellent</div>
+                    <div className="font-bold text-slate-800">
+                      9 – Excellent
+                    </div>
                     <p className="text-slate-600 mt-1">
-                      Ngoại hình đẹp, rất ít vết trầy xước nhỏ khó thấy. Phanh, bánh
-                      và khung sườn hoạt động rất tốt.
+                      Ngoại hình đẹp, rất ít vết trầy xước nhỏ khó thấy. Phanh,
+                      bánh và khung sườn hoạt động rất tốt.
                     </p>
                   </div>
                   <div className="px-4 py-3">
-                    <div className="font-bold text-slate-800">8 – Very Good</div>
+                    <div className="font-bold text-slate-800">
+                      8 – Very Good
+                    </div>
                     <p className="text-slate-600 mt-1">
                       Có vài vết trầy nhẹ, màu sơn còn giữ độ bóng tốt. Xe vận
                       hành ổn định trong điều kiện bình thường.
@@ -492,8 +493,8 @@ export default function InspectorDashboard() {
                   <div className="px-4 py-3">
                     <div className="font-bold text-slate-800">7 – Good</div>
                     <p className="text-slate-600 mt-1">
-                      Vết trầy xước thấy rõ bằng mắt thường nhưng không ảnh hưởng
-                      đến khả năng vận hành.
+                      Vết trầy xước thấy rõ bằng mắt thường nhưng không ảnh
+                      hưởng đến khả năng vận hành.
                     </p>
                   </div>
                   <div className="px-4 py-3">
@@ -504,27 +505,33 @@ export default function InspectorDashboard() {
                     </p>
                   </div>
                   <div className="px-4 py-3">
-                    <div className="font-bold text-slate-800">5 – Acceptable</div>
+                    <div className="font-bold text-slate-800">
+                      5 – Acceptable
+                    </div>
                     <p className="text-slate-600 mt-1">
-                      Máy móc vẫn chạy tốt nhưng ngoại hình xuống cấp
-                      (sơn xấu, trầy xước nhiều hoặc xỉn màu).
+                      Máy móc vẫn chạy tốt nhưng ngoại hình xuống cấp (sơn xấu,
+                      trầy xước nhiều hoặc xỉn màu).
                     </p>
                   </div>
                   <div className="px-4 py-3">
                     <div className="font-bold text-slate-800">4 – Poor</div>
                     <p className="text-slate-600 mt-1">
-                      Xe bắt đầu có vấn đề kỹ thuật cần sửa chữa
-                      (phanh yếu, vành bánh hơi lệch/đảo).
+                      Xe bắt đầu có vấn đề kỹ thuật cần sửa chữa (phanh yếu,
+                      vành bánh hơi lệch/đảo).
                     </p>
                   </div>
                   <div className="px-4 py-3">
-                    <div className="font-bold text-slate-800">3 – Very Poor</div>
+                    <div className="font-bold text-slate-800">
+                      3 – Very Poor
+                    </div>
                     <p className="text-slate-600 mt-1">
                       Cần thay thế nhiều phụ tùng mới có thể sử dụng.
                     </p>
                   </div>
                   <div className="px-4 py-3">
-                    <div className="font-bold text-slate-800">0–2 – Scrap/Parts Only</div>
+                    <div className="font-bold text-slate-800">
+                      0–2 – Scrap/Parts Only
+                    </div>
                     <p className="text-slate-600 mt-1">
                       Xe nát, chỉ có thể lấy linh kiện hoặc bán sắt vụn.
                     </p>
@@ -688,42 +695,51 @@ export default function InspectorDashboard() {
                       </div>
                       <div className="space-y-3">
                         <div className="flex justify-between items-center py-2 border-b border-slate-100">
-                          <span className="font-medium text-slate-600">Điểm</span>
+                          <span className="font-medium text-slate-600">
+                            Điểm
+                          </span>
                           <span className="font-bold text-slate-800">
                             {currentTask.score ?? "—"}
                           </span>
                         </div>
                         <div className="py-2 border-b border-slate-100">
-                          <p className="font-medium text-slate-600 mb-1">Nhận xét</p>
+                          <p className="font-medium text-slate-600 mb-1">
+                            Nhận xét
+                          </p>
                           <p className="text-sm text-slate-800">
                             {currentTask.comment || "Chưa có nhận xét."}
                           </p>
                         </div>
-                        {currentTask.images && currentTask.images.length > 0 && (
-                          <div className="space-y-2">
-                            <p className="font-medium text-slate-600">Ảnh hiện trạng</p>
+                        {currentTask.images &&
+                          currentTask.images.length > 0 && (
                             <div className="space-y-2">
-                              {currentTask.images.map((img: any, idx: number) => (
-                                <div
-                                  key={`${img.type ?? "IMG"}-${idx}`}
-                                  className="flex items-center justify-between text-sm text-slate-700 border-b border-slate-100 py-2"
-                                >
-                                  <span className="font-semibold">
-                                    {img.type ?? "Ảnh"}
-                                  </span>
-                                  <a
-                                    href={img.url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-blue-600 hover:text-blue-700 font-semibold"
-                                  >
-                                    Xem ảnh
-                                  </a>
-                                </div>
-                              ))}
+                              <p className="font-medium text-slate-600">
+                                Ảnh hiện trạng
+                              </p>
+                              <div className="space-y-2">
+                                {currentTask.images.map(
+                                  (img: any, idx: number) => (
+                                    <div
+                                      key={`${img.type ?? "IMG"}-${idx}`}
+                                      className="flex items-center justify-between text-sm text-slate-700 border-b border-slate-100 py-2"
+                                    >
+                                      <span className="font-semibold">
+                                        {img.type ?? "Ảnh"}
+                                      </span>
+                                      <a
+                                        href={img.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-blue-600 hover:text-blue-700 font-semibold"
+                                      >
+                                        Xem ảnh
+                                      </a>
+                                    </div>
+                                  ),
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
                       </div>
                     </div>
                   )}
