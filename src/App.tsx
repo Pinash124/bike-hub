@@ -37,6 +37,8 @@ import ScheduleInspectionPage from "./pages/ScheduleInspectionPage";
 import DebugPage from "./pages/DebugPage";
 import ChoosePlanPage from "./pages/seller/ChoosePlanPage";
 import PaymentResultPage from "./pages/seller/PaymentResultPage";
+import EditListingPage from "./pages/EditListingPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 
 // --- Contexts & Protection ---
 import { AuthProvider } from "./contexts/AuthContext";
@@ -151,6 +153,10 @@ function App() {
               path="/register"
               element={<Register />}
             />
+            <Route
+              path="/forgot-password"
+              element={<ForgotPasswordPage />}
+            />
             {/* Payment Return Callback */}
             <Route
               path="/payment/result"
@@ -232,6 +238,17 @@ function App() {
                 <ProtectedRoute requiredRole="seller">
                   <AppLayout>
                     <ChoosePlanPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/seller/edit/:id"
+              element={
+                <ProtectedRoute requiredRole="seller">
+                  <AppLayout>
+                    <EditListingPage />
                   </AppLayout>
                 </ProtectedRoute>
               }

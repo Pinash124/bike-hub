@@ -21,9 +21,10 @@ export const API_ENDPOINTS = {
   // ─── User ──────────────────────────────────────────────────────────────
   GET_MY_INFO: API_BASE_URL + "/user/my-info", // GET
   USER_LIST: API_BASE_URL + "/user", // GET (admin)
+  USER_DETAIL: (id: string) => `${API_BASE_URL}/user/${id}`, // DELETE/GET (admin)
   USER_CHANGE_PASSWORD: API_BASE_URL + "/user/password", // PUT
   USER_CREATE_INSPECTOR: API_BASE_URL + "/user/create-inspector", // POST
-  USER_DELETE: (id: string) => `${API_BASE_URL}/user/${id}`, // DELETE (admin)
+  USER_DELETE: (id: string) => `${API_BASE_URL}/user/${id}`, // Legacy alias
 
   // ─── KYC ───────────────────────────────────────────────────────────────
   UPLOAD_KYC: API_BASE_URL + "/kyc/upload", // POST multipart
@@ -43,6 +44,7 @@ export const API_ENDPOINTS = {
   LISTING_DETAIL: (id: string) => `${API_BASE_URL}/listing/${id}`, // GET (public) / DELETE (admin)
   LISTING_SELLER_DETAIL: (id: string) => `${API_BASE_URL}/listing/seller/${id}`, // GET (seller — full detail)
   // Legacy admin moderation endpoints kept for existing dashboard compatibility.
+  LISTING_SELLER: (id: string) => `${API_BASE_URL}/listing/seller/${id}`, // Legacy alias
   LISTING_APPROVE: (id: string) => `${API_BASE_URL}/listing/${id}/approve`,
   LISTING_REJECT: (id: string) => `${API_BASE_URL}/listing/${id}/reject`,
 
@@ -108,4 +110,11 @@ export const API_ENDPOINTS = {
   // ─── Component (legacy admin module) ──────────────────────────────────
   COMPONENT: API_BASE_URL + "/component",
   COMPONENT_DETAIL: (id: string) => `${API_BASE_URL}/component/${id}`,
+  // Compatibility aliases for legacy screens
+  ORDER: API_BASE_URL + "/order",
+  PAYMENT_STATUS: (orderId: string) =>
+    `${API_BASE_URL}/payment/${orderId}/status`,
+  PAYMENT_HISTORY: API_BASE_URL + "/payment/history",
+  PAYMENT_REFUND: (paymentId: string) =>
+    `${API_BASE_URL}/payment/${paymentId}/refund`,
 };
