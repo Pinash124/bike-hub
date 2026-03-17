@@ -15,13 +15,13 @@ import {
   AlertTriangle,
   Check,
   Save,
-  Edit2
+  Edit2,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
-import { 
-  addressService, 
-  type Address, 
-  type AddressPayload 
+import {
+  addressService,
+  type Address,
+  type AddressPayload,
 } from "../services/address.service";
 
 const makeEmptyContact = (): AddressPayload => ({
@@ -54,12 +54,17 @@ export default function ProfilePage() {
 
   const [contacts, setContacts] = useState<Address[]>([]);
   const [isLoadingContacts, setIsLoadingContacts] = useState(false);
-  const [contactForm, setContactForm] = useState<AddressPayload>(makeEmptyContact)
-  const [validationErrors, setValidationErrors] = useState<Partial<AddressPayload>>({})
-  const [contactError, setContactError] = useState("")
-  const [contactSuccess, setContactSuccess] = useState("")
-  const [editingContactId, setEditingContactId] = useState<number | null>(null)
-  const [isSavingContact, setIsSavingContact] = useState(false)
+  const [contactForm, setContactForm] =
+    useState<AddressPayload>(makeEmptyContact);
+  const [validationErrors, setValidationErrors] = useState<
+    Partial<AddressPayload>
+  >({});
+  const [contactError, setContactError] = useState("");
+  const [contactSuccess, setContactSuccess] = useState("");
+  const [editingContactId, setEditingContactId] = useState<
+    string | number | null
+  >(null);
+  const [isSavingContact, setIsSavingContact] = useState(false);
 
   const isSellerOrBuyer = useMemo(
     () => !!user && ["seller", "buyer"].includes(user.role),
@@ -96,41 +101,47 @@ export default function ProfilePage() {
 
   const validateContactForm = (): boolean => {
     const errors: Partial<AddressPayload> = {};
-    
+
     if (!validateName(contactForm.nameContact)) {
       errors.nameContact = "Họ tên phải từ 2-50 ký tự";
     }
-    
+
     if (!validatePhone(contactForm.phoneContact)) {
       errors.phoneContact = "Số điện thoại không hợp lệ (ví dụ: 09xxxxxxxx)";
     }
-    
+
     if (!validateAddress(contactForm.addressLine)) {
       errors.addressLine = "Địa chỉ phải từ 10-200 ký tự";
     }
-    
-    if (!contactForm.accountNumber || contactForm.accountNumber.trim().length < 5) {
-      errors.accountNumber = "Số tài khoản ngân hàng không hợp lệ (ít nhất 5 ký tự)";
+
+    if (
+      !contactForm.accountNumber ||
+      contactForm.accountNumber.trim().length < 5
+    ) {
+      errors.accountNumber =
+        "Số tài khoản ngân hàng không hợp lệ (ít nhất 5 ký tự)";
     }
-    
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const hasContactFormValue =
-    !!contactForm.nameContact || !!contactForm.phoneContact || !!contactForm.addressLine;
+    !!contactForm.nameContact ||
+    !!contactForm.phoneContact ||
+    !!contactForm.addressLine;
 
   const handleContactInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setContactForm((prev) => ({ ...prev, [name]: value }));
-    
+
     // Clear validation error for this field when user starts typing
     if (validationErrors[name as keyof AddressPayload]) {
       setValidationErrors((prev) => ({ ...prev, [name]: undefined }));
     }
-    
+
     // Clear general errors when user starts typing
     if (contactError || contactSuccess) {
       setContactError("");
@@ -145,11 +156,11 @@ export default function ProfilePage() {
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateContactForm()) {
       return;
     }
-    
+
     setContactError("");
     setContactSuccess("");
     setIsSavingContact(true);
@@ -163,7 +174,11 @@ export default function ProfilePage() {
 
       await refreshContacts();
       resetContactForm();
-      setContactSuccess(editingContactId ? "Đã cập nhật thông tin liên hệ thành công!" : "Đã thêm thông tin liên hệ thành công!");
+      setContactSuccess(
+        editingContactId
+          ? "Đã cập nhật thông tin liên hệ thành công!"
+          : "Đã thêm thông tin liên hệ thành công!",
+      );
     } catch (error: unknown) {
       const message =
         typeof error === "object" &&
@@ -182,17 +197,24 @@ export default function ProfilePage() {
   };
 
   const handleEditContact = (contact: Address) => {
+    const normalizedBankCode =
+      contact.bankCode === "TECHCOMBANK" ||
+      contact.bankCode === "VIETINBANK" ||
+      contact.bankCode === "MB_BANK"
+        ? contact.bankCode
+        : "TECHCOMBANK";
+
     setContactForm({
       nameContact: contact.nameContact,
       phoneContact: contact.phoneContact,
       addressLine: contact.addressLine,
-      bankCode: contact.bankCode || "TECHCOMBANK",
+      bankCode: normalizedBankCode,
       accountNumber: contact.accountNumber || "",
-    })
-    setEditingContactId(contact.id)
-    setValidationErrors({})
-    setContactError("")
-    setContactSuccess("")
+    });
+    setEditingContactId(contact.id);
+    setValidationErrors({});
+    setContactError("");
+    setContactSuccess("");
   };
 
   const handleReturnToSchedule = () => {
@@ -235,11 +257,19 @@ export default function ProfilePage() {
             </div>
 
             <div className="space-y-1">
-              <h1 className="text-2xl font-black text-slate-900">{user.name}</h1>
+              <h1 className="text-2xl font-black text-slate-900">
+                {user.name}
+              </h1>
               <p className="flex items-center gap-2 text-sm font-semibold text-slate-500">
                 Vai trò:
                 <span className="rounded-md bg-green-50 px-2.5 py-1 text-sm font-medium text-green-600">
-                  {user.role === 'seller' ? 'Người bán' : user.role === 'buyer' ? 'Người mua' : user.role === 'admin' ? 'Quản trị viên' : 'Kiểm định viên'}
+                  {user.role === "seller"
+                    ? "Người bán"
+                    : user.role === "buyer"
+                      ? "Người mua"
+                      : user.role === "admin"
+                        ? "Quản trị viên"
+                        : "Kiểm định viên"}
                 </span>
               </p>
             </div>
@@ -307,9 +337,12 @@ export default function ProfilePage() {
                       <ShieldCheck size={28} className="text-green-600" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-bold text-green-900 text-lg">Đã xác minh</h3>
+                      <h3 className="font-bold text-green-900 text-lg">
+                        Đã xác minh
+                      </h3>
                       <p className="mt-1 text-sm font-medium text-green-700 leading-relaxed">
-                        Tài khoản của bạn đã được xác minh và có đầy đủ quyền giao dịch.
+                        Tài khoản của bạn đã được xác minh và có đầy đủ quyền
+                        giao dịch.
                       </p>
                     </div>
                   </div>
@@ -323,7 +356,8 @@ export default function ProfilePage() {
                         Chưa xác minh KYC
                       </h3>
                       <p className="mt-1 text-sm font-medium text-amber-700 leading-relaxed">
-                        Vui lòng hoàn tất xác minh danh tính để mở đầy đủ quyền mua bán và tăng độ tin cậy cho tài khoản.
+                        Vui lòng hoàn tất xác minh danh tính để mở đầy đủ quyền
+                        mua bán và tăng độ tin cậy cho tài khoản.
                       </p>
                     </div>
                     <button
@@ -348,7 +382,8 @@ export default function ProfilePage() {
                       Thông tin liên hệ
                     </h2>
                     <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-                      Cập nhật thông tin liên hệ để phục vụ cho việc kiểm định xe tại địa điểm của bạn.
+                      Cập nhật thông tin liên hệ để phục vụ cho việc kiểm định
+                      xe tại địa điểm của bạn.
                     </p>
                   </div>
                 </div>
@@ -358,7 +393,9 @@ export default function ProfilePage() {
                     <div className="flex items-center justify-center py-12">
                       <div className="flex items-center gap-3 text-slate-500">
                         <RefreshCw size={20} className="animate-spin" />
-                        <span className="text-sm font-medium">Đang tải thông tin liên hệ...</span>
+                        <span className="text-sm font-medium">
+                          Đang tải thông tin liên hệ...
+                        </span>
                       </div>
                     </div>
                   ) : contacts.length === 0 ? (
@@ -371,10 +408,11 @@ export default function ProfilePage() {
                           Chưa có thông tin liên hệ
                         </h3>
                         <p className="mb-4 text-sm text-amber-700 leading-relaxed">
-                          Vui lòng thêm thông tin liên hệ để phục vụ cho quy trình kiểm định xe tại địa điểm của bạn.
+                          Vui lòng thêm thông tin liên hệ để phục vụ cho quy
+                          trình kiểm định xe tại địa điểm của bạn.
                         </p>
                       </div>
-                      
+
                       <form
                         onSubmit={handleContactSubmit}
                         className="space-y-6 rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-8 shadow-sm"
@@ -464,7 +502,10 @@ export default function ProfilePage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-2">
                             <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                              <ShieldCheck size={16} className="text-slate-400" />
+                              <ShieldCheck
+                                size={16}
+                                className="text-slate-400"
+                              />
                               Ngân hàng
                               <span className="text-red-500">*</span>
                             </label>
@@ -483,7 +524,10 @@ export default function ProfilePage() {
 
                           <div className="space-y-2">
                             <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                              <ShieldCheck size={16} className="text-slate-400" />
+                              <ShieldCheck
+                                size={16}
+                                className="text-slate-400"
+                              />
                               Số tài khoản
                               <span className="text-red-500">*</span>
                             </label>
@@ -509,12 +553,18 @@ export default function ProfilePage() {
                         </div>
 
                         {(contactError || contactSuccess) && (
-                          <div className={`rounded-xl p-4 flex items-center gap-3 ${
-                            contactError 
-                              ? "bg-red-50 border border-red-200 text-red-700" 
-                              : "bg-green-50 border border-green-200 text-green-700"
-                          }`}>
-                            {contactError ? <AlertTriangle size={16} /> : <Check size={16} />}
+                          <div
+                            className={`rounded-xl p-4 flex items-center gap-3 ${
+                              contactError
+                                ? "bg-red-50 border border-red-200 text-red-700"
+                                : "bg-green-50 border border-green-200 text-green-700"
+                            }`}
+                          >
+                            {contactError ? (
+                              <AlertTriangle size={16} />
+                            ) : (
+                              <Check size={16} />
+                            )}
                             <p className="text-sm font-medium">
                               {contactError || contactSuccess}
                             </p>
@@ -559,15 +609,21 @@ export default function ProfilePage() {
                             <MapPin size={28} className="text-green-600" />
                           </div>
                           <div className="flex-1">
-                            <h3 className="font-bold text-green-900 text-lg mb-4">Thông tin liên hệ hiện tại</h3>
+                            <h3 className="font-bold text-green-900 text-lg mb-4">
+                              Thông tin liên hệ hiện tại
+                            </h3>
                             <div className="space-y-3">
                               <div className="flex items-center gap-3">
                                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
                                   <User size={16} className="text-green-600" />
                                 </div>
                                 <div>
-                                  <p className="text-sm font-semibold text-slate-700">Người liên hệ</p>
-                                  <p className="text-slate-900">{contacts[0].nameContact}</p>
+                                  <p className="text-sm font-semibold text-slate-700">
+                                    Người liên hệ
+                                  </p>
+                                  <p className="text-slate-900">
+                                    {contacts[0].nameContact}
+                                  </p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-3">
@@ -575,24 +631,35 @@ export default function ProfilePage() {
                                   <Phone size={16} className="text-green-600" />
                                 </div>
                                 <div>
-                                  <p className="text-sm font-semibold text-slate-700">Số điện thoại</p>
-                                  <p className="text-slate-900">{contacts[0].phoneContact}</p>
+                                  <p className="text-sm font-semibold text-slate-700">
+                                    Số điện thoại
+                                  </p>
+                                  <p className="text-slate-900">
+                                    {contacts[0].phoneContact}
+                                  </p>
                                 </div>
                               </div>
                               <div className="flex items-start gap-3">
                                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 mt-0.5">
-                                  <MapPin size={16} className="text-green-600" />
+                                  <MapPin
+                                    size={16}
+                                    className="text-green-600"
+                                  />
                                 </div>
                                 <div className="flex-1">
-                                  <p className="text-sm font-semibold text-slate-700">Địa chỉ</p>
-                                  <p className="text-slate-900 leading-relaxed">{contacts[0].addressLine}</p>
+                                  <p className="text-sm font-semibold text-slate-700">
+                                    Địa chỉ
+                                  </p>
+                                  <p className="text-slate-900 leading-relaxed">
+                                    {contacts[0].addressLine}
+                                  </p>
                                 </div>
                               </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="flex justify-center">
                         <button
                           type="button"
@@ -603,7 +670,7 @@ export default function ProfilePage() {
                           Cập nhật thông tin
                         </button>
                       </div>
-                      
+
                       {editingContactId && (
                         <form
                           onSubmit={handleContactSubmit}
@@ -694,7 +761,10 @@ export default function ProfilePage() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                               <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                <ShieldCheck size={16} className="text-slate-400" />
+                                <ShieldCheck
+                                  size={16}
+                                  className="text-slate-400"
+                                />
                                 Ngân hàng
                                 <span className="text-red-500">*</span>
                               </label>
@@ -713,7 +783,10 @@ export default function ProfilePage() {
 
                             <div className="space-y-2">
                               <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                <ShieldCheck size={16} className="text-slate-400" />
+                                <ShieldCheck
+                                  size={16}
+                                  className="text-slate-400"
+                                />
                                 Số tài khoản
                                 <span className="text-red-500">*</span>
                               </label>
@@ -739,12 +812,18 @@ export default function ProfilePage() {
                           </div>
 
                           {(contactError || contactSuccess) && (
-                            <div className={`rounded-xl p-4 flex items-center gap-3 ${
-                              contactError 
-                                ? "bg-red-50 border border-red-200 text-red-700" 
-                                : "bg-green-50 border border-green-200 text-green-700"
-                            }`}>
-                              {contactError ? <AlertTriangle size={16} /> : <Check size={16} />}
+                            <div
+                              className={`rounded-xl p-4 flex items-center gap-3 ${
+                                contactError
+                                  ? "bg-red-50 border border-red-200 text-red-700"
+                                  : "bg-green-50 border border-green-200 text-green-700"
+                              }`}
+                            >
+                              {contactError ? (
+                                <AlertTriangle size={16} />
+                              ) : (
+                                <Check size={16} />
+                              )}
                               <p className="text-sm font-medium">
                                 {contactError || contactSuccess}
                               </p>
@@ -759,7 +838,10 @@ export default function ProfilePage() {
                             >
                               {isSavingContact ? (
                                 <>
-                                  <RefreshCw size={16} className="animate-spin" />
+                                  <RefreshCw
+                                    size={16}
+                                    className="animate-spin"
+                                  />
                                   Đang cập nhật...
                                 </>
                               ) : (

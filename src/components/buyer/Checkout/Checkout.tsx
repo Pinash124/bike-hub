@@ -1,9 +1,17 @@
-import React, { useState } from 'react';
-import { MapPin, CreditCard, Package, AlertCircle, Check, Loader2, ShoppingCart } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { type Address } from '../../../services/address.service';
-import { paymentService } from '../../../services/payment.service';
-import { useCart } from '../../../contexts/CartContext';
+import React, { useState } from "react";
+import {
+  MapPin,
+  CreditCard,
+  Package,
+  AlertCircle,
+  Check,
+  Loader2,
+  ShoppingCart,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { type Address } from "../../../services/address.service";
+import { paymentService } from "../../../services/payment.service";
+import { useCart } from "../../../contexts/CartContext";
 
 interface CheckoutProps {
   addresses: Address[];
@@ -11,15 +19,18 @@ interface CheckoutProps {
   listingIds: string[];
 }
 
-export const Checkout: React.FC<CheckoutProps> = ({ addresses, listingIds }) => {
+export const Checkout: React.FC<CheckoutProps> = ({
+  addresses,
+  listingIds,
+}) => {
   const navigate = useNavigate();
   const { items: cartItems, clearCart } = useCart();
   const defaultAddress = addresses.find((a) => a.isDefault) ?? addresses[0];
 
-  const [selectedAddressId, setSelectedAddressId] = useState<string | number | ''>(
-    defaultAddress?.id ?? ''
-  );
-  const [notes, setNotes] = useState('');
+  const [selectedAddressId, setSelectedAddressId] = useState<
+    string | number | ""
+  >(defaultAddress?.id ?? "");
+  const [notes, setNotes] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,9 +39,10 @@ export const Checkout: React.FC<CheckoutProps> = ({ addresses, listingIds }) => 
     const cartItem = cartItems.find((c) => c.productId === lid);
     return {
       id: lid,
-      name: cartItem?.productName ?? `Sản phẩm #${lid.slice(0, 8).toUpperCase()}`,
+      name:
+        cartItem?.productName ?? `Sản phẩm #${lid.slice(0, 8).toUpperCase()}`,
       price: cartItem?.price ?? 0,
-      image: cartItem?.image ?? '',
+      image: cartItem?.image ?? "",
     };
   });
 
@@ -38,7 +50,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ addresses, listingIds }) => 
 
   const handlePayment = async () => {
     if (!selectedAddressId) {
-      setError('Vui lòng chọn địa chỉ giao hàng.');
+      setError("Vui lòng chọn địa chỉ giao hàng.");
       return;
     }
     setError(null);
@@ -48,35 +60,36 @@ export const Checkout: React.FC<CheckoutProps> = ({ addresses, listingIds }) => 
       // BE flow: buyer pays by listingId, backend creates/locks order internally.
       const firstListingId = listingIds[0];
       if (!firstListingId) {
-        throw new Error('Không tìm thấy xe cần thanh toán.');
+        throw new Error("Không tìm thấy xe cần thanh toán.");
       }
 
       const payment = await paymentService.createOrderPayment(firstListingId);
 
       if (payment?.paymentUrl) {
-        localStorage.setItem('pendingOrderListingId', firstListingId);
+        localStorage.setItem("pendingOrderListingId", firstListingId);
         clearCart();
         window.location.href = payment.paymentUrl;
       } else {
-        navigate('/buyer/orders', { replace: true });
+        navigate("/buyer/orders", { replace: true });
       }
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? err?.message ?? 'Thanh toán thất bại.';
+      const msg =
+        err?.response?.data?.message ?? err?.message ?? "Thanh toán thất bại.";
       setError(msg);
     } finally {
       setIsProcessing(false);
     }
   };
 
-
   return (
     <div className="max-w-[1100px] mx-auto px-4 py-10">
-      <h1 className="text-3xl font-black text-gray-900 mb-8 uppercase tracking-tight">Thanh toán</h1>
+      <h1 className="text-3xl font-black text-gray-900 mb-8 uppercase tracking-tight">
+        Thanh toán
+      </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ── Left: Form ── */}
         <div className="lg:col-span-2 space-y-6">
-
           {/* Delivery Address */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900 mb-4">
@@ -88,7 +101,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ addresses, listingIds }) => 
                 <AlertCircle size={40} className="text-gray-300" />
                 <p>Chưa có địa chỉ. Vui lòng thêm địa chỉ trong hồ sơ.</p>
                 <button
-                  onClick={() => navigate('/buyer/dashboard?tab=addresses')}
+                  onClick={() => navigate("/buyer/dashboard?tab=addresses")}
                   className="text-green-600 font-bold hover:underline"
                 >
                   Thêm địa chỉ →
@@ -100,7 +113,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ addresses, listingIds }) => 
                   <label
                     key={address.id}
                     className={`flex items-start gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all
-                      ${selectedAddressId === address.id ? 'border-green-600 bg-green-50' : 'border-gray-100 hover:border-green-200'}`}
+                      ${selectedAddressId === address.id ? "border-green-600 bg-green-50" : "border-gray-100 hover:border-green-200"}`}
                   >
                     <input
                       type="radio"
@@ -112,16 +125,21 @@ export const Checkout: React.FC<CheckoutProps> = ({ addresses, listingIds }) => 
                     />
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-gray-900">{address.fullName}</span>
+                        <span className="font-bold text-gray-900">
+                          {address.fullName}
+                        </span>
                         {address.isDefault && (
                           <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
                             Mặc định
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-gray-500 mt-0.5">{address.phone}</p>
+                      <p className="text-sm text-gray-500 mt-0.5">
+                        {address.phone}
+                      </p>
                       <p className="text-sm text-gray-500">
-                        {address.detail}, {address.ward}, {address.district}, {address.province}
+                        {address.detail}, {address.ward}, {address.district},{" "}
+                        {address.province}
                       </p>
                     </div>
                   </label>
@@ -133,17 +151,24 @@ export const Checkout: React.FC<CheckoutProps> = ({ addresses, listingIds }) => 
           {/* Shipping Method */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900 mb-4">
-              <Package size={20} className="text-green-600" /> Phương thức giao hàng
+              <Package size={20} className="text-green-600" /> Phương thức giao
+              hàng
             </h2>
             <div className="p-4 border-2 border-green-600 rounded-xl bg-green-50">
-              <div className="font-bold text-gray-900">Giao hàng tiêu chuẩn</div>
-              <div className="text-sm text-gray-500 mt-0.5">3–5 ngày làm việc • Miễn phí</div>
+              <div className="font-bold text-gray-900">
+                Giao hàng tiêu chuẩn
+              </div>
+              <div className="text-sm text-gray-500 mt-0.5">
+                3–5 ngày làm việc • Miễn phí
+              </div>
             </div>
           </div>
 
           {/* Notes */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-3">Ghi chú (tuỳ chọn)</h2>
+            <h2 className="text-lg font-bold text-gray-900 mb-3">
+              Ghi chú (tuỳ chọn)
+            </h2>
             <textarea
               placeholder="Hướng dẫn đặc biệt cho người bán..."
               value={notes}
@@ -157,7 +182,8 @@ export const Checkout: React.FC<CheckoutProps> = ({ addresses, listingIds }) => 
         {/* ── Right: Order Summary ── */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 h-fit sticky top-28">
           <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <ShoppingCart size={20} className="text-green-600" /> Tóm tắt đơn hàng
+            <ShoppingCart size={20} className="text-green-600" /> Tóm tắt đơn
+            hàng
           </h2>
 
           {/* Item list */}
@@ -165,15 +191,23 @@ export const Checkout: React.FC<CheckoutProps> = ({ addresses, listingIds }) => 
             {displayItems.map((item) => (
               <div key={item.id} className="flex items-center gap-3">
                 {item.image ? (
-                  <img src={item.image} alt={item.name} className="w-14 h-14 object-cover rounded-lg border border-gray-100" />
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="w-14 h-14 object-cover rounded-lg border border-gray-100"
+                  />
                 ) : (
-                  <div className="w-14 h-14 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-xl">🚲</div>
+                  <div className="w-14 h-14 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-xl">
+                    🚲
+                  </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-gray-900 text-sm line-clamp-2">{item.name}</p>
+                  <p className="font-bold text-gray-900 text-sm line-clamp-2">
+                    {item.name}
+                  </p>
                   {item.price > 0 && (
                     <p className="text-green-600 font-bold text-sm mt-0.5">
-                      {item.price.toLocaleString('vi-VN')} ₫
+                      {item.price.toLocaleString("vi-VN")} ₫
                     </p>
                   )}
                 </div>
@@ -198,7 +232,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ addresses, listingIds }) => 
               <div className="flex justify-between items-end">
                 <span className="text-gray-600 font-medium">Tổng cộng</span>
                 <span className="text-2xl font-black text-green-600">
-                  {totalPrice.toLocaleString('vi-VN')} ₫
+                  {totalPrice.toLocaleString("vi-VN")} ₫
                 </span>
               </div>
             </>
@@ -214,14 +248,20 @@ export const Checkout: React.FC<CheckoutProps> = ({ addresses, listingIds }) => 
 
           <button
             onClick={handlePayment}
-            disabled={isProcessing || addresses.length === 0 || !selectedAddressId}
+            disabled={
+              isProcessing || addresses.length === 0 || !selectedAddressId
+            }
             className="w-full bg-green-600 text-white py-4 rounded-xl font-black text-base flex items-center justify-center gap-2
               hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
           >
             {isProcessing ? (
-              <><Loader2 size={20} className="animate-spin" /> Đang xử lý...</>
+              <>
+                <Loader2 size={20} className="animate-spin" /> Đang xử lý...
+              </>
             ) : (
-              <><CreditCard size={20} /> Thanh toán ngay</>
+              <>
+                <CreditCard size={20} /> Thanh toán ngay
+              </>
             )}
           </button>
 

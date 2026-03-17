@@ -1,8 +1,8 @@
 // src/services/address.service.ts
-import api from '../api/axiosConfig';
-import { API_ENDPOINTS } from '../config/api';
+import api from "../api/axiosConfig";
+import { API_ENDPOINTS } from "../config/api";
 
-export type BankCode = 'TECHCOMBANK' | 'VIETINBANK' | 'MB_BANK';
+export type BankCode = "TECHCOMBANK" | "VIETINBANK" | "MB_BANK";
 
 export interface Address {
   id: string | number;
@@ -35,9 +35,9 @@ function normalise(a: any): Address {
     fullName: a.nameContact,
     phone: a.phoneContact,
     detail: a.addressLine,
-    province: '',
-    district: '',
-    ward: '',
+    province: "",
+    district: "",
+    ward: "",
   };
 }
 
@@ -52,7 +52,7 @@ export const addressService = {
       }
       return [];
     } catch (error) {
-      console.error('Error fetching addresses:', error);
+      console.error("Error fetching addresses:", error);
       return [];
     }
   },
@@ -63,18 +63,21 @@ export const addressService = {
       if (response.data?.code === 1000) return normalise(response.data.result);
       return null;
     } catch (error) {
-      console.error('Error adding address:', error);
+      console.error("Error adding address:", error);
       throw error;
     }
   },
 
-  updateAddress: async (id: string | number, data: Partial<AddressPayload>): Promise<Address | null> => {
+  updateAddress: async (
+    id: string | number,
+    data: Partial<AddressPayload>,
+  ): Promise<Address | null> => {
     try {
       const response = await api.put(API_ENDPOINTS.ADDRESS_BY_ID(id), data);
       if (response.data?.code === 1000) return normalise(response.data.result);
       return null;
     } catch (error) {
-      console.error('Error updating address:', error);
+      console.error("Error updating address:", error);
       throw error;
     }
   },
@@ -84,7 +87,7 @@ export const addressService = {
       const response = await api.delete(API_ENDPOINTS.ADDRESS_BY_ID(id));
       return response.data?.code === 1000;
     } catch (error) {
-      console.error('Error deleting address:', error);
+      console.error("Error deleting address:", error);
       return false;
     }
   },

@@ -22,7 +22,9 @@ export default function ScheduleInspectionPage() {
   const [error, setError] = useState("");
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
-  const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
+  const [selectedAddressId, setSelectedAddressId] = useState<
+    string | number | null
+  >(null);
 
   const selectedAddress = useMemo(
     () => addresses.find((address) => address.id === selectedAddressId) ?? null,
@@ -240,7 +242,7 @@ export default function ScheduleInspectionPage() {
                         ))}
                       </select>
 
-                        {selectedAddress && (
+                      {selectedAddress && (
                         <div className="space-y-1 text-sm text-slate-700">
                           <p>
                             <span className="font-semibold">Tên:</span>{" "}
@@ -278,7 +280,9 @@ export default function ScheduleInspectionPage() {
                     <option value="">-- Chọn địa điểm --</option>
                     {locations.map((location) => (
                       <option key={location.id} value={location.id}>
-                        {location.addressLine || location.contactName || location.id}
+                        {location.addressLine ||
+                          location.contactName ||
+                          location.id}
                       </option>
                     ))}
                   </select>

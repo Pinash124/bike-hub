@@ -1,11 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { ShoppingCart, Package, MapPin, LogOut, Trash2, Bike, ChevronRight } from 'lucide-react';
-import { addressService, type Address } from '../../services/address.service';
-import { listingService } from '../../services/listing.service';
-import { useCart } from '../../contexts/CartContext';
-import { useNavigate } from 'react-router-dom';
-
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../../contexts/AuthContext";
+import {
+  ShoppingCart,
+  Package,
+  MapPin,
+  LogOut,
+  Trash2,
+  Bike,
+  ChevronRight,
+} from "lucide-react";
+import { addressService, type Address } from "../../services/address.service";
+import { useCart } from "../../contexts/CartContext";
+import { useNavigate } from "react-router-dom";
 
 interface Tab {
   id: string;
@@ -15,14 +21,17 @@ interface Tab {
 
 export const BuyerDashboard: React.FC = () => {
   const { user, logout, isLoggingOut } = useAuth();
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState("home");
   const navigate = useNavigate();
 
   // Đọc tham số tab từ URL khi load trang
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const tabParam = params.get('tab');
-    if (tabParam && ['home', 'cart', 'orders', 'addresses', 'profile'].includes(tabParam)) {
+    const tabParam = params.get("tab");
+    if (
+      tabParam &&
+      ["home", "cart", "orders", "addresses", "profile"].includes(tabParam)
+    ) {
       setActiveTab(tabParam);
     }
   }, []);
@@ -35,11 +44,11 @@ export const BuyerDashboard: React.FC = () => {
   };
 
   const tabs: Tab[] = [
-    { id: 'home', label: 'Home', icon: '🏠' },
-    { id: 'cart', label: 'Cart', icon: <ShoppingCart size={20} /> },
-    { id: 'orders', label: 'Orders', icon: <Package size={20} /> },
-    { id: 'addresses', label: 'Addresses', icon: <MapPin size={20} /> },
-    { id: 'profile', label: 'Profile', icon: '👤' },
+    { id: "home", label: "Home", icon: "🏠" },
+    { id: "cart", label: "Cart", icon: <ShoppingCart size={20} /> },
+    { id: "orders", label: "Orders", icon: <Package size={20} /> },
+    { id: "addresses", label: "Addresses", icon: <MapPin size={20} /> },
+    { id: "profile", label: "Profile", icon: "👤" },
   ];
 
   const handleLogout = () => {
@@ -47,9 +56,11 @@ export const BuyerDashboard: React.FC = () => {
   };
 
   return (
-    <div className={`mx-auto ${activeTab === 'cart' ? 'max-w-7xl' : 'max-w-[1200px] p-6'}`}>
+    <div
+      className={`mx-auto ${activeTab === "cart" ? "max-w-7xl" : "max-w-[1200px] p-6"}`}
+    >
       {/* Ẩn Header & Tabs nếu đang xem giỏ hàng */}
-      {activeTab !== 'cart' && (
+      {activeTab !== "cart" && (
         <>
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -78,7 +89,11 @@ export const BuyerDashboard: React.FC = () => {
           {/* Navigation Tabs */}
           <div className="flex gap-2 mb-6">
             {tabs.map((tab) => (
-              <button key={tab.id} className={`flex items-center gap-2 px-3 py-2 rounded ${activeTab === tab.id ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700'}`} onClick={() => handleTabChange(tab.id)}>
+              <button
+                key={tab.id}
+                className={`flex items-center gap-2 px-3 py-2 rounded ${activeTab === tab.id ? "bg-green-600 text-white" : "bg-gray-100 text-gray-700"}`}
+                onClick={() => handleTabChange(tab.id)}
+              >
                 {tab.icon}
                 <span className="text-sm">{tab.label}</span>
               </button>
@@ -89,11 +104,11 @@ export const BuyerDashboard: React.FC = () => {
 
       {/* Content Area */}
       <div>
-        {activeTab === 'home' && <HomeTab onTabChange={handleTabChange} />}
-        {activeTab === 'cart' && <CartTab />}
-        {activeTab === 'orders' && <OrdersTab />}
-        {activeTab === 'addresses' && <AddressesTab />}
-        {activeTab === 'profile' && <ProfileTab user={user} />}
+        {activeTab === "home" && <HomeTab onTabChange={handleTabChange} />}
+        {activeTab === "cart" && <CartTab />}
+        {activeTab === "orders" && <OrdersTab />}
+        {activeTab === "addresses" && <AddressesTab />}
+        {activeTab === "profile" && <ProfileTab user={user} />}
       </div>
     </div>
   );
@@ -115,11 +130,13 @@ const HomeTab: React.FC<HomeTabProps> = ({ onTabChange }) => {
       try {
         const orders = await orderService.getMyOrders();
         // Filter based on API status
-        const active = orders.filter(o => ['PENDING', 'CONFIRMED', 'SHIPPING'].includes(o.status)).length;
-        const completed = orders.filter(o => o.status === 'COMPLETED').length;
+        const active = orders.filter((o) =>
+          ["PENDING", "CONFIRMED", "SHIPPING"].includes(o.status),
+        ).length;
+        const completed = orders.filter((o) => o.status === "COMPLETED").length;
         setOrderStats({ active, completed });
       } catch (error) {
-        console.error('Error fetching order stats:', error);
+        console.error("Error fetching order stats:", error);
       } finally {
         setIsLoading(false);
       }
@@ -131,20 +148,33 @@ const HomeTab: React.FC<HomeTabProps> = ({ onTabChange }) => {
     <div>
       <h2 className="text-lg font-semibold mb-4">Dashboard Overview</h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 bg-white rounded shadow text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => onTabChange('cart')}>
+        <div
+          className="p-4 bg-white rounded shadow text-center cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => onTabChange("cart")}
+        >
           <div className="text-3xl">🛒</div>
           <h3 className="mt-2 font-medium">Items in Cart</h3>
           <p className="text-xl font-bold">{items.length}</p>
         </div>
-        <div className="p-4 bg-white rounded shadow text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => onTabChange('orders')}>
+        <div
+          className="p-4 bg-white rounded shadow text-center cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => onTabChange("orders")}
+        >
           <div className="text-3xl">📦</div>
           <h3 className="mt-2 font-medium">Active Orders</h3>
-          <p className="text-xl font-bold">{isLoading ? '...' : orderStats.active}</p>
+          <p className="text-xl font-bold">
+            {isLoading ? "..." : orderStats.active}
+          </p>
         </div>
-        <div className="p-4 bg-white rounded shadow text-center cursor-pointer hover:shadow-md transition-shadow" onClick={() => onTabChange('orders')}>
+        <div
+          className="p-4 bg-white rounded shadow text-center cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => onTabChange("orders")}
+        >
           <div className="text-3xl">✅</div>
           <h3 className="mt-2 font-medium">Completed Orders</h3>
-          <p className="text-xl font-bold">{isLoading ? '...' : orderStats.completed}</p>
+          <p className="text-xl font-bold">
+            {isLoading ? "..." : orderStats.completed}
+          </p>
         </div>
         <div className="p-4 bg-white rounded shadow text-center">
           <div className="text-3xl">⭐</div>
@@ -156,10 +186,30 @@ const HomeTab: React.FC<HomeTabProps> = ({ onTabChange }) => {
       <div className="mt-6">
         <h3 className="text-lg font-semibold mb-3">Quick Links</h3>
         <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => navigate('/search')} className="p-3 bg-gray-100 rounded text-center hover:bg-gray-200 transition-colors font-medium">🔍 Browse Bikes</button>
-          <button onClick={() => onTabChange('cart')} className="p-3 bg-gray-100 rounded text-center hover:bg-gray-200 transition-colors font-medium">🛒 View Cart</button>
-          <button onClick={() => onTabChange('orders')} className="p-3 bg-gray-100 rounded text-center hover:bg-gray-200 transition-colors font-medium">📦 Track Orders</button>
-          <button onClick={() => onTabChange('addresses')} className="p-3 bg-gray-100 rounded text-center hover:bg-gray-200 transition-colors font-medium">📍 Manage Addresses</button>
+          <button
+            onClick={() => navigate("/search")}
+            className="p-3 bg-gray-100 rounded text-center hover:bg-gray-200 transition-colors font-medium"
+          >
+            🔍 Browse Bikes
+          </button>
+          <button
+            onClick={() => onTabChange("cart")}
+            className="p-3 bg-gray-100 rounded text-center hover:bg-gray-200 transition-colors font-medium"
+          >
+            🛒 View Cart
+          </button>
+          <button
+            onClick={() => onTabChange("orders")}
+            className="p-3 bg-gray-100 rounded text-center hover:bg-gray-200 transition-colors font-medium"
+          >
+            📦 Track Orders
+          </button>
+          <button
+            onClick={() => onTabChange("addresses")}
+            className="p-3 bg-gray-100 rounded text-center hover:bg-gray-200 transition-colors font-medium"
+          >
+            📍 Manage Addresses
+          </button>
         </div>
       </div>
     </div>
@@ -191,12 +241,15 @@ const CartTab: React.FC = () => {
           <div className="w-32 h-32 bg-gradient-to-br from-green-50 to-emerald-50 rounded-full flex items-center justify-center mb-8 shadow-inner">
             <ShoppingCart size={48} className="text-green-400" />
           </div>
-          <h3 className="text-2xl font-black text-slate-800 mb-4 tracking-tight">Chưa có sản phẩm nào!</h3>
+          <h3 className="text-2xl font-black text-slate-800 mb-4 tracking-tight">
+            Chưa có sản phẩm nào!
+          </h3>
           <p className="text-slate-500 mb-10 max-w-sm text-center leading-relaxed">
-            Giỏ hàng của bạn đang trống rỗng. Hãy khám phá những mẫu xe đạp thể thao tuyệt đẹp trên BikeHub ngay hôm nay.
+            Giỏ hàng của bạn đang trống rỗng. Hãy khám phá những mẫu xe đạp thể
+            thao tuyệt đẹp trên BikeHub ngay hôm nay.
           </p>
           <button
-            onClick={() => navigate('/search')}
+            onClick={() => navigate("/search")}
             className="px-10 py-4 bg-slate-900 hover:bg-black text-white font-bold uppercase tracking-widest text-xs rounded-full shadow-2xl shadow-slate-900/30 transition-all active:scale-95"
           >
             Khám phá bộ sưu tập
@@ -207,16 +260,27 @@ const CartTab: React.FC = () => {
           {/* Left Column - Form */}
           <div className="lg:col-span-7 xl:col-span-8 space-y-6">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <span className="font-bold text-slate-800 uppercase tracking-widest text-xs">Sản phẩm</span>
-              <span className="font-bold text-slate-800 uppercase tracking-widest text-xs hidden sm:block">Số lượng</span>
+              <span className="font-bold text-slate-800 uppercase tracking-widest text-xs">
+                Sản phẩm
+              </span>
+              <span className="font-bold text-slate-800 uppercase tracking-widest text-xs hidden sm:block">
+                Số lượng
+              </span>
             </div>
 
             {items.map((item) => (
-              <div key={item.productId} className="bg-white rounded-3xl p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] ring-1 ring-slate-100/50 flex flex-col sm:flex-row gap-6 items-center group hover:ring-green-200 transition-all duration-300">
+              <div
+                key={item.productId}
+                className="bg-white rounded-3xl p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] ring-1 ring-slate-100/50 flex flex-col sm:flex-row gap-6 items-center group hover:ring-green-200 transition-all duration-300"
+              >
                 {/* Image */}
                 <div className="w-full sm:w-36 h-36 rounded-2xl bg-green-50/50 overflow-hidden shrink-0 flex items-center justify-center relative shadow-inner">
                   {item.image ? (
-                    <img src={item.image} alt={item.productName} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                    <img
+                      src={item.image}
+                      alt={item.productName}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                    />
                   ) : (
                     <Bike size={40} className="text-green-200" />
                   )}
@@ -231,7 +295,9 @@ const CartTab: React.FC = () => {
                         {item.productName}
                       </h3>
                       <p className="text-sm text-slate-500 mt-2 flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-600">👤</span>
+                        <span className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] text-slate-600">
+                          👤
+                        </span>
                         {item.sellerName}
                       </p>
                     </div>
@@ -246,13 +312,15 @@ const CartTab: React.FC = () => {
 
                   <div className="flex items-center justify-between mt-6">
                     <span className="font-black text-green-600 text-xl tracking-tight">
-                      {item.price.toLocaleString('vi-VN')} ₫
+                      {item.price.toLocaleString("vi-VN")} ₫
                     </span>
 
                     {/* Quantity Control */}
                     <div className="flex items-center gap-1 bg-slate-50 rounded-xl p-1.5 ring-1 ring-slate-200/50">
                       <button
-                        onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                        onClick={() =>
+                          updateQuantity(item.productId, item.quantity - 1)
+                        }
                         className="w-9 h-9 flex items-center justify-center rounded-lg bg-white text-slate-600 shadow-sm hover:text-green-600 hover:border-green-200 font-medium transition-all"
                       >
                         -
@@ -261,7 +329,9 @@ const CartTab: React.FC = () => {
                         {item.quantity}
                       </span>
                       <button
-                        onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                        onClick={() =>
+                          updateQuantity(item.productId, item.quantity + 1)
+                        }
                         className="w-9 h-9 flex items-center justify-center rounded-lg bg-white text-slate-600 shadow-sm hover:text-green-600 hover:border-green-200 font-medium transition-all"
                       >
                         +
@@ -279,16 +349,25 @@ const CartTab: React.FC = () => {
               {/* Decorative elements */}
               <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
 
-              <h3 className="text-xl font-black mb-8 relative z-10">Tổng Quan Đơn Hàng</h3>
+              <h3 className="text-xl font-black mb-8 relative z-10">
+                Tổng Quan Đơn Hàng
+              </h3>
 
               <div className="space-y-5 mb-8 text-sm relative z-10">
                 <div className="flex justify-between items-center text-slate-300">
-                  <span>Tạm tính ({items.reduce((acc, i) => acc + i.quantity, 0)} sản phẩm)</span>
-                  <span className="font-bold text-white tracking-wide">{totalPrice.toLocaleString('vi-VN')} ₫</span>
+                  <span>
+                    Tạm tính ({items.reduce((acc, i) => acc + i.quantity, 0)}{" "}
+                    sản phẩm)
+                  </span>
+                  <span className="font-bold text-white tracking-wide">
+                    {totalPrice.toLocaleString("vi-VN")} ₫
+                  </span>
                 </div>
                 <div className="flex justify-between items-center text-slate-300">
                   <span>Phí dịch vụ</span>
-                  <span className="px-2 py-1 bg-green-500/20 text-green-300 font-bold text-[10px] rounded-md uppercase tracking-widest">Miễn phí</span>
+                  <span className="px-2 py-1 bg-green-500/20 text-green-300 font-bold text-[10px] rounded-md uppercase tracking-widest">
+                    Miễn phí
+                  </span>
                 </div>
               </div>
 
@@ -297,23 +376,30 @@ const CartTab: React.FC = () => {
                   <span className="text-slate-300 font-medium">Tổng cộng</span>
                   <div className="text-right">
                     <span className="text-3xl font-black text-green-500 tracking-tighter">
-                      {totalPrice.toLocaleString('vi-VN')}
+                      {totalPrice.toLocaleString("vi-VN")}
                     </span>
                     <span className="text-green-500 ml-1 font-bold">₫</span>
                   </div>
                 </div>
-                <p className="text-right text-[11px] text-slate-500 mt-1 uppercase tracking-wider">Đã bao gồm thuế VAT</p>
+                <p className="text-right text-[11px] text-slate-500 mt-1 uppercase tracking-wider">
+                  Đã bao gồm thuế VAT
+                </p>
               </div>
 
               <button
-                onClick={() => navigate('/buyer/checkout', {
-                  state: { listingIds: items.map(i => i.productId) }
-                })}
+                onClick={() =>
+                  navigate("/buyer/checkout", {
+                    state: { listingIds: items.map((i) => i.productId) },
+                  })
+                }
                 disabled={items.length === 0}
                 className="w-full flex items-center justify-center gap-3 py-4.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs transition-all shadow-[0_0_40px_rgba(34,197,94,0.3)] active:scale-95 relative z-10 group overflow-hidden"
               >
                 <span className="relative z-10">Thanh Toán Ngay</span>
-                <ChevronRight size={18} className="relative z-10 group-hover:translate-x-1 transition-transform" />
+                <ChevronRight
+                  size={18}
+                  className="relative z-10 group-hover:translate-x-1 transition-transform"
+                />
               </button>
             </div>
           </div>
@@ -324,9 +410,9 @@ const CartTab: React.FC = () => {
 };
 
 // Orders Tab Component
-import { orderService } from '../../services/order.service';
-import { OrderTracking, type Order as UIOder } from './Orders/OrderTracking';
-import type { Order as APIOrder } from '../../services/order.service';
+import { orderService } from "../../services/order.service";
+import { OrderTracking, type Order as UIOder } from "./Orders/OrderTracking";
+import type { Order as APIOrder } from "../../services/order.service";
 
 const OrdersTab: React.FC = () => {
   const [orders, setOrders] = useState<UIOder[]>([]);
@@ -341,57 +427,65 @@ const OrdersTab: React.FC = () => {
     try {
       const data = await orderService.getMyOrders();
 
-      // Fetch listing details for each order to get real names and images
-      const mappedOrders: UIOder[] = await Promise.all(data.map(async (apiOrder: APIOrder) => {
-        let productName = `Order #${apiOrder.id.substring(0, 8).toUpperCase()}`;
-        let productImage = '';
-
-        if (apiOrder.listingId) {
-          try {
-            const listing = await listingService.getListingById(apiOrder.listingId);
-            if (listing) {
-              productName = listing.title;
-              productImage = listing.images?.[0]?.secureUrl || '';
-            }
-          } catch (err) {
-            console.error(`Failed to fetch listing ${apiOrder.listingId}`, err);
-          }
-        }
+      const mappedOrders: UIOder[] = data.map((apiOrder: APIOrder) => {
+        const listing = apiOrder.listing;
+        const productName =
+          listing?.title ||
+          `Order #${apiOrder.id.substring(0, 8).toUpperCase()}`;
+        const productImage = listing?.images?.[0]?.secureUrl || "";
+        const total =
+          typeof apiOrder.totalPrice === "number"
+            ? apiOrder.totalPrice
+            : listing?.price || 0;
 
         return {
           id: apiOrder.id,
           items: [
             {
               productName,
-              price: apiOrder.totalPrice,
+              price: total,
               quantity: 1,
-              image: productImage
-            }
+              image: productImage,
+            },
           ],
-          status: statusMap(apiOrder.status),
-          totalAmount: apiOrder.totalPrice,
-          deliveryAddress: apiOrder.note || 'Delivery Address',
+          status: statusMap(apiOrder.orderStatus || apiOrder.status),
+          totalAmount: total,
+          deliveryAddress: "Delivery Address",
           createdAt: apiOrder.createdAt,
-          estimatedDelivery: new Date(new Date(apiOrder.createdAt).getTime() + 5 * 24 * 60 * 60 * 1000).toISOString()
+          estimatedDelivery: new Date(
+            new Date(apiOrder.createdAt).getTime() + 5 * 24 * 60 * 60 * 1000,
+          ).toISOString(),
         };
-      }));
+      });
 
       setOrders(mappedOrders);
     } catch (error) {
-      console.error('Failed to fetch user orders', error);
+      console.error("Failed to fetch user orders", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const statusMap = (apiStatus: string): UIOder['status'] => {
-    switch (apiStatus) {
-      case 'PENDING': return 'processing';
-      case 'CONFIRMED': return 'pending_confirmation';
-      case 'SHIPPING': return 'shipping';
-      case 'COMPLETED': return 'completed';
-      case 'CANCELLED': return 'cancelled';
-      default: return 'processing';
+  const statusMap = (apiStatus: string): UIOder["status"] => {
+    switch ((apiStatus || "").toUpperCase()) {
+      case "PENDING":
+      case "PAID":
+        return "processing";
+      case "IN_TRANSIT":
+      case "SHIPPING":
+        return "shipping";
+      case "DELIVERED":
+      case "CONFIRMED":
+        return "pending_confirmation";
+      case "COMPLETE":
+      case "COMPLETED":
+        return "completed";
+      case "REFUND":
+        return "refunded";
+      case "EXPIRED":
+      case "CANCELLED":
+      default:
+        return "cancelled";
     }
   };
 
@@ -414,9 +508,9 @@ const AddressesTab: React.FC = () => {
 
   // Form State — matches Swagger AddressCreationRequest
   const [formData, setFormData] = useState({
-    nameContact: '',
-    phoneContact: '',
-    addressLine: '',
+    nameContact: "",
+    phoneContact: "",
+    addressLine: "",
   });
 
   useEffect(() => {
@@ -426,46 +520,51 @@ const AddressesTab: React.FC = () => {
   const fetchAddresses = async () => {
     setIsLoading(true);
     // Dynamic import to avoid circular dependencies if any, though here it's fine.
-    // Importing addressService at top level is better. 
+    // Importing addressService at top level is better.
     // Assuming addressService is imported.
     try {
       const data = await addressService.getMyAddresses();
       setAddresses(data);
     } catch (error) {
-      console.error('Failed to fetch addresses');
+      console.error("Failed to fetch addresses");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async () => {
     try {
       await addressService.addAddress(formData);
       setShowForm(false);
-      setFormData({ nameContact: '', phoneContact: '', addressLine: '' });
+      setFormData({ nameContact: "", phoneContact: "", addressLine: "" });
       fetchAddresses();
     } catch (error) {
-      alert('Thêm địa chỉ thất bại. Vui lòng thử lại.');
+      alert("Thêm địa chỉ thất bại. Vui lòng thử lại.");
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this address?')) return;
+    if (!window.confirm("Are you sure you want to delete this address?"))
+      return;
     try {
       const success = await addressService.deleteAddress(id);
       if (success) {
         fetchAddresses(); // Refresh list
       } else {
-        alert('Failed to delete address');
+        alert("Failed to delete address");
       }
     } catch (error) {
-      console.error('Delete address error:', error);
-      alert('Failed to delete address');
+      console.error("Delete address error:", error);
+      alert("Failed to delete address");
     }
   };
 
@@ -473,7 +572,12 @@ const AddressesTab: React.FC = () => {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">Saved Addresses</h2>
-        <button className="bg-green-600 text-white px-3 py-2 rounded" onClick={() => setShowForm(!showForm)}>{showForm ? '✕ Cancel' : '+ Add Address'}</button>
+        <button
+          className="bg-green-600 text-white px-3 py-2 rounded"
+          onClick={() => setShowForm(!showForm)}
+        >
+          {showForm ? "✕ Cancel" : "+ Add Address"}
+        </button>
       </div>
 
       {showForm && (
@@ -481,32 +585,79 @@ const AddressesTab: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium">Tên liên hệ</label>
-              <input name="nameContact" value={formData.nameContact} onChange={handleInputChange} className="mt-1 w-full border rounded p-2" type="text" placeholder="Họ và tên" />
+              <input
+                name="nameContact"
+                value={formData.nameContact}
+                onChange={handleInputChange}
+                className="mt-1 w-full border rounded p-2"
+                type="text"
+                placeholder="Họ và tên"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium">Số điện thoại</label>
-              <input name="phoneContact" value={formData.phoneContact} onChange={handleInputChange} className="mt-1 w-full border rounded p-2" type="tel" placeholder="Số điện thoại" />
+              <input
+                name="phoneContact"
+                value={formData.phoneContact}
+                onChange={handleInputChange}
+                className="mt-1 w-full border rounded p-2"
+                type="tel"
+                placeholder="Số điện thoại"
+              />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium">Địa chỉ đầy đủ</label>
-              <textarea name="addressLine" value={formData.addressLine} onChange={handleInputChange} className="mt-1 w-full border rounded p-2" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành" rows={2}></textarea>
+              <label className="block text-sm font-medium">
+                Địa chỉ đầy đủ
+              </label>
+              <textarea
+                name="addressLine"
+                value={formData.addressLine}
+                onChange={handleInputChange}
+                className="mt-1 w-full border rounded p-2"
+                placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành"
+                rows={2}
+              ></textarea>
             </div>
           </div>
 
           <div className="mt-4 flex gap-2">
-            <button onClick={handleSubmit} className="bg-green-600 text-white px-4 py-2 rounded">Save Address</button>
-            <button className="border px-4 py-2 rounded" onClick={() => setShowForm(false)}>Cancel</button>
+            <button
+              onClick={handleSubmit}
+              className="bg-green-600 text-white px-4 py-2 rounded"
+            >
+              Save Address
+            </button>
+            <button
+              className="border px-4 py-2 rounded"
+              onClick={() => setShowForm(false)}
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}
 
       <div className="space-y-4">
-        {isLoading ? <p>Đang tải địa chỉ...</p> : addresses.length === 0 ? <p className="text-gray-600">Chưa có địa chỉ nào</p> : (
+        {isLoading ? (
+          <p>Đang tải địa chỉ...</p>
+        ) : addresses.length === 0 ? (
+          <p className="text-gray-600">Chưa có địa chỉ nào</p>
+        ) : (
           addresses.map((addr: any) => (
-            <div key={addr.id} className="bg-white p-4 rounded shadow border border-gray-100 flex justify-between items-center">
+            <div
+              key={addr.id}
+              className="bg-white p-4 rounded shadow border border-gray-100 flex justify-between items-center"
+            >
               <div>
-                <p className="font-bold">{addr.nameContact || addr.fullName} <span className="text-gray-500 font-normal">| {addr.phoneContact || addr.phone}</span></p>
-                <p className="text-sm text-gray-600">{addr.addressLine || addr.detail}</p>
+                <p className="font-bold">
+                  {addr.nameContact || addr.fullName}{" "}
+                  <span className="text-gray-500 font-normal">
+                    | {addr.phoneContact || addr.phone}
+                  </span>
+                </p>
+                <p className="text-sm text-gray-600">
+                  {addr.addressLine || addr.detail}
+                </p>
               </div>
               <button
                 onClick={() => handleDelete(addr.id)}
@@ -534,7 +685,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div className="bg-white p-4 rounded shadow">
           <label className="block text-sm text-gray-500">Full Name</label>
-          <p className="font-medium">{user?.name || 'Not set'}</p>
+          <p className="font-medium">{user?.name || "Not set"}</p>
         </div>
         <div className="bg-white p-4 rounded shadow">
           <label className="block text-sm text-gray-500">Email</label>
@@ -542,20 +693,28 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ user }) => {
         </div>
         <div className="bg-white p-4 rounded shadow">
           <label className="block text-sm text-gray-500">Phone</label>
-          <p className="font-medium">{user?.phone || 'Not set'}</p>
+          <p className="font-medium">{user?.phone || "Not set"}</p>
         </div>
         <div className="bg-white p-4 rounded shadow">
           <label className="block text-sm text-gray-500">Member Since</label>
-          <p className="font-medium">{new Date(user?.createdAt).toLocaleDateString()}</p>
+          <p className="font-medium">
+            {new Date(user?.createdAt).toLocaleDateString()}
+          </p>
         </div>
-        {['seller', 'buyer'].includes(user?.role) && (
+        {["seller", "buyer"].includes(user?.role) && (
           <div className="bg-white p-4 rounded shadow md:col-span-2">
             <label className="block text-sm text-gray-500">KYC Status</label>
-            <p className={`mt-2 ${user?.isKYCVerified ? 'text-green-600' : 'text-yellow-600'}`}>{user?.isKYCVerified ? '✓ Verified' : '⚠ Not Verified'}</p>
+            <p
+              className={`mt-2 ${user?.isKYCVerified ? "text-green-600" : "text-yellow-600"}`}
+            >
+              {user?.isKYCVerified ? "✓ Verified" : "⚠ Not Verified"}
+            </p>
           </div>
         )}
       </div>
-      <button className="bg-red-500 text-white px-4 py-2 rounded">Change Password</button>
+      <button className="bg-red-500 text-white px-4 py-2 rounded">
+        Change Password
+      </button>
     </div>
   );
 };
