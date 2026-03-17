@@ -15,7 +15,11 @@ import {
   AlertTriangle,
   Check,
   Save,
-  Edit2
+  Edit2,
+  Lock,
+  Eye,
+  EyeOff,
+  X
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { 
@@ -23,6 +27,8 @@ import {
   type Address, 
   type AddressPayload 
 } from "../services/address.service";
+import api from "../api/axiosConfig";
+import { API_ENDPOINTS } from "../config/api";
 
 const makeEmptyContact = (): AddressPayload => ({
   nameContact: "",
@@ -60,6 +66,42 @@ export default function ProfilePage() {
   const [contactSuccess, setContactSuccess] = useState("")
   const [editingContactId, setEditingContactId] = useState<number | null>(null)
   const [isSavingContact, setIsSavingContact] = useState(false)
+
+  // Change Password
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
+  const [showPw, setShowPw] = useState(false)
+  const [pwError, setPwError] = useState('')
+  const [pwSuccess, setPwSuccess] = useState('')
+  const [isSavingPw, setIsSavingPw] = useState(false)
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setPwError('')
+    setPwSuccess('')
+    if (pwForm.newPassword !== pwForm.confirmPassword) {
+      setPwError('Mật khẩu xác nhận không khớp.')
+      return
+    }
+    if (pwForm.newPassword.length < 6) {
+      setPwError('Mật khẩu mới phải có ít nhất 6 ký tự.')
+      return
+    }
+    setIsSavingPw(true)
+    try {
+      await api.put(API_ENDPOINTS.USER_CHANGE_PASSWORD, {
+        currentPassword: pwForm.currentPassword,
+        newPassword: pwForm.newPassword
+      })
+      setPwSuccess('Đổi mật khẩu thành công!')
+      setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+      setTimeout(() => { setShowPasswordModal(false); setPwSuccess('') }, 2000)
+    } catch (err: any) {
+      setPwError(err?.response?.data?.message || 'Đổi mật khẩu thất bại. Kiểm tra lại mật khẩu hiện tại.')
+    } finally {
+      setIsSavingPw(false)
+    }
+  }
 
   const isSellerOrBuyer = useMemo(
     () => !!user && ["seller", "buyer"].includes(user.role),
@@ -790,13 +832,86 @@ export default function ProfilePage() {
                 <ShieldCheck size={20} className="text-slate-600" />
                 Bảo mật tài khoản
               </h2>
-              <button className="w-full rounded-xl border-2 border-slate-200 py-4 text-sm font-semibold text-slate-700 transition-all hover:border-green-500 hover:bg-green-50 hover:text-green-700 hover:shadow-sm hover:shadow-green-500/10">
-                Đổi mật khẩu
+              <button
+                onClick={() => setShowPasswordModal(true)}
+                className="w-full rounded-xl border-2 border-slate-200 py-4 text-sm font-semibold text-slate-700 transition-all hover:border-green-500 hover:bg-green-50 hover:text-green-700"
+              >
+                🔒 Đổi mật khẩu
               </button>
             </div>
+
           </div>
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-black text-slate-800">Đổi mật khẩu</h3>
+              <button onClick={() => { setShowPasswordModal(false); setPwError(''); setPwSuccess('') }}
+                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100"
+              >
+                <X size={20} className="text-slate-500" />
+              </button>
+            </div>
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <label className="text-sm font-semibold text-slate-700 mb-2 block">Mật khẩu hiện tại</label>
+                <div className="relative">
+                  <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type={showPw ? 'text' : 'password'} required
+                    value={pwForm.currentPassword}
+                    onChange={e => setPwForm(p => ({ ...p, currentPassword: e.target.value }))}
+                    className="w-full pl-10 pr-10 py-3 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-green-500"
+                    placeholder="Mật khẩu hiện tại"
+                  />
+                  <button type="button" onClick={() => setShowPw(p => !p)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                  >
+                    {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-slate-700 mb-2 block">Mật khẩu mới</label>
+                <div className="relative">
+                  <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type={showPw ? 'text' : 'password'} required
+                    value={pwForm.newPassword}
+                    onChange={e => setPwForm(p => ({ ...p, newPassword: e.target.value }))}
+                    className="w-full pl-10 pr-4 py-3 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-green-500"
+                    placeholder="Ít nhất 6 ký tự"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-slate-700 mb-2 block">Xác nhận mật khẩu mới</label>
+                <div className="relative">
+                  <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type={showPw ? 'text' : 'password'} required
+                    value={pwForm.confirmPassword}
+                    onChange={e => setPwForm(p => ({ ...p, confirmPassword: e.target.value }))}
+                    className="w-full pl-10 pr-4 py-3 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-green-500"
+                    placeholder="Nhập lại mật khẩu mới"
+                  />
+                </div>
+              </div>
+              {pwError && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-xl flex items-center gap-2"><AlertTriangle size={14} />{pwError}</p>}
+              {pwSuccess && <p className="text-sm text-green-600 bg-green-50 p-3 rounded-xl flex items-center gap-2"><Check size={14} />{pwSuccess}</p>}
+              <button type="submit" disabled={isSavingPw}
+                className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isSavingPw ? <><RefreshCw size={16} className="animate-spin" />Đang lưu...</> : <><Lock size={16} />Đổi mật khẩu</>}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

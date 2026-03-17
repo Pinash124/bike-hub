@@ -15,15 +15,15 @@ export const API_ENDPOINTS = {
   SEND_OTP: `${API_BASE_URL}/auth/send-otp`,
   VERIFY_OTP: `${API_BASE_URL}/auth/verify-otp`,
   REGISTRATION: `${API_BASE_URL}/auth/registration`,
+  SEND_FORGOT_OTP: `${API_BASE_URL}/auth/send-forgot-otp`,
+  FORGOT_PASSWORD: `${API_BASE_URL}/auth/forgot-password`,
 
   // User
   GET_MY_INFO: `${API_BASE_URL}/user/my-info`,
-  USER_PROFILE: `${API_BASE_URL}/user/profile`,
-  USER_CHANGE_PASSWORD: `${API_BASE_URL}/user/change-password`,
-  USER_FORGOT_PASSWORD: `${API_BASE_URL}/user/forgot-password`,
-  USER_RESET_PASSWORD: `${API_BASE_URL}/user/reset-password`,
-  USER_LIST: `${API_BASE_URL}/user`, // Admin only
-  USER_DETAIL: (id: string) => `${API_BASE_URL}/user/${id}`, // Admin only
+  USER_LIST: `${API_BASE_URL}/user`,
+  USER_DETAIL: (id: string) => `${API_BASE_URL}/user/${id}`,
+  USER_CHANGE_PASSWORD: `${API_BASE_URL}/user/password`,
+  USER_CREATE_INSPECTOR: `${API_BASE_URL}/user/create-inspector`,
 
   // KYC (per Swagger: kyc-controller)
   UPLOAD_KYC: `${API_BASE_URL}/kyc/upload`,      // POST — Seller uploads documents
@@ -38,13 +38,12 @@ export const API_ENDPOINTS = {
 
   // Listing
   LISTING: `${API_BASE_URL}/listing`,
-  LISTING_ALL: `${API_BASE_URL}/listing/all`, // Admin only
+  LISTING_ALL: `${API_BASE_URL}/listing/all`,
   MY_LISTING: `${API_BASE_URL}/listing/my-list`,
   LISTING_DETAIL: (id: string) => `${API_BASE_URL}/listing/${id}`,
-  LISTING_ACTIVATE: (id: string) => `${API_BASE_URL}/listing/${id}/activate`,
-  LISTING_DEACTIVATE: (id: string) => `${API_BASE_URL}/listing/${id}/deactivate`,
-  LISTING_APPROVE: (id: string) => `${API_BASE_URL}/listing/${id}/approve`, // Admin only
-  LISTING_REJECT: (id: string) => `${API_BASE_URL}/listing/${id}/reject`, // Admin only
+  LISTING_SELLER: (id: string) => `${API_BASE_URL}/listing/seller/${id}`,
+  LISTING_APPROVE: (id: string) => `${API_BASE_URL}/listing/${id}/approve`,
+  LISTING_REJECT: (id: string) => `${API_BASE_URL}/listing/${id}/reject`,
 
   // Address (Buyer/Seller — per Swagger)
   ADDRESS: `${API_BASE_URL}/address`,           // POST: add new address
@@ -84,16 +83,15 @@ export const API_ENDPOINTS = {
   // Order
   ORDER: `${API_BASE_URL}/order`,
   ORDER_DETAIL: (id: string) => `${API_BASE_URL}/order/${id}`,
-  ORDER_CREATE: `${API_BASE_URL}/order/create`, // To be deprecated by /payment/order
-  ORDER_CONFIRM: (id: string) => `${API_BASE_URL}/order/${id}/confirm`,
-  ORDER_CANCEL: (id: string) => `${API_BASE_URL}/order/${id}/cancel`,
   ORDER_ACCEPT: (id: string) => `${API_BASE_URL}/order/${id}/accept`,
   ORDER_REJECT: (id: string) => `${API_BASE_URL}/order/${id}/reject`,
   ORDER_DELIVERED: (id: string) => `${API_BASE_URL}/order/${id}/delivered`,
   ORDER_CLAIM: (id: string) => `${API_BASE_URL}/order/${id}/claim`,
-  ORDER_HISTORY: `${API_BASE_URL}/order/history`,
   ORDER_MY: `${API_BASE_URL}/order/my-order`,
-  ORDER_ADMIN_LIST: `${API_BASE_URL}/order/admin`, // Admin only
+
+  // Order Log
+  ORDER_LOG_BY_ORDER: (orderId: string) => `${API_BASE_URL}/order-log/order/${orderId}`,
+  ORDER_LOG_BY_ID: (id: string | number) => `${API_BASE_URL}/order-log/${id}`,
 
   // Payment
   PAYMENT_CREATE_ORDER: `${API_BASE_URL}/payment/order`,         // POST /payment/order

@@ -38,6 +38,7 @@ import DebugPage from "./pages/DebugPage";
 import ChoosePlanPage from "./pages/seller/ChoosePlanPage";
 import PaymentResultPage from "./pages/seller/PaymentResultPage";
 import EditListingPage from "./pages/EditListingPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 
 // --- Contexts & Protection ---
 import { AuthProvider } from "./contexts/AuthContext";
@@ -151,6 +152,10 @@ function App() {
             <Route
               path="/register"
               element={<Register />}
+            />
+            <Route
+              path="/forgot-password"
+              element={<ForgotPasswordPage />}
             />
             {/* Payment Return Callback */}
             <Route

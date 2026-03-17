@@ -195,6 +195,7 @@ export default function LoginModal({
               </label>
               <button
                 type="button"
+                onClick={() => navigate("/forgot-password")}
                 className="text-sm font-medium text-green-600 transition-colors hover:text-green-700"
               >
                 Quên mật khẩu?
