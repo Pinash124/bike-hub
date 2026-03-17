@@ -9,6 +9,8 @@ export interface Address {
     nameContact: string;   // actual backend field name
     phoneContact: string;  // actual backend field name
     addressLine: string;   // actual backend field name
+    accountNumber?: string;
+    bankCode?: 'TECHCOMBANK' | 'VIETINBANK' | 'MB_BANK' | string;
     // Convenience aliases set locally after fetch
     fullName?: string;
     phone?: string;
@@ -23,6 +25,8 @@ export type AddressPayload = {
     nameContact: string;
     phoneContact: string;
     addressLine: string;
+    accountNumber?: string;
+    bankCode?: 'TECHCOMBANK' | 'VIETINBANK' | 'MB_BANK' | string;
 };
 
 /** Normalise backend address to include friendly alias fields for UI */

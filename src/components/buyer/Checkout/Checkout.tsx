@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { MapPin, CreditCard, Package, AlertCircle, Check, Loader2, ShoppingCart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { type Address } from '../../../services/address.service';
-import { orderService } from '../../../services/order.service';
 import { paymentService } from '../../../services/payment.service';
 import { useCart } from '../../../contexts/CartContext';
 
@@ -46,33 +45,10 @@ export const Checkout: React.FC<CheckoutProps> = ({ addresses, listingIds }) => 
     setIsProcessing(true);
 
     try {
-      // Create one order per listing
-      // Swagger PlaceOrderRequest: { listingId, description? } — no addressId
-      const selectedAddress = addresses.find(a => a.id === selectedAddressId);
-      const addressNote = selectedAddress
-        ? `${selectedAddress.nameContact ?? selectedAddress.fullName} — ${selectedAddress.addressLine ?? selectedAddress.detail} — ${selectedAddress.phoneContact ?? selectedAddress.phone}`
-        : undefined;
-
-      const orders = await Promise.all(
-        listingIds.map((listingId) =>
-          orderService.createOrder({
-            listingId,
-            description: notes || addressNote || undefined,
-          })
-        )
-      );
-
-      const failedOrders = orders.filter((o) => !o);
-      if (failedOrders.length > 0) {
-        throw new Error(`Không thể tạo ${failedOrders.length} đơn hàng. Vui lòng thử lại.`);
-      }
-
-      // Initiate payment: POST /payment/create/order { order_id, description }
-      const firstOrder = orders.find(Boolean)!;
-      const orderId = (firstOrder as any).id;
+      // Initiate payment: POST /payment/order { listingId }
+      // Since Swagger only supports 1 listingId per order, we just process the first item.
       const payment = await paymentService.createPayment({
-        order_id: orderId,
-        description: `Thanh toan don ${String(orderId).substring(0, 8)}`.substring(0, 25),
+        listingId: listingIds[0],
       });
 
       // Clear cart after successful order creation

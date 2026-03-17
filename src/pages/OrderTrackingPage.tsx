@@ -8,62 +8,66 @@ export default function OrderTrackingPage() {
   const [orders, setOrders] = useState<TrackingOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      setIsLoading(true);
-      try {
-        const myOrders = await orderService.getMyOrders();
+  const fetchOrders = async () => {
+    setIsLoading(true);
+    try {
+      const myOrders = await orderService.getMyOrders();
 
-        // Enrich orders with product details for the tracking UI
-        const enrichedOrders = await Promise.all(myOrders.map(async (order) => {
-          let bikeTitle = `Order #${order.id.slice(0, 8).toUpperCase()}`;
-          let bikeImage = '';
+      // Enrich orders with product details for the tracking UI
+      const enrichedOrders = await Promise.all(myOrders.map(async (order) => {
+        let bikeTitle = `Order #${order.id.slice(0, 8).toUpperCase()}`;
+        let bikeImage = '';
 
-          if (order.listingId) {
-            try {
-              const listing = await listingService.getListingById(order.listingId);
-              if (listing) {
-                bikeTitle = listing.title;
-                bikeImage = listing.images?.[0]?.secureUrl || '';
-              }
-            } catch (err) {
-              console.error('Failed to enrich order:', order.id, err);
+        if (order.listingId) {
+          try {
+            const listing = await listingService.getListingById(order.listingId);
+            if (listing) {
+              bikeTitle = listing.title;
+              bikeImage = listing.images?.[0]?.secureUrl || '';
             }
+          } catch (err) {
+            console.error('Failed to enrich order:', order.id, err);
           }
+        }
 
-          return {
-            id: order.id,
-            items: [
-              {
-                productName: bikeTitle,
-                price: order.totalPrice,
-                quantity: 1,
-                image: bikeImage
-              }
-            ],
-            status: order.status.toLowerCase() as any,
-            totalAmount: order.totalPrice,
-            deliveryAddress: 'Giao hàng tận nơi', // No address in order object, using placeholder
-            createdAt: new Date(order.createdAt).toLocaleDateString('vi-VN'),
-            estimatedDelivery: 'Đang cập nhật'
-          };
-        }));
+        return {
+          id: order.id,
+          items: [
+            {
+              productName: bikeTitle,
+              price: order.totalPrice,
+              quantity: 1,
+              image: bikeImage
+            }
+          ],
+          status: order.status.toLowerCase() as any,
+          totalAmount: order.totalPrice,
+          deliveryAddress: order.buyer?.address?.addressLine || 'Giao hàng tận nơi',
+          createdAt: new Date(order.createdAt).toLocaleDateString('vi-VN'),
+          estimatedDelivery: 'Đang cập nhật'
+        };
+      }));
 
-        setOrders(enrichedOrders);
-      } catch (error) {
-        console.error('Error fetching orders for tracking:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      setOrders(enrichedOrders);
+    } catch (error) {
+      console.error('Error fetching orders for tracking:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchOrders();
   }, []);
 
   const handleConfirmReceipt = async (orderId: string) => {
-    console.log('Confirming receipt for order:', orderId);
-    // Future implementation: await orderService.confirmOrder(orderId);
-    alert('Đã xác nhận nhận hàng thành công!');
+    try {
+      await orderService.claimOrder(orderId);
+      alert('Đã xác nhận nhận hàng thành công!');
+      fetchOrders();
+    } catch (err) {
+      alert('Có lỗi xảy ra khi xác nhận.');
+    }
   };
 
   const handleRequestReturn = (orderId: string) => {

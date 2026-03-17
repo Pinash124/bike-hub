@@ -30,11 +30,9 @@ export const paymentService = {
    * Tạo payment link cho Đơn Hàng (Order) PayOS
    * POST /payment/create/order
    */
-  createPayment: async (payload: any): Promise<PaymentResult | null> => {
+  createPayment: async (payload: { listingId: string }): Promise<PaymentResult | null> => {
     try {
-      // If payload is primitive id, wrap it. If it's already an object (like from Checkout.tsx), use it.
-      const body = typeof payload === 'object' ? payload : { order_id: payload };
-      const response = await api.post(API_ENDPOINTS.PAYMENT_CREATE_ORDER, body);
+      const response = await api.post(API_ENDPOINTS.PAYMENT_CREATE_ORDER, payload);
       if (response.data?.code === 1000) {
         return response.data.result;
       }

@@ -1,13 +1,13 @@
 // src/components/dashboards/SellerDashboard.tsx
 // Role: SELLER — shows real listings from API + inspection status
-import { Plus, Eye, TrendingUp, Package, CheckCircle, ChevronRight, Bike, Calendar, AlertCircle, RefreshCw, Search, Trash2, BarChart3, DollarSign, CreditCard } from 'lucide-react'
+import { Plus, Eye, TrendingUp, Package, CheckCircle, Bike, Calendar, AlertCircle, RefreshCw, Search, Trash2, BarChart3, DollarSign, CreditCard } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState, useMemo } from 'react'
 import { listingService, type Listing } from '../../services/listing.service'
+import { orderService, type Order } from '../../services/order.service'
 
 const STATUS_CONFIG: Record<string, { label: string, color: string, bg: string, border: string, icon: string }> = {
   DRAFT: { label: 'Nháp', color: 'text-slate-700', bg: 'bg-slate-100', border: 'border-slate-200', icon: '📝' },
-  WAITING_FOR_PAYMENT: { label: 'Chờ thanh toán', color: 'text-orange-700', bg: 'bg-orange-100', border: 'border-orange-300', icon: '💳' },
   PENDING: { label: 'Chờ duyệt', color: 'text-amber-700', bg: 'bg-amber-100', border: 'border-amber-200', icon: '⏳' },
   RESERVED: { label: 'Đã đặt cọc', color: 'text-blue-700', bg: 'bg-blue-100', border: 'border-blue-200', icon: '💰' },
   REJECTED: { label: 'Bị từ chối', color: 'text-red-700', bg: 'bg-red-100', border: 'border-red-200', icon: '❌' },
@@ -20,22 +20,25 @@ export default function SellerDashboard() {
   const navigate = useNavigate()
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const [listings, setListings] = useState<Listing[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
+  const [activeTab, setActiveTab] = useState<'listings' | 'orders'>('listings')
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'newest' | 'price-low' | 'price-high'>('newest')
   const [isRefreshing, setIsRefreshing] = useState(false)
 
-  useEffect(() => {
-    fetchMyListings()
-  }, [])
-
-  const fetchMyListings = async () => {
+  const fetchAllData = async () => {
     try {
-      const data = await listingService.getMyListings()
-      setListings(data)
+      const [listingsData, ordersData] = await Promise.all([
+        listingService.getMyListings(),
+        orderService.getMyOrders()
+      ])
+      setListings(listingsData)
+      // Filter orders where current user is seller
+      setOrders(ordersData.filter(o => o.seller?.id === user.id))
     } catch (error) {
-      console.error('Failed to fetch listings:', error)
+      console.error('Failed to fetch data:', error)
     } finally {
       setIsLoading(false)
     }
@@ -43,9 +46,13 @@ export default function SellerDashboard() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
-    await fetchMyListings()
+    await fetchAllData()
     setIsRefreshing(false)
   }
+
+  useEffect(() => {
+    fetchAllData()
+  }, [])
 
   const filteredAndSortedListings = useMemo(() => {
     let filtered = listings
@@ -79,13 +86,13 @@ export default function SellerDashboard() {
 
   const liveCount = listings.filter(l => l.status === 'LIVE').length
   const soldCount = listings.filter(l => l.status === 'SOLD').length
-  const awaitingPaymentCount = listings.filter(l => l.status === 'WAITING_FOR_PAYMENT').length
   const totalRevenue = listings.filter(l => l.status === 'SOLD').reduce((sum, l) => sum + l.price, 0)
+  const pendingOrdersCount = orders.filter(o => o.sellerStatus === 'PENDING').length
 
   const stats = [
     { label: 'Xe đang bán', value: liveCount.toString(), icon: Package, color: 'text-emerald-600', bg: 'bg-emerald-100', trend: '+12%' },
-    { label: 'Xe đã bán', value: soldCount.toString(), icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-100', trend: '+8%' },
-    { label: 'Chờ thanh toán', value: awaitingPaymentCount.toString(), icon: CreditCard, color: 'text-orange-600', bg: 'bg-orange-100', trend: '' },
+    { label: 'Yêu cầu đặt cọc', value: pendingOrdersCount.toString(), icon: Package, color: 'text-blue-600', bg: 'bg-blue-100', trend: pendingOrdersCount > 0 ? 'Mới' : '' },
+    { label: 'Xe đã bán', value: soldCount.toString(), icon: TrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-100', trend: '+8%' },
     { label: 'Doanh thu', value: `${(totalRevenue / 1000000).toFixed(1)}M`, icon: DollarSign, color: 'text-purple-600', bg: 'bg-purple-100', trend: '+25%' },
   ]
 
@@ -178,20 +185,25 @@ export default function SellerDashboard() {
         <div className="bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden">
           <div className="px-8 py-6 border-b border-slate-100">
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-2xl font-black text-slate-800 flex items-center gap-3">
-                  <Bike size={28} className="text-green-600" />
-                  Danh Sách Xe Đạp
-                  <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
-                    {filteredAndSortedListings.length} xe
-                  </span>
-                </h2>
-                <p className="text-slate-600 mt-1">Quản lý tất cả xe đang bán của bạn</p>
+              <div className="flex gap-4 border-b-2 border-slate-100 w-full mb-4">
+                <button 
+                  onClick={() => setActiveTab('listings')}
+                  className={`pb-3 text-lg font-bold flex items-center gap-2 border-b-2 transition-colors ${activeTab === 'listings' ? 'border-green-600 text-green-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+                >
+                  <Bike size={24} /> Xe Đang Bán
+                </button>
+                <button 
+                  onClick={() => setActiveTab('orders')}
+                  className={`pb-3 text-lg font-bold flex items-center gap-2 border-b-2 transition-colors ${activeTab === 'orders' ? 'border-green-600 text-green-600' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
+                >
+                  <Package size={24} /> Quản Lý Đơn Hàng
+                  {pendingOrdersCount > 0 && <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{pendingOrdersCount}</span>}
+                </button>
               </div>
-              <button className="text-sm font-bold text-green-600 hover:text-green-700 flex items-center gap-2 transition-colors">
-                Xem tất cả <ChevronRight size={18} />
-              </button>
             </div>
+
+            {activeTab === 'listings' && (
+              <>
 
             {/* Search and Filters */}
             <div className="mt-6 flex flex-col lg:flex-row gap-4">
@@ -217,7 +229,6 @@ export default function SellerDashboard() {
                   <option value="SOLD">Đã bán</option>
                   <option value="PENDING">Chờ duyệt</option>
                   <option value="APPROVED">Đã duyệt</option>
-                  <option value="WAITING_FOR_PAYMENT">Chờ thanh toán</option>
                   <option value="DRAFT">Nháp</option>
                 </select>
 
@@ -227,14 +238,16 @@ export default function SellerDashboard() {
                   className="px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all"
                 >
                   <option value="newest">Mới nhất</option>
-                  <option value="price-low">Giá thấp → cao</option>
-                  <option value="price-high">Giá cao → thấp</option>
                 </select>
               </div>
             </div>
+            </>
+            )}
           </div>
 
           <div className="p-8">
+            {activeTab === 'listings' && (
+              <>
             {isLoading ? (
               <div className="py-20 flex flex-col items-center justify-center gap-4">
                 <div className="relative">
@@ -269,7 +282,7 @@ export default function SellerDashboard() {
                 {filteredAndSortedListings.map(listing => {
                   const thumbnail = listing.images?.[0]?.secureUrl
                   const config = STATUS_CONFIG[listing.status] || STATUS_CONFIG.DRAFT
-                  const needsPayment = listing.status === 'WAITING_FOR_PAYMENT' || listing.status === 'DRAFT';
+                  const needsPayment = listing.status === 'DRAFT';
 
                   return (
                     <div key={listing.id} className="group border border-slate-200 rounded-3xl overflow-hidden hover:border-green-300 hover:shadow-2xl transition-all duration-300 bg-white">
@@ -357,6 +370,63 @@ export default function SellerDashboard() {
                     </div>
                   )
                 })}
+              </div>
+            )}
+            </>
+            )}
+
+            {activeTab === 'orders' && (
+              <div className="space-y-4">
+                {orders.length === 0 ? (
+                  <div className="text-center py-10 text-slate-500">Chưa có đơn hàng nào.</div>
+                ) : (
+                  orders.map(order => (
+                    <div key={order.id} className="border border-slate-200 rounded-xl p-5 hover:border-green-300 transition-colors">
+                      <div className="flex justify-between items-start mb-4 border-b border-slate-100 pb-4">
+                        <div>
+                          <p className="text-sm text-slate-400">Mã đơn: <strong className="text-slate-700">{order.id.slice(0, 8).toUpperCase()}</strong></p>
+                          <p className="text-lg font-bold text-slate-800 mt-1">{order.listing?.title || 'Xe đạp'}</p>
+                          <p className="text-sm text-slate-500 mt-1">Ngày mua: {new Date(order.createdAt).toLocaleDateString('vi-VN')}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-black text-green-600">{(order.totalPrice / 1000000).toFixed(1)}M</p>
+                          <p className="text-sm font-bold mt-1 text-slate-500">
+                            Status: <span className="text-blue-600 uppercase">{order.sellerStatus || order.status}</span>
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-3 justify-end">
+                        {order.sellerStatus === 'PENDING' && (
+                          <>
+                            <button 
+                              onClick={async () => {
+                                if (await orderService.acceptOrder(order.id)) handleRefresh();
+                              }}
+                              className="bg-green-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-green-700"
+                            >Chấp nhận</button>
+                            <button 
+                              onClick={async () => {
+                                if (await orderService.rejectOrder(order.id)) handleRefresh();
+                              }}
+                              className="bg-red-50 text-red-600 px-5 py-2 rounded-lg font-bold hover:bg-red-100"
+                            >Từ chối</button>
+                          </>
+                        )}
+                        {['ACCEPTED', 'IN_TRANSIT', 'PAID'].includes(order.sellerStatus || '') && (
+                          <button 
+                            onClick={async () => {
+                              // Dummy file upload for prototype
+                              const dummyImage = new File([''], 'delivery.jpg', { type: 'image/jpeg' });
+                              await orderService.deliverOrder(order.id, dummyImage);
+                              handleRefresh();
+                            }}
+                            className="bg-blue-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-blue-700"
+                          >Xác nhận đã giao xe</button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </div>

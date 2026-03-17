@@ -3,6 +3,7 @@ import { ShoppingCart, MessageSquare, Heart, Share2, ChevronLeft, Zap, Tag, Cloc
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../../contexts/CartContext';
 import { type Listing } from '../../../services/listing.service';
+import { favoriteService } from '../../../services/favorite.service';
 
 interface ListingDetailProps {
   listing: Listing;
@@ -24,7 +25,8 @@ export const ProductDetail: React.FC<ListingDetailProps> = ({ listing }) => {
   const navigate = useNavigate();
   const { addItem } = useCart();
   const [selectedImage, setSelectedImage] = useState(0);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavorite, setIsFavorite] = useState((listing as any).favorite ?? false);
+  const [isLiking, setIsLiking] = useState(false);
 
   const images = listing.images?.length
     ? listing.images
@@ -33,7 +35,7 @@ export const ProductDetail: React.FC<ListingDetailProps> = ({ listing }) => {
       .map((img) => img.secureUrl)
     : [PLACEHOLDER];
 
-  const isAvailable = listing.status === 'LIVE' || listing.status === 'APPROVED';
+  const isAvailable = listing.status === 'LIVE';
 
   const statusInfo = STATUS_LABELS[listing.status] ?? {
     label: listing.status,
@@ -61,6 +63,24 @@ export const ProductDetail: React.FC<ListingDetailProps> = ({ listing }) => {
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
     alert('Đã sao chép liên kết!');
+  };
+
+  const handleFavoriteToggle = async () => {
+    setIsLiking(true);
+    try {
+      if (isFavorite) {
+        const success = await favoriteService.deleteFavorite(listing.id);
+        if (success) setIsFavorite(false);
+      } else {
+        const res = await favoriteService.addFavorite(listing.id);
+        if (res) setIsFavorite(true);
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      alert('Có lỗi xảy ra. Bạn đã đăng nhập chưa?');
+    } finally {
+      setIsLiking(false);
+    }
   };
 
   const specs = [
@@ -103,9 +123,10 @@ export const ProductDetail: React.FC<ListingDetailProps> = ({ listing }) => {
                 {statusInfo.label}
               </span>
               <button
-                onClick={() => setIsFavorite(!isFavorite)}
+                onClick={handleFavoriteToggle}
+                disabled={isLiking}
                 className={`absolute top-4 right-4 w-11 h-11 rounded-xl flex items-center justify-center shadow-md transition-all
-                  ${isFavorite ? 'bg-red-500 text-white' : 'bg-white text-gray-400 hover:text-red-500'}`}
+                  ${isFavorite ? 'bg-red-500 text-white' : 'bg-white text-gray-400 hover:text-red-500'} ${isLiking ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <Heart size={22} fill={isFavorite ? 'currentColor' : 'none'} />
               </button>

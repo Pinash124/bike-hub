@@ -28,6 +28,8 @@ const makeEmptyContact = (): AddressPayload => ({
   nameContact: "",
   phoneContact: "",
   addressLine: "",
+  bankCode: "TECHCOMBANK",
+  accountNumber: "",
 });
 
 const validatePhone = (phone: string): boolean => {
@@ -107,6 +109,10 @@ export default function ProfilePage() {
       errors.addressLine = "Địa chỉ phải từ 10-200 ký tự";
     }
     
+    if (!contactForm.accountNumber || contactForm.accountNumber.trim().length < 5) {
+      errors.accountNumber = "Số tài khoản ngân hàng không hợp lệ (ít nhất 5 ký tự)";
+    }
+    
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -180,6 +186,8 @@ export default function ProfilePage() {
       nameContact: contact.nameContact,
       phoneContact: contact.phoneContact,
       addressLine: contact.addressLine,
+      bankCode: contact.bankCode || "TECHCOMBANK",
+      accountNumber: contact.accountNumber || "",
     })
     setEditingContactId(contact.id)
     setValidationErrors({})
@@ -453,6 +461,53 @@ export default function ProfilePage() {
                           )}
                         </div>
 
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                              <ShieldCheck size={16} className="text-slate-400" />
+                              Ngân hàng
+                              <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              required
+                              name="bankCode"
+                              value={contactForm.bankCode}
+                              onChange={handleContactInputChange as any}
+                              className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500"
+                            >
+                              <option value="TECHCOMBANK">Techcombank</option>
+                              <option value="VIETINBANK">VietinBank</option>
+                              <option value="MB_BANK">MB Bank</option>
+                            </select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                              <ShieldCheck size={16} className="text-slate-400" />
+                              Số tài khoản
+                              <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              required
+                              name="accountNumber"
+                              value={contactForm.accountNumber}
+                              onChange={handleContactInputChange}
+                              className={`w-full rounded-xl border-2 bg-white px-4 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-500/20 ${
+                                validationErrors.accountNumber
+                                  ? "border-red-300 focus:border-red-500"
+                                  : "border-slate-200 focus:border-green-500"
+                              }`}
+                              placeholder="Nhập số tài khoản ngân hàng"
+                            />
+                            {validationErrors.accountNumber && (
+                              <p className="flex items-center gap-1 text-xs text-red-600 mt-1">
+                                <AlertTriangle size={12} />
+                                {validationErrors.accountNumber}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
                         {(contactError || contactSuccess) && (
                           <div className={`rounded-xl p-4 flex items-center gap-3 ${
                             contactError 
@@ -634,6 +689,53 @@ export default function ProfilePage() {
                                 {validationErrors.addressLine}
                               </p>
                             )}
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                <ShieldCheck size={16} className="text-slate-400" />
+                                Ngân hàng
+                                <span className="text-red-500">*</span>
+                              </label>
+                              <select
+                                required
+                                name="bankCode"
+                                value={contactForm.bankCode}
+                                onChange={handleContactInputChange as any}
+                                className="w-full rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500"
+                              >
+                                <option value="TECHCOMBANK">Techcombank</option>
+                                <option value="VIETINBANK">VietinBank</option>
+                                <option value="MB_BANK">MB Bank</option>
+                              </select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                <ShieldCheck size={16} className="text-slate-400" />
+                                Số tài khoản
+                                <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                required
+                                name="accountNumber"
+                                value={contactForm.accountNumber}
+                                onChange={handleContactInputChange}
+                                className={`w-full rounded-xl border-2 bg-white px-4 py-3 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-green-500/20 ${
+                                  validationErrors.accountNumber
+                                    ? "border-red-300 focus:border-red-500"
+                                    : "border-slate-200 focus:border-green-500"
+                                }`}
+                                placeholder="Nhập số tài khoản ngân hàng"
+                              />
+                              {validationErrors.accountNumber && (
+                                <p className="flex items-center gap-1 text-xs text-red-600 mt-1">
+                                  <AlertTriangle size={12} />
+                                  {validationErrors.accountNumber}
+                                </p>
+                              )}
+                            </div>
                           </div>
 
                           {(contactError || contactSuccess) && (

@@ -51,6 +51,11 @@ export const API_ENDPOINTS = {
   ADDRESS_MY: `${API_BASE_URL}/address/my-address`, // GET: my addresses
   ADDRESS_BY_ID: (id: string | number) => `${API_BASE_URL}/address/${id}`, // PUT: update address
 
+  // Favorite (Buyer)
+  FAVORITE: `${API_BASE_URL}/favorite`,
+  FAVORITE_MY: `${API_BASE_URL}/favorite/my-favorite`,
+  FAVORITE_DELETE: (listingId: string) => `${API_BASE_URL}/favorite/${listingId}`,
+
   // Inspection (per Swagger)
   INSPECTION: `${API_BASE_URL}/inspection`,                         // GET all | POST create
   INSPECTION_PENDING: `${API_BASE_URL}/inspection/pending`,          // GET inspector pending queue
@@ -79,10 +84,15 @@ export const API_ENDPOINTS = {
   // Order
   ORDER: `${API_BASE_URL}/order`,
   ORDER_DETAIL: (id: string) => `${API_BASE_URL}/order/${id}`,
-  ORDER_CREATE: `${API_BASE_URL}/order/create`,
+  ORDER_CREATE: `${API_BASE_URL}/order/create`, // To be deprecated by /payment/order
   ORDER_CONFIRM: (id: string) => `${API_BASE_URL}/order/${id}/confirm`,
   ORDER_CANCEL: (id: string) => `${API_BASE_URL}/order/${id}/cancel`,
+  ORDER_ACCEPT: (id: string) => `${API_BASE_URL}/order/${id}/accept`,
+  ORDER_REJECT: (id: string) => `${API_BASE_URL}/order/${id}/reject`,
+  ORDER_DELIVERED: (id: string) => `${API_BASE_URL}/order/${id}/delivered`,
+  ORDER_CLAIM: (id: string) => `${API_BASE_URL}/order/${id}/claim`,
   ORDER_HISTORY: `${API_BASE_URL}/order/history`,
+  ORDER_MY: `${API_BASE_URL}/order/my-order`,
   ORDER_ADMIN_LIST: `${API_BASE_URL}/order/admin`, // Admin only
 
   // Payment
