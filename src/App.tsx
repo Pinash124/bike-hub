@@ -145,18 +145,9 @@ function App() {
               }
             />
             {/* AUTH ROUTES */}
-            <Route
-              path="/login"
-              element={<Login />}
-            />
-            <Route
-              path="/register"
-              element={<Register />}
-            />
-            <Route
-              path="/forgot-password"
-              element={<ForgotPasswordPage />}
-            />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             {/* Payment Return Callback */}
             <Route
               path="/payment/result"
