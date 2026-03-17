@@ -15,6 +15,10 @@ export default function PaymentResultPage() {
     const hasCode = searchParams.get('code');
     const orderCode = searchParams.get('orderCode');
     const orderId = searchParams.get('orderId'); // Passed from frontend payload
+    const pendingSubscriptionId = localStorage.getItem('pendingSubscriptionId');
+    const pendingOrderListingId = localStorage.getItem('pendingOrderListingId');
+    const isSubscriptionFlow = !!pendingSubscriptionId;
+    const isOrderFlow = !isSubscriptionFlow || !!pendingOrderListingId;
 
     const baseSuccess = (() => {
         if (paymentStatus === 'PAID' && !isCancel) return true;
@@ -40,11 +44,10 @@ export default function PaymentResultPage() {
             }
 
             try {
-                const pendingSubscriptionId = localStorage.getItem('pendingSubscriptionId');
                 const payments = await paymentService.getMyPayments();
                 const match = pendingSubscriptionId
                     ? payments.find((p) => String(p.referenceId || '') === pendingSubscriptionId)
-                    : payments.find((p) => p.type === 'SUBSCRIPTION');
+                    : payments.find((p) => p.type === 'PAYMENT');
 
                 const status = String(match?.status || '').toUpperCase();
                 const isSuccessStatus = ['PAID', 'SUCCESS', 'COMPLETED'].includes(status);
@@ -56,6 +59,7 @@ export default function PaymentResultPage() {
                     setDisplayStatus('success');
                     localStorage.removeItem('pendingSubscriptionId');
                     localStorage.removeItem('pendingListingId');
+                    localStorage.removeItem('pendingOrderListingId');
                 } else if (isFailedStatus) {
                     setDisplayStatus('failed');
                 } else {
@@ -90,10 +94,18 @@ export default function PaymentResultPage() {
 
                     <p className="text-slate-500 font-medium text-lg mb-4">
                         {displayStatus === 'success'
-                            ? 'Cảm ơn bạn đã thanh toán! Bài đăng đã được gửi đến Admin. Admin sẽ phân công kiểm định viên xem xét xe của bạn — sau khi hoàn thành, xe sẽ tự động hiển thị trên trang chủ.'
+                            ? isSubscriptionFlow
+                                ? 'Cảm ơn bạn đã thanh toán! Bài đăng đã được gửi đến Admin để xử lý kiểm định trước khi hiển thị.'
+                                : 'Thanh toán đặt cọc thành công. Bạn có thể theo dõi tiến trình giao dịch tại trang đơn hàng của tôi.'
                             : displayStatus === 'failed'
-                                ? 'Giao dịch đã bị hủy hoặc xảy ra lỗi. Hệ thống chưa ghi nhận gói cước của bài đăng.'
-                                : 'Hệ thống đang xác nhận thanh toán. Bạn có thể chờ vài giây hoặc quay lại Dashboard để kiểm tra trạng thái.'
+                                ? isSubscriptionFlow
+                                    ? 'Giao dịch đã bị hủy hoặc xảy ra lỗi. Hệ thống chưa ghi nhận gói cước của bài đăng.'
+                                    : 'Giao dịch đặt cọc thất bại hoặc đã bị hủy. Vui lòng thử lại từ trang sản phẩm.'
+                                : isOrderFlow
+                                    ? 'Hệ thống đang xác nhận thanh toán đặt cọc. Bạn có thể chờ thêm hoặc vào trang đơn hàng để kiểm tra.'
+                                    : isSubscriptionFlow
+                                    ? 'Hệ thống đang xác nhận thanh toán. Bạn có thể chờ vài giây hoặc quay lại Dashboard để kiểm tra trạng thái.'
+                                    : 'Hệ thống đang xác nhận giao dịch.'
                         }
                     </p>
 
@@ -114,10 +126,10 @@ export default function PaymentResultPage() {
 
                     <div className="flex flex-col gap-3">
                         <button
-                            onClick={() => navigate('/seller/dashboard')}
+                            onClick={() => navigate(isSubscriptionFlow ? '/seller/dashboard' : '/buyer/orders')}
                             className="w-full py-4 text-sm font-black text-white uppercase tracking-widest rounded-2xl bg-slate-900 hover:bg-slate-800 transition flex items-center justify-center gap-2"
                         >
-                            <FileText size={18} /> Quản lý xe của tôi
+                            <FileText size={18} /> {isSubscriptionFlow ? 'Quản lý xe của tôi' : 'Xem đơn hàng của tôi'}
                         </button>
                         <button
                             onClick={() => navigate('/')}

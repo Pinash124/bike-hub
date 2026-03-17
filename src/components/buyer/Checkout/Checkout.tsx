@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { MapPin, CreditCard, Package, AlertCircle, Check, Loader2, ShoppingCart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { type Address } from '../../../services/address.service';
-import { orderService } from '../../../services/order.service';
 import { paymentService } from '../../../services/payment.service';
 import { useCart } from '../../../contexts/CartContext';
 
@@ -46,39 +45,17 @@ export const Checkout: React.FC<CheckoutProps> = ({ addresses, listingIds }) => 
     setIsProcessing(true);
 
     try {
-      // Create one order per listing
-      // Swagger PlaceOrderRequest: { listingId, description? } — no addressId
-      const selectedAddress = addresses.find(a => a.id === selectedAddressId);
-      const addressNote = selectedAddress
-        ? `${selectedAddress.nameContact ?? selectedAddress.fullName} — ${selectedAddress.addressLine ?? selectedAddress.detail} — ${selectedAddress.phoneContact ?? selectedAddress.phone}`
-        : undefined;
-
-      const orders = await Promise.all(
-        listingIds.map((listingId) =>
-          orderService.createOrder({
-            listingId,
-            description: notes || addressNote || undefined,
-          })
-        )
-      );
-
-      const failedOrders = orders.filter((o) => !o);
-      if (failedOrders.length > 0) {
-        throw new Error(`Không thể tạo ${failedOrders.length} đơn hàng. Vui lòng thử lại.`);
+      // BE flow: buyer pays by listingId, backend creates/locks order internally.
+      const firstListingId = listingIds[0];
+      if (!firstListingId) {
+        throw new Error('Không tìm thấy xe cần thanh toán.');
       }
 
-      // Initiate payment: POST /payment/create/order { order_id, description }
-      const firstOrder = orders.find(Boolean)!;
-      const orderId = (firstOrder as any).id;
-      const payment = await paymentService.createPayment({
-        order_id: orderId,
-        description: `Thanh toan don ${String(orderId).substring(0, 8)}`.substring(0, 25),
-      });
-
-      // Clear cart after successful order creation
-      clearCart();
+      const payment = await paymentService.createOrderPayment(firstListingId);
 
       if (payment?.paymentUrl) {
+        localStorage.setItem('pendingOrderListingId', firstListingId);
+        clearCart();
         window.location.href = payment.paymentUrl;
       } else {
         navigate('/buyer/orders', { replace: true });

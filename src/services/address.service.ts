@@ -4,11 +4,15 @@
 import api from '../api/axiosConfig';
 import { API_ENDPOINTS } from '../config/api';
 
+export type BankCode = 'TECHCOMBANK' | 'VIETINBANK' | 'MB_BANK';
+
 export interface Address {
-    id: number;
+    id: string | number;
     nameContact: string;   // actual backend field name
     phoneContact: string;  // actual backend field name
     addressLine: string;   // actual backend field name
+    accountNumber?: string;
+    bankCode?: BankCode;
     // Convenience aliases set locally after fetch
     fullName?: string;
     phone?: string;
@@ -23,6 +27,8 @@ export type AddressPayload = {
     nameContact: string;
     phoneContact: string;
     addressLine: string;
+    accountNumber?: string;
+    bankCode?: BankCode;
 };
 
 /** Normalise backend address to include friendly alias fields for UI */
@@ -78,7 +84,7 @@ export const addressService = {
      * [BUYER/SELLER] Cập nhật địa chỉ
      * PUT /address/{id}
      */
-    updateAddress: async (id: number, data: Partial<AddressPayload>): Promise<Address | null> => {
+    updateAddress: async (id: string | number, data: Partial<AddressPayload>): Promise<Address | null> => {
         try {
             const response = await api.put(API_ENDPOINTS.ADDRESS_BY_ID(id), data);
             if (response.data?.code === 1000) {
@@ -95,7 +101,7 @@ export const addressService = {
      * [BUYER/SELLER] Xóa địa chỉ
      * DELETE /address/{id}
      */
-    deleteAddress: async (id: number): Promise<boolean> => {
+    deleteAddress: async (id: string | number): Promise<boolean> => {
         try {
             const response = await api.delete(API_ENDPOINTS.ADDRESS_BY_ID(id));
             return response.data?.code === 1000;
