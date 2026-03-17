@@ -14,7 +14,7 @@ export default function FeaturedBikes() {
   const fetchListings = async () => {
     try {
       const data = await listingService.getListings();
-      const activeListings = data.filter((listing: Listing) => listing.status === 'LIVE' || listing.status === 'APPROVED');
+      const activeListings = data.filter((listing: Listing) => listing.status === 'LIVE');
       // Map API data to UI format
       const mappedBikes = activeListings.slice(0, 4).map((listing: Listing) => ({
         id: listing.id,

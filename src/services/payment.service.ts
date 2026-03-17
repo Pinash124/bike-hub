@@ -2,12 +2,10 @@
 import api from '../api/axiosConfig';
 import { API_ENDPOINTS } from '../config/api';
 
-/** Response từ POST /payment/order hoặc POST /payment/subscription */
 export interface PaymentCreationResponse {
   paymentUrl: string;
 }
 
-/** Response từ GET /payment/all hoặc GET /payment/my-payment */
 export interface PaymentResponse {
   paymentId: number;
   type: 'PAYMENT' | 'PAYOUT' | 'REFUND';
@@ -29,11 +27,6 @@ export interface PaymentResponse {
 export type PaymentResult = PaymentResponse;
 
 export const paymentService = {
-  /**
-   * [BUYER] Tạo payment link để đặt cọc mua xe
-   * POST /payment/order  →  { listingId: uuid }  →  { paymentUrl }
-   * BE tự tạo Order — FE KHÔNG cần tạo order trước
-   */
   createOrderPayment: async (listingId: string): Promise<PaymentCreationResponse | null> => {
     try {
       const response = await api.post(API_ENDPOINTS.PAYMENT_CREATE_ORDER, { listingId });
@@ -45,7 +38,7 @@ export const paymentService = {
     }
   },
 
-  /** @deprecated Use createOrderPayment(listingId). Kept for temporary compatibility. */
+  // Kept for temporary compatibility with older call-sites.
   createPayment: async (payload: { listingId?: string } | string): Promise<PaymentCreationResponse | null> => {
     const listingId = typeof payload === 'string' ? payload : payload?.listingId;
     if (!listingId) {
@@ -54,10 +47,6 @@ export const paymentService = {
     return paymentService.createOrderPayment(listingId);
   },
 
-  /**
-   * [SELLER] Tạo payment link trả phí đăng bán (subscription)
-   * POST /payment/subscription  →  { subscriptionId: uuid }  →  { paymentUrl }
-   */
   createSubscriptionPayment: async (subscriptionId: string): Promise<PaymentCreationResponse | null> => {
     try {
       const response = await api.post(API_ENDPOINTS.PAYMENT_CREATE_SUBSCRIPTION, { subscriptionId });
@@ -69,7 +58,6 @@ export const paymentService = {
     }
   },
 
-  /** [ADMIN] Tất cả lịch sử thanh toán — GET /payment/all */
   getAllPayments: async (): Promise<PaymentResponse[]> => {
     try {
       const response = await api.get(API_ENDPOINTS.PAYMENT_ALL);
@@ -81,7 +69,6 @@ export const paymentService = {
     }
   },
 
-  /** [BUYER/SELLER] Lịch sử thanh toán của mình — GET /payment/my-payment */
   getMyPayments: async (): Promise<PaymentResponse[]> => {
     try {
       const response = await api.get(API_ENDPOINTS.PAYMENT_MY);

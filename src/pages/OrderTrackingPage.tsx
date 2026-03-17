@@ -28,62 +28,27 @@ export default function OrderTrackingPage() {
   const [orders, setOrders] = useState<TrackingOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      setIsLoading(true);
-      try {
-        const myOrders = await orderService.getMyOrders();
-
-        const enrichedOrders: TrackingOrder[] = myOrders.map((order) => {
-          const listing = order.listing;
-          const bikeTitle = listing?.title || `Order #${order.id.slice(0, 8).toUpperCase()}`;
-          const bikeImage = listing?.images?.[0]?.secureUrl || '';
-          const total = typeof order.totalPrice === 'number' ? order.totalPrice : (listing?.price || 0);
-
-          return {
-            id: order.id,
-            items: [
-              {
-                productName: bikeTitle,
-                price: total,
-                quantity: 1,
-                image: bikeImage,
-              },
-            ],
-            status: mapOrderStatus(order.orderStatus || order.status),
-            totalAmount: total,
-            deliveryAddress: 'Giao hàng tận nơi',
-            createdAt: new Date(order.createdAt).toISOString(),
-            estimatedDelivery: order.expiresAt || order.createdAt,
-          };
-        });
-
-        setOrders(enrichedOrders);
-      } catch (error) {
-        console.error('Error fetching orders for tracking:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchOrders();
-  }, []);
-
-  const handleConfirmReceipt = async (orderId: string) => {
+  const fetchOrders = async () => {
+    setIsLoading(true);
     try {
-      await orderService.claimOrder(orderId);
       const myOrders = await orderService.getMyOrders();
-      const refreshed: TrackingOrder[] = myOrders.map((order) => {
+
+      const enrichedOrders: TrackingOrder[] = myOrders.map((order) => {
         const listing = order.listing;
+        const bikeTitle = listing?.title || `Order #${order.id.slice(0, 8).toUpperCase()}`;
+        const bikeImage = listing?.images?.[0]?.secureUrl || '';
         const total = typeof order.totalPrice === 'number' ? order.totalPrice : (listing?.price || 0);
+
         return {
           id: order.id,
-          items: [{
-            productName: listing?.title || `Order #${order.id.slice(0, 8).toUpperCase()}`,
-            price: total,
-            quantity: 1,
-            image: listing?.images?.[0]?.secureUrl || '',
-          }],
+          items: [
+            {
+              productName: bikeTitle,
+              price: total,
+              quantity: 1,
+              image: bikeImage,
+            },
+          ],
           status: mapOrderStatus(order.orderStatus || order.status),
           totalAmount: total,
           deliveryAddress: 'Giao hàng tận nơi',
@@ -91,7 +56,23 @@ export default function OrderTrackingPage() {
           estimatedDelivery: order.expiresAt || order.createdAt,
         };
       });
-      setOrders(refreshed);
+
+      setOrders(enrichedOrders);
+    } catch (error) {
+      console.error('Error fetching orders for tracking:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const handleConfirmReceipt = async (orderId: string) => {
+    try {
+      await orderService.claimOrder(orderId);
+      fetchOrders();
       alert('Đã xác nhận nhận hàng thành công!');
     } catch (error: any) {
       const message = error?.response?.data?.message || 'Xác nhận nhận hàng thất bại.';

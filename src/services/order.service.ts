@@ -3,19 +3,18 @@ import api from '../api/axiosConfig';
 import { API_ENDPOINTS } from '../config/api';
 import type { Listing } from './listing.service';
 
-// Trạng thái đơn hàng từ BE
 export type OrderStatus =
-  | 'PENDING'    // Chờ thanh toán (5 phút)
-  | 'EXPIRED'    // Hết giờ thanh toán
-  | 'PAID'       // Đã đặt cọc, chờ seller chấp nhận
-  | 'REFUND'     // Đã hoàn tiền
-  | 'IN_TRANSIT' // Seller đã chấp nhận, đang giao xe
-  | 'SHIPPING'   // Legacy alias used by existing UI
-  | 'DELIVERED'  // Seller xác nhận đã giao, chờ buyer claim
-  | 'CONFIRMED'  // Buyer xác nhận đã nhận xe
-  | 'COMPLETE'   // Hoàn tất — BE tự động sau claim
-  | 'COMPLETED'  // Legacy alias used by existing UI
-  | 'CANCELLED'; // Đã hủy
+  | 'PENDING'
+  | 'EXPIRED'
+  | 'PAID'
+  | 'REFUND'
+  | 'IN_TRANSIT'
+  | 'SHIPPING'
+  | 'DELIVERED'
+  | 'CONFIRMED'
+  | 'COMPLETE'
+  | 'COMPLETED'
+  | 'CANCELLED';
 
 export type SellerStatus = 'PENDING' | 'ACCEPTED' | 'CANCELLED' | 'REJECTED' | 'PAID';
 
@@ -56,6 +55,7 @@ function normaliseOrder(raw: any): Order {
     COMPLETED: 'COMPLETE',
   };
   const orderStatus = (statusMap[rawStatus] ?? rawStatus) as OrderStatus;
+
   return {
     ...raw,
     listing,
@@ -68,7 +68,6 @@ function normaliseOrder(raw: any): Order {
 }
 
 export const orderService = {
-  /** [BUYER] Danh sách đơn hàng của mình — GET /order/my-order */
   getMyOrders: async (): Promise<Order[]> => {
     try {
       const response = await api.get(API_ENDPOINTS.ORDER_MY);
@@ -83,7 +82,6 @@ export const orderService = {
     }
   },
 
-  /** [ADMIN/SELLER] Tất cả đơn hàng — GET /order */
   getAllOrders: async (): Promise<Order[]> => {
     try {
       const response = await api.get(API_ENDPOINTS.ORDER_ALL);
@@ -98,7 +96,6 @@ export const orderService = {
     }
   },
 
-  /** GET /order/{id} */
   getOrderById: async (id: string): Promise<Order | null> => {
     try {
       const response = await api.get(API_ENDPOINTS.ORDER_DETAIL(id));
@@ -110,7 +107,6 @@ export const orderService = {
     }
   },
 
-  /** [SELLER] Chấp nhận đơn → orderStatus: IN_TRANSIT — PUT /order/{id}/accept */
   acceptOrder: async (id: string): Promise<boolean> => {
     try {
       const response = await api.put(API_ENDPOINTS.ORDER_ACCEPT(id));
@@ -121,7 +117,6 @@ export const orderService = {
     }
   },
 
-  /** [SELLER] Từ chối đơn → orderStatus: CANCELLED — PUT /order/{id}/reject */
   rejectOrder: async (id: string): Promise<boolean> => {
     try {
       const response = await api.put(API_ENDPOINTS.ORDER_REJECT(id));
@@ -132,7 +127,6 @@ export const orderService = {
     }
   },
 
-  /** [SELLER] Xác nhận đã giao xe — PUT /order/{id}/delivered (multipart, kèm ảnh) */
   deliverOrder: async (id: string, imageFile: File): Promise<Order | null> => {
     try {
       const formData = new FormData();
@@ -146,7 +140,6 @@ export const orderService = {
     }
   },
 
-  /** [BUYER] Xác nhận đã nhận xe → COMPLETE — PUT /order/{id}/claim */
   claimOrder: async (id: string): Promise<Order | null> => {
     try {
       const response = await api.put(API_ENDPOINTS.ORDER_CLAIM(id));
@@ -158,7 +151,6 @@ export const orderService = {
     }
   },
 
-  /** Lịch sử thay đổi trạng thái — GET /order-log/order/{orderId} */
   getOrderLog: async (orderId: string): Promise<OrderLog[]> => {
     try {
       const response = await api.get(API_ENDPOINTS.ORDER_LOG_BY_ORDER(orderId));
@@ -170,12 +162,12 @@ export const orderService = {
     }
   },
 
-  /** @deprecated Legacy create-order flow is replaced by /payment/order. */
+  // Legacy compatibility shim.
   createOrder: async (_payload: { listingId: string; description?: string }): Promise<Order | null> => {
     throw new Error('createOrder đã bị BE loại bỏ. Hãy dùng paymentService.createOrderPayment(listingId).');
   },
 
-  /** @deprecated Legacy cancel flow is replaced by reject/claim lifecycle. */
+  // Legacy compatibility shim.
   cancelOrder: async (_orderId: string): Promise<boolean> => {
     throw new Error('cancelOrder không còn được hỗ trợ trong flow mới.');
   },

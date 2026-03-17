@@ -16,7 +16,7 @@ export interface Listing {
     price: number;
     usageDuration: number;
     frameNumber: string;
-    status: 'DRAFT' | 'WAITING_FOR_PAYMENT' | 'PENDING' | 'RESERVED' | 'REJECTED' | 'APPROVED' | 'LIVE' | 'SOLD';
+    status: 'DRAFT' | 'PAID' | 'PENDING' | 'RESERVED' | 'REJECT' | 'LIVE' | 'SOLD' | 'DELETED' | 'EXPIRED';
     brand: Brand;
     images: ListingImage[];
     createdAt: string;

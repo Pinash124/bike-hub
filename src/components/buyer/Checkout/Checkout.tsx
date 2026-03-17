@@ -16,7 +16,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ addresses, listingIds }) => 
   const { items: cartItems, clearCart } = useCart();
   const defaultAddress = addresses.find((a) => a.isDefault) ?? addresses[0];
 
-  const [selectedAddressId, setSelectedAddressId] = useState<number | ''>(
+  const [selectedAddressId, setSelectedAddressId] = useState<string | number | ''>(
     defaultAddress?.id ?? ''
   );
   const [notes, setNotes] = useState('');
@@ -106,8 +106,8 @@ export const Checkout: React.FC<CheckoutProps> = ({ addresses, listingIds }) => 
                       type="radio"
                       name="address"
                       value={address.id}
-                      checked={selectedAddressId === address.id}
-                      onChange={(e) => setSelectedAddressId(Number(e.target.value))}
+                      checked={String(selectedAddressId) === String(address.id)}
+                      onChange={(e) => setSelectedAddressId(e.target.value)}
                       className="mt-1 h-4 w-4 accent-green-600"
                     />
                     <div className="flex-1">
