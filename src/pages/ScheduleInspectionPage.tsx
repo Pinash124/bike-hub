@@ -22,10 +22,14 @@ export default function ScheduleInspectionPage() {
   const [error, setError] = useState("");
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
-  const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
+    null,
+  );
 
   const selectedAddress = useMemo(
-    () => addresses.find((address) => address.id === selectedAddressId) ?? null,
+    () =>
+      addresses.find((address) => String(address.id) === selectedAddressId) ??
+      null,
     [addresses, selectedAddressId],
   );
   const hasContactInfo = addresses.length > 0 && selectedAddress !== null;
@@ -54,7 +58,7 @@ export default function ScheduleInspectionPage() {
       try {
         const data = await addressService.getMyAddresses();
         setAddresses(data);
-        setSelectedAddressId(data[0]?.id ?? null);
+        setSelectedAddressId(data[0] ? String(data[0].id) : null);
       } catch (err) {
         console.error(err);
         setAddresses([]);
@@ -229,18 +233,21 @@ export default function ScheduleInspectionPage() {
                         className="w-full rounded border p-2"
                         value={selectedAddressId ?? ""}
                         onChange={(e) =>
-                          setSelectedAddressId(Number(e.target.value))
+                          setSelectedAddressId(e.target.value || null)
                         }
                       >
                         {addresses.map((address) => (
-                          <option key={address.id} value={address.id}>
+                          <option
+                            key={String(address.id)}
+                            value={String(address.id)}
+                          >
                             {address.nameContact} - {address.phoneContact} -{" "}
                             {address.addressLine}
                           </option>
                         ))}
                       </select>
 
-                        {selectedAddress && (
+                      {selectedAddress && (
                         <div className="space-y-1 text-sm text-slate-700">
                           <p>
                             <span className="font-semibold">Tên:</span>{" "}
@@ -278,7 +285,9 @@ export default function ScheduleInspectionPage() {
                     <option value="">-- Chọn địa điểm --</option>
                     {locations.map((location) => (
                       <option key={location.id} value={location.id}>
-                        {location.addressLine || location.contactName || location.id}
+                        {location.addressLine ||
+                          location.contactName ||
+                          location.id}
                       </option>
                     ))}
                   </select>
