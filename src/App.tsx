@@ -37,6 +37,7 @@ import ScheduleInspectionPage from "./pages/ScheduleInspectionPage";
 import DebugPage from "./pages/DebugPage";
 import ChoosePlanPage from "./pages/seller/ChoosePlanPage";
 import PaymentResultPage from "./pages/seller/PaymentResultPage";
+import EditListingPage from "./pages/EditListingPage";
 
 // --- Contexts & Protection ---
 import { AuthProvider } from "./contexts/AuthContext";
@@ -232,6 +233,17 @@ function App() {
                 <ProtectedRoute requiredRole="seller">
                   <AppLayout>
                     <ChoosePlanPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/seller/edit/:id"
+              element={
+                <ProtectedRoute requiredRole="seller">
+                  <AppLayout>
+                    <EditListingPage />
                   </AppLayout>
                 </ProtectedRoute>
               }

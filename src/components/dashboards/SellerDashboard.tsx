@@ -1,6 +1,6 @@
 // src/components/dashboards/SellerDashboard.tsx
 // Role: SELLER — shows real listings from API + inspection status
-import { Plus, Eye, TrendingUp, Package, CheckCircle, Bike, Calendar, AlertCircle, RefreshCw, Search, Trash2, BarChart3, DollarSign, CreditCard } from 'lucide-react'
+import { Plus, Eye, TrendingUp, Package, CheckCircle, Bike, Calendar, AlertCircle, RefreshCw, Search, Trash2, BarChart3, DollarSign } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState, useMemo } from 'react'
 import { listingService, type Listing } from '../../services/listing.service'
@@ -353,16 +353,15 @@ export default function SellerDashboard() {
                         </div>
 
                         {needsPayment && (
-                          <div className="border-t border-orange-100 pt-4">
-                            <div className="mb-3 p-3 bg-orange-50 rounded-xl border border-orange-200 text-xs text-orange-700 font-medium">
-                              💳 Xe chờ thanh toán gói đăng bài. Nhấn để tiếp tục thanh toán.
+                          <div className="border-t border-amber-100 pt-4">
+                            <div className="mb-3 p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-700 font-medium">
+                              📝 Bài đăng chưa hoàn thành. Chỉnh sửa để tiếp tục quy trình đăng bán.
                             </div>
                             <button
-                              onClick={() => navigate(`/seller/choose-plan/${listing.id}`, { state: { listing } })}
-                              className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-xl text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 animate-pulse"
+                              onClick={() => navigate(`/seller/edit/${listing.id}`, { state: { listing } })}
+                              className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                             >
-                              <CreditCard size={16} />
-                              Tiếp tục thanh toán
+                              ✏️ Sửa &amp; Đăng bài
                             </button>
                           </div>
                         )}
