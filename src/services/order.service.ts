@@ -1,11 +1,11 @@
 // src/services/order.service.ts
-// Role: BUYER — Create and track purchase orders
+// Role: BUYER/SELLER/ADMIN — manage purchase orders
 import api from '../api/axiosConfig';
 import { API_ENDPOINTS } from '../config/api';
 
 export interface OrderCreatePayload {
     listingId: string;
-    description?: string; // Swagger: PlaceOrderRequest has listingId + description (no addressId)
+    description?: string;
 }
 
 export interface Order {
@@ -32,29 +32,12 @@ const normalizeOrder = (o: any): Order => ({
 
 export const orderService = {
     /**
-     * [BUYER] Tạo đơn mua xe mới
-     * POST /order/create  →  { listingId, description }
-     */
-    createOrder: async (payload: OrderCreatePayload): Promise<Order | null> => {
-        try {
-            const response = await api.post(API_ENDPOINTS.ORDER_CREATE, payload);
-            if (response.data?.code === 1000) {
-                return response.data.result;
-            }
-            throw new Error(response.data?.message || 'Tạo đơn hàng thất bại');
-        } catch (error) {
-            console.error('Error creating order:', error);
-            throw error;
-        }
-    },
-
-    /**
      * [BUYER] Lấy danh sách đơn hàng của tôi
      * GET /order
      */
     getMyOrders: async (): Promise<Order[]> => {
         try {
-            const response = await api.get(API_ENDPOINTS.ORDER_MY); // Updated to ORDER_MY per swagger
+            const response = await api.get(API_ENDPOINTS.ORDER_MY);
             if (response.data?.code === 1000) {
                 const arr = response.data.result ?? [];
                 return arr.map(normalizeOrder);
@@ -68,31 +51,19 @@ export const orderService = {
 
     /**
      * [ADMIN] Lấy tất cả đơn hàng trong hệ thống
+     * GET /order
      */
     getAllOrders: async (): Promise<Order[]> => {
         try {
             const response = await api.get(API_ENDPOINTS.ORDER);
             if (response.data?.code === 1000) {
-                return Array.isArray(response.data.result) ? response.data.result : [];
+                const arr = Array.isArray(response.data.result) ? response.data.result : [];
+                return arr.map(normalizeOrder);
             }
             return [];
         } catch (error) {
             console.error('Error fetching all orders:', error);
             return [];
-        }
-    },
-
-    /**
-     * [BUYER] Hủy đơn hàng
-     * POST /order/{id}/cancel
-     */
-    cancelOrder: async (orderId: string): Promise<boolean> => {
-        try {
-            const response = await api.post(API_ENDPOINTS.ORDER_CANCEL(orderId));
-            return response.data?.code === 1000;
-        } catch (error) {
-            console.error('Error cancelling order:', error);
-            return false;
         }
     },
 
