@@ -157,13 +157,15 @@ const KYC_STATUS_MAP: Record<
   },
 };
 const LISTING_STATUS_MAP: Record<string, { label: string; color: string }> = {
-  DRAFT: { label: "Nháp", color: "bg-slate-100 text-slate-600" },
-  PENDING: { label: "Chờ duyệt", color: "bg-amber-100 text-amber-700" },
-  APPROVED: { label: "Đã duyệt", color: "bg-indigo-100 text-indigo-700" },
-  LIVE: { label: "Đang bán", color: "bg-emerald-100 text-emerald-700" },
-  REJECTED: { label: "Từ chối", color: "bg-red-100 text-red-700" },
-  RESERVED: { label: "Đặt cọc", color: "bg-purple-100 text-purple-700" },
-  SOLD: { label: "Đã bán", color: "bg-teal-100 text-teal-700" },
+  DRAFT:    { label: "Nháp",          color: "bg-slate-100 text-slate-600" },
+  PAID:     { label: "Đã thanh toán", color: "bg-blue-100 text-blue-700" },
+  PENDING:  { label: "Chờ duyệt",    color: "bg-amber-100 text-amber-700" },
+  REJECT:   { label: "Từ chối",      color: "bg-red-100 text-red-700" },
+  LIVE:     { label: "Đang bán",     color: "bg-emerald-100 text-emerald-700" },
+  RESERVED: { label: "Đặt cọc",     color: "bg-purple-100 text-purple-700" },
+  SOLD:     { label: "Đã bán",       color: "bg-teal-100 text-teal-700" },
+  DELETED:  { label: "Đã xóa",      color: "bg-gray-200 text-gray-500" },
+  EXPIRED:  { label: "Hết hạn",     color: "bg-orange-100 text-orange-600" },
 };
 
 // ─── Reusable UI ─────────────────────────────────────────────────────────────
@@ -1916,10 +1918,14 @@ function ListingsTab({
   type ListFilter =
     | "ALL"
     | "PENDING"
-    | "APPROVED"
-    | "REJECTED"
+    | "PAID"
+    | "REJECT"
     | "LIVE"
-    | "DRAFT";
+    | "RESERVED"
+    | "SOLD"
+    | "DRAFT"
+    | "DELETED"
+    | "EXPIRED";
   const [filter, setFilter] = useState<ListFilter>("ALL");
   const [processing, setProcessing] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -1958,12 +1964,16 @@ function ListingsTab({
   };
 
   const filterTabs: { key: ListFilter; label: string }[] = [
-    { key: "ALL", label: "Tất cả" },
-    { key: "PENDING", label: "Chờ duyệt" },
-    { key: "APPROVED", label: "Đã duyệt" },
-    { key: "LIVE", label: "Đang bán" },
-    { key: "REJECTED", label: "Từ chối" },
-    { key: "DRAFT", label: "Nháp" },
+    { key: "ALL",      label: "Tất cả" },
+    { key: "PENDING",  label: "Chờ duyệt" },
+    { key: "PAID",     label: "Đã TT" },
+    { key: "LIVE",     label: "Đang bán" },
+    { key: "RESERVED", label: "Đặt cọc" },
+    { key: "SOLD",     label: "Đã bán" },
+    { key: "REJECT",   label: "Từ chối" },
+    { key: "DRAFT",    label: "Nháp" },
+    { key: "EXPIRED",  label: "Hết hạn" },
+    { key: "DELETED",  label: "Đã xóa" },
   ];
 
   return (
