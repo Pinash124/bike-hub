@@ -1,12 +1,56 @@
 // src/pages/seller/PaymentResultPage.tsx
-import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { CheckCircle2, XCircle, Home, FileText, Loader2 } from "lucide-react";
 import { paymentService } from "../../services/payment.service";
 
+const PAID_LISTING_IDS_KEY = "paidListingIds";
+const SCHEDULED_LISTING_IDS_KEY = "scheduledInspectionListingIds";
+
+const readListByKey = (key: string): string[] => {
+  try {
+    const raw = localStorage.getItem(key);
+    const parsed = raw ? (JSON.parse(raw) as string[]) : [];
+    return Array.isArray(parsed) ? parsed.map((id) => String(id)) : [];
+  } catch {
+    return [];
+  }
+};
+
+const removeListingFromKey = (key: string, listingId?: string | null) => {
+  if (!listingId) return;
+  const normalizedId = String(listingId);
+  const filtered = readListByKey(key).filter((id) => id !== normalizedId);
+  localStorage.setItem(key, JSON.stringify(filtered));
+};
+
+const markListingAsPaid = (listingId?: string | null) => {
+  if (!listingId) return;
+  try {
+    const raw = localStorage.getItem(PAID_LISTING_IDS_KEY);
+    const current = raw ? (JSON.parse(raw) as string[]) : [];
+    if (!Array.isArray(current)) return;
+    if (!current.includes(listingId)) {
+      localStorage.setItem(
+        PAID_LISTING_IDS_KEY,
+        JSON.stringify([...current, listingId]),
+      );
+    }
+    removeListingFromKey(SCHEDULED_LISTING_IDS_KEY, listingId);
+  } catch {
+    // Ignore local storage parse errors.
+  }
+};
+
 export default function PaymentResultPage() {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const initialSearchParamsRef = useRef<URLSearchParams | null>(null);
+  if (!initialSearchParamsRef.current) {
+    initialSearchParamsRef.current = new URLSearchParams(location.search);
+  }
+  const searchParams = initialSearchParamsRef.current;
 
   // PayOS usually returns these in the URL redirect:
   // ?code=00&id=123&cancel=false&status=PAID&orderCode=123
@@ -15,9 +59,24 @@ export default function PaymentResultPage() {
   const hasCode = searchParams.get("code");
   const orderCode = searchParams.get("orderCode");
   const orderId = searchParams.get("orderId"); // Passed from frontend payload
-  const pendingSubscriptionId = localStorage.getItem("pendingSubscriptionId");
-  const pendingOrderListingId = localStorage.getItem("pendingOrderListingId");
-  const isSubscriptionFlow = !!pendingSubscriptionId;
+  const flowRef = useRef<{
+    pendingSubscriptionId: string | null;
+    pendingListingId: string | null;
+    pendingOrderListingId: string | null;
+  } | null>(null);
+  if (!flowRef.current) {
+    flowRef.current = {
+      pendingSubscriptionId: localStorage.getItem("pendingSubscriptionId"),
+      pendingListingId: localStorage.getItem("pendingListingId"),
+      pendingOrderListingId: localStorage.getItem("pendingOrderListingId"),
+    };
+  }
+
+  const pendingSubscriptionId = flowRef.current.pendingSubscriptionId;
+  const pendingListingId = flowRef.current.pendingListingId;
+  const pendingOrderListingId = flowRef.current.pendingOrderListingId;
+
+  const isSubscriptionFlow = !!pendingSubscriptionId || !!pendingListingId;
   const isOrderFlow = !isSubscriptionFlow || !!pendingOrderListingId;
 
   const baseSuccess = (() => {
@@ -31,10 +90,29 @@ export default function PaymentResultPage() {
   >(baseSuccess ? "success" : isCancel ? "failed" : "pending");
 
   useEffect(() => {
+    // Keep callback params only for initial parse, then clean URL for better UX.
+    if (location.search) {
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.pathname, location.search, navigate]);
+
+  useEffect(() => {
     let isMounted = true;
 
     const verifyFromPayments = async () => {
       if (baseSuccess) {
+        if (pendingListingId) {
+          markListingAsPaid(pendingListingId);
+        }
+        if (pendingSubscriptionId) {
+          localStorage.removeItem("pendingSubscriptionId");
+        }
+        if (pendingListingId) {
+          localStorage.removeItem("pendingListingId");
+        }
+        if (pendingOrderListingId) {
+          localStorage.removeItem("pendingOrderListingId");
+        }
         if (isMounted) setDisplayStatus("success");
         return;
       }
@@ -67,8 +145,10 @@ export default function PaymentResultPage() {
 
         if (isSuccessStatus) {
           setDisplayStatus("success");
+          if (pendingListingId) {
+            markListingAsPaid(pendingListingId);
+          }
           localStorage.removeItem("pendingSubscriptionId");
-          localStorage.removeItem("pendingListingId");
           localStorage.removeItem("pendingOrderListingId");
         } else if (isFailedStatus) {
           setDisplayStatus("failed");
@@ -84,7 +164,21 @@ export default function PaymentResultPage() {
     return () => {
       isMounted = false;
     };
-  }, [baseSuccess, isCancel]);
+  }, [baseSuccess, isCancel, pendingOrderListingId, pendingSubscriptionId]);
+
+  useEffect(() => {
+    if (displayStatus !== "success") return;
+
+    if (isSubscriptionFlow) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      navigate("/buyer/orders", { replace: true });
+    }, 1800);
+
+    return () => window.clearTimeout(timer);
+  }, [displayStatus, isSubscriptionFlow, navigate]);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 font-sans">
@@ -115,7 +209,7 @@ export default function PaymentResultPage() {
           <p className="text-slate-500 font-medium text-lg mb-4">
             {displayStatus === "success"
               ? isSubscriptionFlow
-                ? "Cảm ơn bạn đã thanh toán! Bài đăng đã được gửi đến Admin để xử lý kiểm định trước khi hiển thị."
+                ? "Thanh toán gói thành công. Bước tiếp theo là đặt lịch kiểm định bắt buộc cho bài đăng của bạn."
                 : "Thanh toán đặt cọc thành công. Bạn có thể theo dõi tiến trình giao dịch tại trang đơn hàng của tôi."
               : displayStatus === "failed"
                 ? isSubscriptionFlow
@@ -149,16 +243,25 @@ export default function PaymentResultPage() {
 
           <div className="flex flex-col gap-3">
             <button
-              onClick={() =>
-                navigate(
-                  isSubscriptionFlow ? "/seller/dashboard" : "/buyer/orders",
-                )
-              }
+              onClick={() => {
+                if (isSubscriptionFlow) {
+                  const schedulePath = pendingListingId
+                    ? `/seller/schedule?listingId=${encodeURIComponent(pendingListingId)}`
+                    : "/seller/dashboard";
+                  localStorage.removeItem("pendingSubscriptionId");
+                  localStorage.removeItem("pendingListingId");
+                  navigate(schedulePath);
+                  return;
+                }
+
+                localStorage.removeItem("pendingOrderListingId");
+                navigate("/buyer/orders");
+              }}
               className="w-full py-4 text-sm font-black text-white uppercase tracking-widest rounded-2xl bg-slate-900 hover:bg-slate-800 transition flex items-center justify-center gap-2"
             >
               <FileText size={18} />{" "}
               {isSubscriptionFlow
-                ? "Quản lý xe của tôi"
+                ? "Đặt lịch kiểm định"
                 : "Xem đơn hàng của tôi"}
             </button>
             <button

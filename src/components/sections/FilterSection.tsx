@@ -23,8 +23,7 @@ export default function FilterSection() {
       try {
         const data = await listingService.getListings();
         const activeListings = data.filter(
-          (listing: Listing) =>
-            listing.status === "LIVE" || listing.status === "PAID",
+          (listing: Listing) => listing.status === "LIVE",
         );
         // Map API data to UI format
         const mappedBikes = activeListings.map((listing: Listing) => ({

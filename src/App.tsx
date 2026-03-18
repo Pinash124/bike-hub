@@ -157,6 +157,14 @@ function App() {
                 </AppLayout>
               }
             />
+            <Route
+              path="/seller/payment/result"
+              element={
+                <AppLayout>
+                  <PaymentResultPage />
+                </AppLayout>
+              }
+            />
             {/* --- Product Discovery --- */}
             <Route
               path="/search"

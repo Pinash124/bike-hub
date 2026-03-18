@@ -293,9 +293,9 @@ export default function CreateListingPage() {
         );
         return;
       }
-
-      setSuccess(true);
-      setTimeout(() => navigate("/seller/dashboard"), 1800);
+      setError(
+        "Tạo listing thành công nhưng chưa nhận được mã listing. Vui lòng thử lại.",
+      );
     } catch (err: unknown) {
       console.error("Create listing error:", err);
       const errorMessage =

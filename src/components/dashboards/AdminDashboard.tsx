@@ -1269,52 +1269,39 @@ function OrdersTab({
   loading: boolean;
   onRefresh: () => void;
 }) {
-  const ORDER_STATUS_LABEL: Record<string, string> = {
-    PENDING:   'Chờ xác nhận',
-    EXPIRED:   'Hết hạn',
-    PAID:      'Đã thanh toán',
-    REFUND:    'Hoàn tiền',
-    IN_TRANSIT: 'Đang giao xe',
-    DELIVERED: 'Đã giao xe',
-    CONFIRMED: 'Buyer xác nhận',
-    COMPLETE:  'Hoàn tất',
-    CANCELLED: 'Đã hủy',
-  };
-  const ORDER_STATUS_COLOR: Record<string, string> = {
-    PENDING:    'bg-amber-100 text-amber-700',
-    EXPIRED:    'bg-slate-100 text-slate-500',
-    PAID:       'bg-blue-100 text-blue-700',
-    REFUND:     'bg-orange-100 text-orange-700',
-    IN_TRANSIT: 'bg-purple-100 text-purple-700',
-    DELIVERED:  'bg-indigo-100 text-indigo-700',
-    CONFIRMED:  'bg-green-100 text-green-700',
-    COMPLETE:   'bg-emerald-100 text-emerald-700',
-    CANCELLED:  'bg-red-100 text-red-700',
-  };
+  const [filter, setFilter] = useState<Order["status"] | "ALL">("ALL");
 
-  const filterStatuses = ['ALL','PENDING','PAID','IN_TRANSIT','DELIVERED','CONFIRMED','COMPLETE','CANCELLED','EXPIRED','REFUND'] as const;
-  type OrderFilter = typeof filterStatuses[number];
-  const [filter, setFilter] = useState<OrderFilter>('ALL');
-
-  const getStatus = (order: Order) => order.orderStatus || order.status || '';
-
-  const filtered = filter === 'ALL' ? orders : orders.filter(o => getStatus(o) === filter);
+  const filtered =
+    filter === "ALL" ? orders : orders.filter((o) => o.status === filter);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 flex-wrap">
-        {filterStatuses.map(f => (
+        {(
+          [
+            "ALL",
+            "PENDING",
+            "CONFIRMED",
+            "SHIPPING",
+            "COMPLETED",
+            "CANCELLED",
+          ] as const
+        ).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
-              filter === f ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-slate-400'
-            }`}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${filter === f
+              ? "bg-slate-900 text-white"
+              : "bg-white border border-slate-200 text-slate-500 hover:border-slate-400"
+              }`}
           >
-            {f === 'ALL' ? 'Tất cả' : (ORDER_STATUS_LABEL[f] ?? f)}
+            {f === "ALL" ? "Tất cả" : f}
           </button>
         ))}
-        <button onClick={onRefresh} className="ml-auto p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 transition">
+        <button
+          onClick={onRefresh}
+          className="ml-auto p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 transition"
+        >
           <RefreshCw size={15} />
         </button>
       </div>
@@ -1333,37 +1320,47 @@ function OrdersTab({
                   <th className="px-6 py-3.5">Người Mua</th>
                   <th className="px-6 py-3.5">Bài Đăng</th>
                   <th className="px-6 py-3.5">Giá</th>
-                  <th className="px-6 py-3.5">Trạng Thái Đơn</th>
+                  <th className="px-6 py-3.5">Trạng Thái</th>
                   <th className="px-6 py-3.5">Ngày Tạo</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {filtered.map((order) => {
-                  const st = getStatus(order);
-                  const buyerName = order.buyer?.name || order.buyer?.username || order.buyerId || '—';
-                  const listingTitle = order.listing?.title || (order.listingId ? order.listingId.slice(0, 8) : '—');
-                  const price = order.totalPrice || order.listing?.price || 0;
-                  return (
-                    <tr key={order.id} className="hover:bg-slate-50/60 transition">
-                      <td className="px-6 py-3.5 text-sm font-semibold text-slate-800">
-                        {(order.id || '').slice(0, 8).toUpperCase()}
-                      </td>
-                      <td className="px-6 py-3.5 text-sm text-slate-600">{buyerName}</td>
-                      <td className="px-6 py-3.5 text-sm text-slate-600 max-w-[180px] truncate">{listingTitle}</td>
-                      <td className="px-6 py-3.5 text-sm font-bold text-slate-800">
-                        {price.toLocaleString('vi-VN')} ₫
-                      </td>
-                      <td className="px-6 py-3.5">
-                        <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${ORDER_STATUS_COLOR[st] ?? 'bg-slate-100 text-slate-600'}`}>
-                          {ORDER_STATUS_LABEL[st] ?? st}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3.5 text-sm text-slate-500">
-                        {order.createdAt ? new Date(order.createdAt).toLocaleDateString('vi-VN') : '—'}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {filtered.map((order) => (
+                  <tr
+                    key={order.id}
+                    className="hover:bg-slate-50/60 transition"
+                  >
+                    <td className="px-6 py-3.5 text-sm font-semibold text-slate-800">
+                      {order.id.slice(0, 8)}
+                    </td>
+                    <td className="px-6 py-3.5 text-sm text-slate-600">
+                      {order.buyerId}
+                    </td>
+                    <td className="px-6 py-3.5 text-sm text-slate-600">
+                      {order.listingId.slice(0, 8)}
+                    </td>
+                    <td className="px-6 py-3.5 text-sm font-bold text-slate-800">
+                      {order.totalPrice.toLocaleString("vi-VN")} ₫
+                    </td>
+                    <td className="px-6 py-3.5">
+                      <span
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${order.status === "COMPLETED"
+                          ? "bg-green-100 text-green-700"
+                          : order.status === "PENDING"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : order.status === "CANCELLED"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-blue-100 text-blue-700"
+                          }`}
+                      >
+                        {order.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3.5 text-sm text-slate-500">
+                      {new Date(order.createdAt).toLocaleDateString("vi-VN")}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

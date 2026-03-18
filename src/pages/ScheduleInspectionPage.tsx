@@ -1,49 +1,69 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { addressService, type Address } from "../services/address.service";
 import { inspectionService } from "../services/inspection.service";
+import { listingService } from "../services/listing.service";
 import {
   locationService,
   type InspectionLocation,
 } from "../services/location.service";
 
-type InspectionType = "ONSITE" | "COMPANY";
+const PAID_LISTING_IDS_KEY = "paidListingIds";
+const SCHEDULED_LISTING_IDS_KEY = "scheduledInspectionListingIds";
 
-type InspectionRequestPayload = {
-  inspectionType: InspectionType;
-  listingId: string;
-  scheduledAt: string;
-  inspectionLocationId?: string;
-  contact?: {
-    nameContact: string;
-    phoneContact: string;
-    addressLine: string;
-  };
+const readListByKey = (key: string): string[] => {
+  try {
+    const raw = localStorage.getItem(key);
+    const parsed = raw ? (JSON.parse(raw) as string[]) : [];
+    return Array.isArray(parsed) ? parsed.map((id) => String(id)) : [];
+  } catch {
+    return [];
+  }
 };
 
-const PROFILE_ROUTE = "/profile";
-const SELLER_DASHBOARD_ROUTE = "/seller/dashboard";
+const markListingScheduled = (listingId: string) => {
+  const normalizedId = String(listingId);
+  const scheduled = readListByKey(SCHEDULED_LISTING_IDS_KEY);
+  if (!scheduled.includes(normalizedId)) {
+    localStorage.setItem(
+      SCHEDULED_LISTING_IDS_KEY,
+      JSON.stringify([...scheduled, normalizedId]),
+    );
+  }
 
-const formatInputDateTime = (date: Date): string => {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  const paid = readListByKey(PAID_LISTING_IDS_KEY).filter(
+    (id) => id !== normalizedId,
+  );
+  localStorage.setItem(PAID_LISTING_IDS_KEY, JSON.stringify(paid));
+};
+
+const hasLocalPaidMark = (listingId: string): boolean => {
+  try {
+    const raw = localStorage.getItem(PAID_LISTING_IDS_KEY);
+    const parsed = raw ? (JSON.parse(raw) as string[]) : [];
+    return Array.isArray(parsed) && parsed.includes(String(listingId));
+  } catch {
+    return false;
+  }
 };
 
 export default function ScheduleInspectionPage() {
+  const [searchParams] = useSearchParams();
   const { state } = useLocation() as { state?: { listingId?: string } };
   const navigate = useNavigate();
-  const listingId = state?.listingId;
+  const listingId =
+    state?.listingId ?? searchParams.get("listingId") ?? undefined;
 
   const [locations, setLocations] = useState<InspectionLocation[]>([]);
   const [isLoadingLocations, setIsLoadingLocations] = useState(false);
-  const [inspectionType, setInspectionType] =
-    useState<InspectionType>("ONSITE");
+  const [inspectionType, setInspectionType] = useState<"ONSITE" | "COMPANY">(
+    "ONSITE",
+  );
   const [inspectionLocationId, setInspectionLocationId] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
   const [error, setError] = useState("");
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
     null,
   );
@@ -56,51 +76,45 @@ export default function ScheduleInspectionPage() {
   );
   const hasContactInfo = addresses.length > 0 && selectedAddress !== null;
 
-  const minDateTime = useMemo(() => formatInputDateTime(new Date()), []);
-
-  const loadCompanyLocations = async () => {
-    setIsLoadingLocations(true);
-    try {
-      const data = await locationService.getMyCompanyLocation();
-      setLocations(data);
-    } catch (err) {
-      console.error(err);
-      setLocations([]);
-    } finally {
-      setIsLoadingLocations(false);
-    }
-  };
-
-  const loadAddresses = async () => {
-    setIsLoadingAddresses(true);
-    try {
-      const data = await addressService.getMyAddresses();
-      setAddresses(data);
-      setSelectedAddressId(data[0] ? String(data[0].id) : null);
-    } catch (err) {
-      console.error(err);
-      setAddresses([]);
-      setSelectedAddressId(null);
-    } finally {
-      setIsLoadingAddresses(false);
-    }
-  };
+  const nowForInput = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const minDateTime = `${nowForInput.getFullYear()}-${pad(nowForInput.getMonth() + 1)}-${pad(nowForInput.getDate())}T${pad(nowForInput.getHours())}:${pad(nowForInput.getMinutes())}`;
 
   useEffect(() => {
-    const loadData = async (): Promise<void> => {
+    const loadData = async () => {
       if (inspectionType === "COMPANY") {
-        await loadCompanyLocations();
+        setIsLoadingLocations(true);
+        try {
+          const data = await locationService.getMyCompanyLocation();
+          setLocations(data);
+        } catch (err) {
+          console.error(err);
+          setLocations([]);
+        } finally {
+          setIsLoadingLocations(false);
+        }
         return;
       }
 
-      await loadAddresses();
+      setIsLoadingAddresses(true);
+      try {
+        const data = await addressService.getMyAddresses();
+        setAddresses(data);
+        setSelectedAddressId(data[0] ? String(data[0].id) : null);
+      } catch (err) {
+        console.error(err);
+        setAddresses([]);
+        setSelectedAddressId(null);
+      } finally {
+        setIsLoadingAddresses(false);
+      }
     };
 
     void loadData();
   }, [inspectionType]);
 
   const goToProfile = () => {
-    navigate(PROFILE_ROUTE, {
+    navigate("/profile", {
       state: {
         returnTo: "/seller/schedule",
         listingId,
@@ -108,7 +122,7 @@ export default function ScheduleInspectionPage() {
     });
   };
 
-  const handleInspectionTypeChange = (value: InspectionType) => {
+  const handleInspectionTypeChange = (value: "ONSITE" | "COMPANY") => {
     if (value === "ONSITE" && !isLoadingAddresses && addresses.length === 0) {
       setInspectionType("ONSITE");
       setError(
@@ -121,30 +135,62 @@ export default function ScheduleInspectionPage() {
     setInspectionType(value);
   };
 
-  const validateForm = (): string | null => {
-    if (!listingId) return "Missing listing id.";
-    if (!scheduledAt) return "Vui long chon thoi gian.";
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setError("");
+
+    if (!listingId) {
+      setError("Missing listing id.");
+      return;
+    }
+    if (!scheduledAt) {
+      setError("Vui long chon thoi gian.");
+      return;
+    }
 
     const selectedMs = new Date(scheduledAt).getTime();
     if (Number.isNaN(selectedMs) || selectedMs < Date.now()) {
-      return "Khong the chon thoi gian trong qua khu.";
+      setError("Khong the chon thoi gian trong qua khu.");
+      return;
     }
 
     if (inspectionType === "ONSITE" && !hasContactInfo) {
-      return "Ban chua co thong tin lien he cho kiem dinh tai noi ban. Vui long cap nhat trong Profile.";
+      setError(
+        "Ban chua co thong tin lien he cho kiem dinh tai noi ban. Vui long cap nhat trong Profile.",
+      );
+      return;
     }
 
     if (inspectionType === "COMPANY" && !inspectionLocationId) {
-      return "Vui long chon dia diem kiem tra.";
+      setError("Vui long chon dia diem kiem tra.");
+      return;
     }
 
-    return null;
-  };
+    try {
+      const listing = await listingService.getSellerListingById(listingId);
+      const isPaidLocally = hasLocalPaidMark(listingId);
+      if (listing?.status === "DRAFT" && !isPaidLocally) {
+        setError(
+          "Listing dang o trang thai DRAFT. Vui long chon goi va thanh toan truoc khi dat lich kiem dinh.",
+        );
+        return;
+      }
+    } catch {
+      setError("Khong the kiem tra trang thai listing. Vui long thu lai.");
+      return;
+    }
 
-  const buildPayload = (): InspectionRequestPayload | null => {
-    if (!listingId) return null;
-
-    const payload: InspectionRequestPayload = {
+    const payload: {
+      inspectionType: "ONSITE" | "COMPANY";
+      listingId: string;
+      scheduledAt: string;
+      inspectionLocationId?: string;
+      contact?: {
+        nameContact: string;
+        phoneContact: string;
+        addressLine: string;
+      };
+    } = {
       inspectionType,
       listingId,
       scheduledAt: new Date(scheduledAt).toISOString(),
@@ -162,37 +208,14 @@ export default function ScheduleInspectionPage() {
       payload.inspectionLocationId = inspectionLocationId;
     }
 
-    return payload;
-  };
-
-  const handleSubmit = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    setError("");
-
-    const validationError = validateForm();
-    if (validationError) {
-      setError(validationError);
+    const ok = await inspectionService.requestInspection(payload);
+    if (ok) {
+      markListingScheduled(listingId);
+      navigate("/seller/dashboard");
       return;
     }
 
-    const payload = buildPayload();
-    if (!payload) {
-      setError("Missing listing id.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const ok = await inspectionService.requestInspection(payload);
-      if (ok) {
-        navigate(SELLER_DASHBOARD_ROUTE);
-        return;
-      }
-
-      setError("Dat lich kiem tra that bai. Vui long thu lai.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    setError("Dat lich kiem tra that bai. Vui long thu lai.");
   };
 
   return (
@@ -201,10 +224,7 @@ export default function ScheduleInspectionPage() {
         <h2 className="mb-4 text-xl font-bold">Chọn lịch kiểm tra</h2>
         {error && <div className="mb-3 text-red-600">{error}</div>}
 
-        <form
-          className="rounded-lg bg-white p-6 shadow"
-          onSubmit={handleSubmit}
-        >
+        <div className="rounded-lg bg-white p-6 shadow">
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium">Loại kiểm tra</label>
@@ -212,7 +232,9 @@ export default function ScheduleInspectionPage() {
                 className="mt-1 w-full rounded border p-2"
                 value={inspectionType}
                 onChange={(e) =>
-                  handleInspectionTypeChange(e.target.value as InspectionType)
+                  handleInspectionTypeChange(
+                    e.target.value as "ONSITE" | "COMPANY",
+                  )
                 }
               >
                 <option value="ONSITE">Tại nhà (kiểm tra tại nơi bán)</option>
@@ -345,22 +367,28 @@ export default function ScheduleInspectionPage() {
 
             <div className="flex gap-3">
               <button
-                type="submit"
                 className="rounded bg-green-600 px-4 py-2 text-white"
-                disabled={isSubmitting}
+                onClick={handleSubmit}
               >
-                {isSubmitting ? "Dang dat lich..." : "Xác nhận và đặt lịch"}
+                Xác nhận và đặt lịch
               </button>
               <button
-                type="button"
                 className="rounded border px-4 py-2"
-                onClick={() => navigate(SELLER_DASHBOARD_ROUTE)}
+                onClick={() =>
+                  listingId && navigate(`/seller/choose-plan/${listingId}`)
+                }
+              >
+                Chọn gói trước
+              </button>
+              <button
+                className="rounded border px-4 py-2"
+                onClick={() => navigate("/seller/dashboard")}
               >
                 Hủy
               </button>
             </div>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

@@ -185,12 +185,12 @@ export const orderService = {
     description?: string;
   }): Promise<Order | null> => {
     throw new Error(
-      "createOrder đã bị BE loại bỏ. Hãy dùng paymentService.createOrderPayment(listingId).",
+      "createOrder da bi BE loai bo. Hay dung paymentService.createOrderPayment(listingId).",
     );
   },
 
   // Legacy compatibility shim.
   cancelOrder: async (_orderId: string): Promise<boolean> => {
-    throw new Error("cancelOrder không còn được hỗ trợ trong flow mới.");
+    throw new Error("cancelOrder khong con duoc ho tro trong flow moi.");
   },
 };

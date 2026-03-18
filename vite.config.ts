@@ -1,7 +1,7 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
-const RAILWAY_API = 'https://bikehub-production-1c50.up.railway.app'
+const RAILWAY_API = "https://bikehub-production-1c50.up.railway.app";
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -10,71 +10,77 @@ export default defineConfig({
     proxy: {
       // Proxy mọi request /auth, /user, /listing, /brand, /inspection, /kyc
       // qua Railway backend để tránh lỗi CORS khi chạy local
-      '/auth': {
+      "/auth": {
         target: RAILWAY_API,
         changeOrigin: true,
         secure: true,
       },
-      '/user': {
+      "/user": {
         target: RAILWAY_API,
         changeOrigin: true,
         secure: true,
       },
-      '/listing': {
+      "/listing": {
         target: RAILWAY_API,
         changeOrigin: true,
         secure: true,
       },
-      '/brand': {
+      "/brand": {
         target: RAILWAY_API,
         changeOrigin: true,
         secure: true,
       },
-      '/inspection': {
+      "/inspection": {
         target: RAILWAY_API,
         changeOrigin: true,
         secure: true,
       },
-      '/kyc': {
+      "/kyc": {
         target: RAILWAY_API,
         changeOrigin: true,
         secure: true,
       },
-      '/component': {
+      "/component": {
         target: RAILWAY_API,
         changeOrigin: true,
         secure: true,
       },
-      '/location': {
+      "/location": {
         target: RAILWAY_API,
         changeOrigin: true,
         secure: true,
       },
-      '/order': {
+      "/order": {
         target: RAILWAY_API,
         changeOrigin: true,
         secure: true,
       },
-      '/payment': {
+      // Proxy only payment API endpoints so SPA callback routes are never forwarded.
+      "^/payment/(order|subscription|all|my-payment|history)(?:$|/)": {
         target: RAILWAY_API,
         changeOrigin: true,
         secure: true,
       },
-      '/address': {
+      "^/payment/.+/(status|refund)$": {
         target: RAILWAY_API,
         changeOrigin: true,
         secure: true,
       },
-      '/plan': {
+      "/address": {
         target: RAILWAY_API,
         changeOrigin: true,
         secure: true,
       },
-      '/subscription': {
+      "/plan": {
+        target: RAILWAY_API,
+        changeOrigin: true,
+        secure: true,
+      },
+      "/subscription": {
         target: RAILWAY_API,
         changeOrigin: true,
         secure: true,
       },
     },
   },
-})
+});
