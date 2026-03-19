@@ -30,6 +30,7 @@ export const paymentService = {
   createOrderPayment: async (
     listingId: string,
   ): Promise<PaymentCreationResponse | null> => {
+    // Tạo link thanh toán cho đơn hàng theo listingId
     try {
       const response = await api.post(API_ENDPOINTS.PAYMENT_CREATE_ORDER, {
         listingId,

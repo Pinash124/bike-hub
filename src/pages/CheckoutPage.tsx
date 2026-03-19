@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Checkout from '../components/buyer/Checkout/Checkout';
 import { addressService, type Address } from '../services/address.service';
@@ -9,16 +9,21 @@ export default function CheckoutPage() {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // "Mua ngay" (Buy Now) → single listingId
-  // Cart checkout   → listingIds[]
+  // Nhận dữ liệu điều hướng:
+  // - "Mua ngay" → chỉ có một listingId
+  // - "Giỏ hàng" → có nhiều listingIds[]
   const listingId: string | undefined = location.state?.listingId;
   const listingIds: string[] | undefined = location.state?.listingIds;
 
-  // Normalise: always work with an array
+  // Chuẩn hóa: luôn làm việc với mảng để xử lý thống nhất
   const ids = listingIds ?? (listingId ? [listingId] : []);
 
   useEffect(() => {
-    addressService.getMyAddresses().then(setAddresses).catch(console.error).finally(() => setIsLoading(false));
+    // Lấy danh sách địa chỉ của người mua trước khi hiển thị form
+    addressService.getMyAddresses()
+      .then(setAddresses)
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
   }, []);
 
   if (isLoading) {

@@ -34,7 +34,9 @@ export const Checkout: React.FC<CheckoutProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Build a display list from cartItems (if coming from cart) or just show listing IDs
+  // Tạo danh sách hiển thị:
+  // - Nếu đến từ giỏ hàng thì lấy thông tin từ cartItems
+  // - Nếu chỉ có listingId thì hiển thị thông tin tối thiểu
   const displayItems = listingIds.map((lid) => {
     const cartItem = cartItems.find((c) => c.productId === lid);
     return {
@@ -49,6 +51,7 @@ export const Checkout: React.FC<CheckoutProps> = ({
   const totalPrice = displayItems.reduce((sum, item) => sum + item.price, 0);
 
   const handlePayment = async () => {
+    // 1) Kiểm tra đã chọn địa chỉ giao hàng
     if (!selectedAddressId) {
       setError("Vui lòng chọn địa chỉ giao hàng.");
       return;
@@ -57,19 +60,24 @@ export const Checkout: React.FC<CheckoutProps> = ({
     setIsProcessing(true);
 
     try {
-      // BE flow: buyer pays by listingId, backend creates/locks order internally.
+      // 2) Flow BE hiện tại: thanh toán theo 1 listingId,
+      //    BE sẽ tự tạo/khóa order tương ứng
       const firstListingId = listingIds[0];
       if (!firstListingId) {
         throw new Error("Không tìm thấy xe cần thanh toán.");
       }
 
+      // 3) Tạo link thanh toán
       const payment = await paymentService.createOrderPayment(firstListingId);
 
       if (payment?.paymentUrl) {
+        // 4) Lưu trạng thái tạm để xác thực ở trang kết quả
         localStorage.setItem("pendingOrderListingId", firstListingId);
+        // 5) Xóa giỏ và chuyển sang cổng thanh toán
         clearCart();
         window.location.href = payment.paymentUrl;
       } else {
+        // Trường hợp không có URL, chuyển thẳng sang trang đơn hàng
         navigate("/buyer/orders", { replace: true });
       }
     } catch (err: any) {

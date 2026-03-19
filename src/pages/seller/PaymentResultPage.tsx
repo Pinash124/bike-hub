@@ -52,7 +52,7 @@ export default function PaymentResultPage() {
   }
   const searchParams = initialSearchParamsRef.current;
 
-  // PayOS usually returns these in the URL redirect:
+  // PayOS thường trả các tham số qua URL redirect:
   // ?code=00&id=123&cancel=false&status=PAID&orderCode=123
   const paymentStatus = searchParams.get("status");
   const isCancel = searchParams.get("cancel") === "true";
@@ -79,6 +79,7 @@ export default function PaymentResultPage() {
   const isSubscriptionFlow = !!pendingSubscriptionId || !!pendingListingId;
   const isOrderFlow = !isSubscriptionFlow || !!pendingOrderListingId;
 
+  // Xác định trạng thái thành công nhanh dựa trên query params
   const baseSuccess = (() => {
     if (paymentStatus === "PAID" && !isCancel) return true;
     if (hasCode === "00" && !isCancel) return true;
@@ -90,7 +91,7 @@ export default function PaymentResultPage() {
   >(baseSuccess ? "success" : isCancel ? "failed" : "pending");
 
   useEffect(() => {
-    // Keep callback params only for initial parse, then clean URL for better UX.
+    // Chỉ đọc params ở lần đầu, sau đó làm sạch URL cho gọn
     if (location.search) {
       navigate(location.pathname, { replace: true });
     }
@@ -100,6 +101,7 @@ export default function PaymentResultPage() {
     let isMounted = true;
 
     const verifyFromPayments = async () => {
+      // Nếu đã biết thành công từ query params thì không cần gọi API nữa
       if (baseSuccess) {
         if (pendingListingId) {
           markListingAsPaid(pendingListingId);
@@ -122,6 +124,7 @@ export default function PaymentResultPage() {
       }
 
       try {
+        // Trường hợp chưa rõ: gọi API để kiểm tra lịch sử thanh toán
         const payments = await paymentService.getMyPayments();
         const match = pendingSubscriptionId
           ? payments.find(
