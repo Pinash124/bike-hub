@@ -167,7 +167,7 @@ export const Checkout: React.FC<CheckoutProps> = ({
                 Giao hàng tiêu chuẩn
               </div>
               <div className="text-sm text-gray-500 mt-0.5">
-                3–5 ngày làm việc • Miễn phí
+                3–5 ngày làm việc.
               </div>
             </div>
           </div>

@@ -707,6 +707,28 @@ export default function ProfilePage() {
                                   </p>
                                 </div>
                               </div>
+                              {(contacts[0].bankCode ||
+                                contacts[0].accountNumber) && (
+                                <div className="flex items-start gap-3">
+                                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 mt-0.5">
+                                    <ShieldCheck
+                                      size={16}
+                                      className="text-green-600"
+                                    />
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="text-sm font-semibold text-slate-700">
+                                      Ngân hàng
+                                    </p>
+                                    <p className="text-slate-900 leading-relaxed">
+                                      {contacts[0].bankCode || "—"}
+                                      {contacts[0].accountNumber
+                                        ? ` • ${contacts[0].accountNumber}`
+                                        : ""}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
