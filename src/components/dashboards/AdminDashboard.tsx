@@ -161,15 +161,15 @@ const KYC_STATUS_MAP: Record<
   },
 };
 const LISTING_STATUS_MAP: Record<string, { label: string; color: string }> = {
-  DRAFT:    { label: "Nháp",          color: "bg-slate-100 text-slate-600" },
-  PAID:     { label: "Đã thanh toán", color: "bg-blue-100 text-blue-700" },
-  PENDING:  { label: "Chờ duyệt",    color: "bg-amber-100 text-amber-700" },
-  REJECT:   { label: "Từ chối",      color: "bg-red-100 text-red-700" },
-  LIVE:     { label: "Đang bán",     color: "bg-emerald-100 text-emerald-700" },
-  RESERVED: { label: "Đặt cọc",     color: "bg-purple-100 text-purple-700" },
-  SOLD:     { label: "Đã bán",       color: "bg-teal-100 text-teal-700" },
-  DELETED:  { label: "Đã xóa",      color: "bg-gray-200 text-gray-500" },
-  EXPIRED:  { label: "Hết hạn",     color: "bg-orange-100 text-orange-600" },
+  DRAFT: { label: "Nháp", color: "bg-slate-100 text-slate-600" },
+  PAID: { label: "Đã thanh toán", color: "bg-blue-100 text-blue-700" },
+  PENDING: { label: "Chờ duyệt", color: "bg-amber-100 text-amber-700" },
+  REJECT: { label: "Từ chối", color: "bg-red-100 text-red-700" },
+  LIVE: { label: "Đang bán", color: "bg-emerald-100 text-emerald-700" },
+  RESERVED: { label: "Đặt cọc", color: "bg-purple-100 text-purple-700" },
+  SOLD: { label: "Đã bán", color: "bg-teal-100 text-teal-700" },
+  DELETED: { label: "Đã xóa", color: "bg-gray-200 text-gray-500" },
+  EXPIRED: { label: "Hết hạn", color: "bg-orange-100 text-orange-600" },
 };
 
 /**
@@ -177,12 +177,12 @@ const LISTING_STATUS_MAP: Record<string, { label: string; color: string }> = {
  */
 function formatDateTime(val: any, options: { onlyDate?: boolean; fallbackFrom?: any } = {}): string {
   let targetVal = val;
-  
+
   // If specific value is missing, try to find a similar key in the fallback object
   if (!targetVal && options.fallbackFrom) {
     const keys = Object.keys(options.fallbackFrom);
-    const similarKey = keys.find(k => 
-      ['scheduleAt', 'appointmentAt', 'appointmentDate', 'date', 'time'].includes(k)
+    const similarKey = keys.find(k =>
+      ['scheduledAt', 'scheduleAt', 'appointmentAt', 'appointmentDate', 'date', 'time'].includes(k)
     );
     if (similarKey) targetVal = options.fallbackFrom[similarKey];
   }
@@ -195,7 +195,17 @@ function formatDateTime(val: any, options: { onlyDate?: boolean; fallbackFrom?: 
       const [y, m, d, h = 0, i = 0, s = 0] = targetVal;
       date = new Date(y, m - 1, d, h, i, s);
     } else {
+      // Try standard parsing
       date = new Date(targetVal);
+
+      // If invalid, try parsing DD-MM-YYYY HH:mm or DD/MM/YYYY HH:mm
+      if (isNaN(date.getTime()) && typeof targetVal === 'string') {
+        const dmyMatch = targetVal.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+        if (dmyMatch) {
+          const [_, d, m, y, h = 0, i = 0, s = 0] = dmyMatch;
+          date = new Date(Number(y), Number(m) - 1, Number(d), Number(h), Number(i), Number(s));
+        }
+      }
     }
 
     if (isNaN(date.getTime())) return "—";
@@ -1253,11 +1263,10 @@ function InspectionsTab({
                       <td className="px-5 py-3.5">
                         {ins.inspectionResult ? (
                           <span
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
-                              ins.inspectionResult === "PASSED"
-                                ? "bg-emerald-100 text-emerald-700"
-                                : "bg-red-100 text-red-600"
-                            }`}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${ins.inspectionResult === "PASSED"
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-red-100 text-red-600"
+                              }`}
                           >
                             {ins.inspectionResult === "PASSED" ? "✓ Đạt" : "✗ Không đạt"}
                           </span>
@@ -2051,16 +2060,16 @@ function ListingsTab({
   const pendingCount = listings.filter((l) => l.status === "PENDING").length;
 
   const filterTabs: { key: ListFilter; label: string }[] = [
-    { key: "ALL",      label: "Tất cả" },
-    { key: "PENDING",  label: "Chờ duyệt" },
-    { key: "PAID",     label: "Đã TT" },
-    { key: "LIVE",     label: "Đang bán" },
+    { key: "ALL", label: "Tất cả" },
+    { key: "PENDING", label: "Chờ duyệt" },
+    { key: "PAID", label: "Đã TT" },
+    { key: "LIVE", label: "Đang bán" },
     { key: "RESERVED", label: "Đặt cọc" },
-    { key: "SOLD",     label: "Đã bán" },
-    { key: "REJECT",   label: "Từ chối" },
-    { key: "DRAFT",    label: "Nháp" },
-    { key: "EXPIRED",  label: "Hết hạn" },
-    { key: "DELETED",  label: "Đã xóa" },
+    { key: "SOLD", label: "Đã bán" },
+    { key: "REJECT", label: "Từ chối" },
+    { key: "DRAFT", label: "Nháp" },
+    { key: "EXPIRED", label: "Hết hạn" },
+    { key: "DELETED", label: "Đã xóa" },
   ];
 
   return (

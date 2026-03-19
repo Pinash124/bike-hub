@@ -56,7 +56,17 @@ function formatDateTime(val: any, options: { onlyDate?: boolean } = {}): string 
       const [y, m, d, h = 0, i = 0, s = 0] = val;
       date = new Date(y, m - 1, d, h, i, s);
     } else {
+      // Try standard parsing
       date = new Date(val);
+
+      // If invalid, try parsing DD-MM-YYYY HH:mm or DD/MM/YYYY HH:mm
+      if (isNaN(date.getTime()) && typeof val === 'string') {
+        const dmyMatch = val.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+        if (dmyMatch) {
+          const [_, d, m, y, h = 0, i = 0, s = 0] = dmyMatch;
+          date = new Date(Number(y), Number(m) - 1, Number(d), Number(h), Number(i), Number(s));
+        }
+      }
     }
     if (isNaN(date.getTime())) return "—";
 

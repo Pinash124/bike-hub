@@ -171,10 +171,10 @@ export const inspectionService = {
      * [ADMIN] Lấy inspector rảnh vào thời gian schedule
      * GET /inspection/available-inspector?startTime=...
      */
-    getAvailableInspectors: async (startTime: string): Promise<any[]> => {
+    getAvailableInspectors: async (scheduleAt: string): Promise<any[]> => {
         try {
             const response = await api.get(API_ENDPOINTS.INSPECTION_AVAILABLE_INSPECTOR, {
-                params: { startTime }
+                params: { scheduleAt }
             });
             if (response.data?.code === 1000) {
                 return response.data.result ?? [];
