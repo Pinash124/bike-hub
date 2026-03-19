@@ -2,7 +2,6 @@
 import {
   CheckCircle,
   XCircle,
-  Clock,
   AlertCircle,
   Edit,
   Eye,
@@ -16,7 +15,6 @@ import {
   locationService,
   type InspectionLocation,
 } from "../../services/location.service";
-import { useAuth } from "../../contexts/AuthContext";
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING: "Hàng chờ",
@@ -86,11 +84,8 @@ function formatDateTime(val: any, options: { onlyDate?: boolean } = {}): string 
 }
 
 export default function InspectorDashboard() {
-  const { user } = useAuth();
   const [myTasks, setMyTasks] = useState<InspectionTask[]>([]);
-  const [pendingTasks, setPendingTasks] = useState<InspectionTask[]>([]);
   const [isLoadingMy, setIsLoadingMy] = useState(true);
-  const [isLoadingPending, setIsLoadingPending] = useState(true);
 
   // Scoring Modal
   const [isScoring, setIsScoring] = useState(false);
@@ -115,7 +110,6 @@ export default function InspectorDashboard() {
 
   useEffect(() => {
     fetchMyAssigned();
-    fetchPending();
   }, []);
 
   const fetchMyAssigned = async () => {
@@ -126,40 +120,6 @@ export default function InspectorDashboard() {
       console.error("Failed to fetch assigned inspections:", error);
     } finally {
       setIsLoadingMy(false);
-    }
-  };
-
-  const fetchPending = async () => {
-    try {
-      const data = await inspectionService.getPendingInspections();
-      setPendingTasks(data);
-    } catch (error) {
-      console.error("Failed to fetch pending inspections:", error);
-    } finally {
-      setIsLoadingPending(false);
-    }
-  };
-
-  const handleAssign = async (inspectionId: string) => {
-    if (!user?.id) {
-      alert("Không tìm thấy thông tin Inspector.");
-      return;
-    }
-    const confirmed = window.confirm(
-      "Bạn có chắc chắn muốn nhận kiểm tra đơn này?",
-    );
-    if (!confirmed) return;
-
-    const success = await inspectionService.assignInspector({
-      inspectionId,
-      inspectorId: String(user.id),
-    });
-    if (success) {
-      alert("Nhận việc thành công!");
-      fetchMyAssigned();
-      fetchPending();
-    } else {
-      alert("Nhận việc thất bại. Đơn này có thể đã được người khác nhận.");
     }
   };
 
@@ -272,11 +232,6 @@ export default function InspectorDashboard() {
 
   const stats = [
     {
-      label: "Hàng chờ (Mới)",
-      value: isLoadingPending ? "..." : pendingTasks.length.toString(),
-      icon: Clock,
-    },
-    {
       label: "Việc đang làm",
       value: isLoadingMy ? "..." : inProgressCount.toString(),
       icon: AlertCircle,
@@ -367,14 +322,6 @@ export default function InspectorDashboard() {
                 >
                   <Eye size={14} /> Xem chi tiết
                 </button>
-                {isPendingQueue && (
-                  <button
-                    onClick={() => handleAssign(task.inspectionId)}
-                    className="px-4 py-1.5 bg-green-600 text-white text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-green-700 transition shadow-sm active:scale-95"
-                  >
-                    Nhận việc
-                  </button>
-                )}
                 {!isPendingQueue &&
                   ["PENDING_ASSIGNED", "ASSIGNED", "IN_PROGRESS"].includes(
                     task.status,
@@ -433,24 +380,6 @@ export default function InspectorDashboard() {
           })}
         </div>
 
-        {/* Pending Queue */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-8">
-          <div className="border-b border-slate-50 bg-gradient-to-r from-amber-50 to-white px-6 py-5 flex items-center justify-between">
-            <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
-              <span className="text-amber-500">⏳</span> Hàng Chờ (Chưa Phân
-              Công)
-            </h2>
-            <span className="text-xs font-bold text-amber-700 bg-amber-100 px-3 py-1 rounded-full">
-              {pendingTasks.length} đơn
-            </span>
-          </div>
-          {renderTaskList(
-            pendingTasks,
-            isLoadingPending,
-            "Không có đơn yêu cầu mới nào trong hệ thống.",
-            true,
-          )}
-        </div>
 
         {/* My Assigned Tasks */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-8">
