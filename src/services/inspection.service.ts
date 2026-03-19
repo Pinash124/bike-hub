@@ -3,16 +3,37 @@
 import api from '../api/axiosConfig';
 import { API_ENDPOINTS } from '../config/api';
 
+export interface InspectionLocation {
+    id: string;
+    type: 'SELLER' | 'COMPANY';
+    contactName?: string;
+    contactPhone?: string;
+    addressLine?: string;
+}
+
+export interface InspectionInspector {
+    id: string;
+    username?: string;
+    name?: string;
+    roles?: { name: string; description?: string }[];
+    hasAddress?: boolean;
+    kyc?: boolean;
+}
+
 export interface InspectionTask {
     inspectionId: string;
+    listingId?: string; // Link to the bike listing
     inspectionType: 'ONSITE' | 'COMPANY';
-    status: 'PENDING' | 'PENDING_ASSIGNED' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED';
+    status: 'PENDING' | 'PENDING_ASSIGNED' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED' | 'EXPIRED';
     scheduledAt?: string;
-    inspector?: any;
-    location?: any;
+    expiredAt?: string;
+    createdAt?: string;
+    inspector?: InspectionInspector;
+    location?: InspectionLocation;
+    inspectionResult?: 'FAILED' | 'PASSED';
     score?: number;
     comment?: string;
-    images?: { url: string; type: string }[];
+    images?: { url: string; type: 'LEFT_VIEW' | 'RIGHT_VIEW' | 'FRONT_VIEW' | 'REAR_VIEW' | string }[];
 }
 
 export interface InspectionScorePayload {
@@ -150,10 +171,10 @@ export const inspectionService = {
      * [ADMIN] Lấy inspector rảnh vào thời gian schedule
      * GET /inspection/available-inspector?startTime=...
      */
-    getAvailableInspectors: async (startTime: string): Promise<any[]> => {
+    getAvailableInspectors: async (scheduleAt: string): Promise<any[]> => {
         try {
             const response = await api.get(API_ENDPOINTS.INSPECTION_AVAILABLE_INSPECTOR, {
-                params: { startTime }
+                params: { scheduleAt }
             });
             if (response.data?.code === 1000) {
                 return response.data.result ?? [];

@@ -2,7 +2,6 @@
 import {
   CheckCircle,
   XCircle,
-  Clock,
   AlertCircle,
   Edit,
   Eye,
@@ -16,7 +15,6 @@ import {
   locationService,
   type InspectionLocation,
 } from "../../services/location.service";
-import { useAuth } from "../../contexts/AuthContext";
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING: "Hàng chờ",
@@ -45,12 +43,49 @@ const SCORE_IMAGE_ORDER: { key: ScoreImageType; label: string }[] = [
   { key: "REAR_VIEW", label: "Góc sau (REAR_VIEW)" },
 ];
 
+/**
+ * Handle both ISO strings and Java LocalDateTime arrays [y, m, d, h, i, s, n]
+ */
+function formatDateTime(val: any, options: { onlyDate?: boolean } = {}): string {
+  if (!val) return "—";
+  try {
+    let date: Date;
+    if (Array.isArray(val)) {
+      const [y, m, d, h = 0, i = 0, s = 0] = val;
+      date = new Date(y, m - 1, d, h, i, s);
+    } else {
+      // Try standard parsing
+      date = new Date(val);
+
+      // If invalid, try parsing DD-MM-YYYY HH:mm or DD/MM/YYYY HH:mm
+      if (isNaN(date.getTime()) && typeof val === 'string') {
+        const dmyMatch = val.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+        if (dmyMatch) {
+          const [_, d, m, y, h = 0, i = 0, s = 0] = dmyMatch;
+          date = new Date(Number(y), Number(m) - 1, Number(d), Number(h), Number(i), Number(s));
+        }
+      }
+    }
+    if (isNaN(date.getTime())) return "—";
+
+    const DD = date.getDate().toString().padStart(2, "0");
+    const MM = (date.getMonth() + 1).toString().padStart(2, "0");
+    const YYYY = date.getFullYear();
+    const HH = date.getHours().toString().padStart(2, "0");
+    const II = date.getMinutes().toString().padStart(2, "0");
+
+    if (options.onlyDate) {
+      return `${DD}/${MM}/${YYYY}`;
+    }
+    return `${HH}:${II} ${DD}/${MM}/${YYYY}`;
+  } catch (e) {
+    return "—";
+  }
+}
+
 export default function InspectorDashboard() {
-  const { user } = useAuth();
   const [myTasks, setMyTasks] = useState<InspectionTask[]>([]);
-  const [pendingTasks, setPendingTasks] = useState<InspectionTask[]>([]);
   const [isLoadingMy, setIsLoadingMy] = useState(true);
-  const [isLoadingPending, setIsLoadingPending] = useState(true);
 
   // Scoring Modal
   const [isScoring, setIsScoring] = useState(false);
@@ -75,7 +110,6 @@ export default function InspectorDashboard() {
 
   useEffect(() => {
     fetchMyAssigned();
-    fetchPending();
   }, []);
 
   const fetchMyAssigned = async () => {
@@ -86,40 +120,6 @@ export default function InspectorDashboard() {
       console.error("Failed to fetch assigned inspections:", error);
     } finally {
       setIsLoadingMy(false);
-    }
-  };
-
-  const fetchPending = async () => {
-    try {
-      const data = await inspectionService.getPendingInspections();
-      setPendingTasks(data);
-    } catch (error) {
-      console.error("Failed to fetch pending inspections:", error);
-    } finally {
-      setIsLoadingPending(false);
-    }
-  };
-
-  const handleAssign = async (inspectionId: string) => {
-    if (!user?.id) {
-      alert("Không tìm thấy thông tin Inspector.");
-      return;
-    }
-    const confirmed = window.confirm(
-      "Bạn có chắc chắn muốn nhận kiểm tra đơn này?",
-    );
-    if (!confirmed) return;
-
-    const success = await inspectionService.assignInspector({
-      inspectionId,
-      inspectorId: String(user.id),
-    });
-    if (success) {
-      alert("Nhận việc thành công!");
-      fetchMyAssigned();
-      fetchPending();
-    } else {
-      alert("Nhận việc thất bại. Đơn này có thể đã được người khác nhận.");
     }
   };
 
@@ -232,11 +232,6 @@ export default function InspectorDashboard() {
 
   const stats = [
     {
-      label: "Hàng chờ (Mới)",
-      value: isLoadingPending ? "..." : pendingTasks.length.toString(),
-      icon: Clock,
-    },
-    {
       label: "Việc đang làm",
       value: isLoadingMy ? "..." : inProgressCount.toString(),
       icon: AlertCircle,
@@ -297,7 +292,7 @@ export default function InspectorDashboard() {
                     <span className="flex items-center gap-1">
                       📅 Lịch hẹn:{" "}
                       <span className="font-medium text-slate-700">
-                        {new Date(task.scheduledAt).toLocaleDateString("vi-VN")}
+                        {formatDateTime(task.scheduledAt)}
                       </span>
                     </span>
                   )}
@@ -327,14 +322,6 @@ export default function InspectorDashboard() {
                 >
                   <Eye size={14} /> Xem chi tiết
                 </button>
-                {isPendingQueue && (
-                  <button
-                    onClick={() => handleAssign(task.inspectionId)}
-                    className="px-4 py-1.5 bg-green-600 text-white text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-green-700 transition shadow-sm active:scale-95"
-                  >
-                    Nhận việc
-                  </button>
-                )}
                 {!isPendingQueue &&
                   ["PENDING_ASSIGNED", "ASSIGNED", "IN_PROGRESS"].includes(
                     task.status,
@@ -393,24 +380,6 @@ export default function InspectorDashboard() {
           })}
         </div>
 
-        {/* Pending Queue */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-8">
-          <div className="border-b border-slate-50 bg-gradient-to-r from-amber-50 to-white px-6 py-5 flex items-center justify-between">
-            <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
-              <span className="text-amber-500">⏳</span> Hàng Chờ (Chưa Phân
-              Công)
-            </h2>
-            <span className="text-xs font-bold text-amber-700 bg-amber-100 px-3 py-1 rounded-full">
-              {pendingTasks.length} đơn
-            </span>
-          </div>
-          {renderTaskList(
-            pendingTasks,
-            isLoadingPending,
-            "Không có đơn yêu cầu mới nào trong hệ thống.",
-            true,
-          )}
-        </div>
 
         {/* My Assigned Tasks */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-8">
@@ -651,6 +620,16 @@ export default function InspectorDashboard() {
                       Thông tin liên hệ và địa chỉ kiểm tra
                     </div>
                     <div className="space-y-3">
+                      {currentTask?.scheduledAt && (
+                        <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                          <span className="font-medium text-slate-600">
+                            📅 Lịch hẹn:
+                          </span>
+                          <span className="font-bold text-slate-800">
+                            {formatDateTime(currentTask.scheduledAt)}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center py-2 border-b border-slate-100">
                         <span className="font-medium text-slate-600">
                           Loại:
