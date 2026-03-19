@@ -135,6 +135,10 @@ const INSPECTION_STATUS_MAP: Record<string, { label: string; color: string }> =
     label: "Hoàn thành",
     color: "bg-emerald-100 text-emerald-700",
   },
+  EXPIRED: {
+    label: "Hết hạn",
+    color: "bg-red-100 text-red-600",
+  },
 };
 const KYC_STATUS_MAP: Record<
   string,
@@ -167,6 +171,49 @@ const LISTING_STATUS_MAP: Record<string, { label: string; color: string }> = {
   DELETED:  { label: "Đã xóa",      color: "bg-gray-200 text-gray-500" },
   EXPIRED:  { label: "Hết hạn",     color: "bg-orange-100 text-orange-600" },
 };
+
+/**
+ * Handle both ISO strings and Java LocalDateTime arrays [y, m, d, h, i, s, n]
+ */
+function formatDateTime(val: any, options: { onlyDate?: boolean; fallbackFrom?: any } = {}): string {
+  let targetVal = val;
+  
+  // If specific value is missing, try to find a similar key in the fallback object
+  if (!targetVal && options.fallbackFrom) {
+    const keys = Object.keys(options.fallbackFrom);
+    const similarKey = keys.find(k => 
+      ['scheduleAt', 'appointmentAt', 'appointmentDate', 'date', 'time'].includes(k)
+    );
+    if (similarKey) targetVal = options.fallbackFrom[similarKey];
+  }
+
+  if (!targetVal) return "—";
+  try {
+    let date: Date;
+    if (Array.isArray(targetVal)) {
+      // Handle [y, m, d, h, i, s, n]
+      const [y, m, d, h = 0, i = 0, s = 0] = targetVal;
+      date = new Date(y, m - 1, d, h, i, s);
+    } else {
+      date = new Date(targetVal);
+    }
+
+    if (isNaN(date.getTime())) return "—";
+
+    const DD = date.getDate().toString().padStart(2, "0");
+    const MM = (date.getMonth() + 1).toString().padStart(2, "0");
+    const YYYY = date.getFullYear();
+    const HH = date.getHours().toString().padStart(2, "0");
+    const II = date.getMinutes().toString().padStart(2, "0");
+
+    if (options.onlyDate) {
+      return `${DD}/${MM}/${YYYY}`;
+    }
+    return `${HH}:${II} ${DD}/${MM}/${YYYY}`;
+  } catch (e) {
+    return "—";
+  }
+}
 
 // ─── Reusable UI ─────────────────────────────────────────────────────────────
 
@@ -665,9 +712,7 @@ function OverviewTab({
                         : "Tại Chỗ"}
                     </p>
                     <p className="text-xs text-slate-400">
-                      {ins.scheduledAt
-                        ? new Date(ins.scheduledAt).toLocaleDateString("vi-VN")
-                        : "—"}
+                      {formatDateTime(ins.scheduledAt)}
                     </p>
                   </div>
                   <span
@@ -987,7 +1032,7 @@ function KycTab({
                         Nộp lúc
                       </span>
                       <span className="font-medium text-slate-500">
-                        {new Date(kyc.submittedAt).toLocaleDateString("vi-VN")}
+                        {formatDateTime(kyc.submittedAt, { onlyDate: true })}
                       </span>
                     </div>
                   )}
@@ -997,7 +1042,7 @@ function KycTab({
                         Duyệt lúc
                       </span>
                       <span className="font-medium text-slate-500">
-                        {new Date(kyc.verifiedAt).toLocaleDateString("vi-VN")}
+                        {formatDateTime(kyc.verifiedAt, { onlyDate: true })}
                       </span>
                     </div>
                   )}
@@ -1105,6 +1150,7 @@ function InspectionsTab({
           "ASSIGNED",
           "IN_PROGRESS",
           "COMPLETED",
+          "EXPIRED",
         ].map((f) => {
           const st = INSPECTION_STATUS_MAP[f];
           return (
@@ -1137,7 +1183,9 @@ function InspectionsTab({
                 <tr className="bg-slate-50 text-slate-500 text-[11px] font-bold uppercase tracking-wider border-b border-slate-100">
                   <th className="px-5 py-3.5">Loại</th>
                   <th className="px-5 py-3.5">Lịch hẹn</th>
+                  <th className="px-5 py-3.5">Địa điểm & liên hệ</th>
                   <th className="px-5 py-3.5">Trạng thái</th>
+                  <th className="px-5 py-3.5">Kết quả</th>
                   <th className="px-5 py-3.5">Inspector</th>
                   <th className="px-5 py-3.5">Thao tác</th>
                 </tr>
@@ -1160,10 +1208,40 @@ function InspectionsTab({
                             : "📍 Tại Chỗ"}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 text-sm text-slate-500">
-                        {ins.scheduledAt
-                          ? new Date(ins.scheduledAt).toLocaleString("vi-VN")
-                          : "—"}
+                      <td className="px-5 py-3.5">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-sm font-medium text-slate-700">
+                            {formatDateTime(ins.scheduledAt)}
+                          </span>
+                          {ins.createdAt && (
+                            <span className="text-[11px] text-slate-400">
+                              Tạo: {formatDateTime(ins.createdAt)}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        {ins.location ? (
+                          <div className="flex flex-col gap-0.5 min-w-[140px]">
+                            {ins.location.addressLine && (
+                              <span className="text-xs font-medium text-slate-700 leading-tight">
+                                {ins.location.addressLine}
+                              </span>
+                            )}
+                            {ins.location.contactName && (
+                              <span className="text-[11px] text-slate-500">
+                                👤 {ins.location.contactName}
+                              </span>
+                            )}
+                            {ins.location.contactPhone && (
+                              <span className="text-[11px] text-slate-500">
+                                📞 {ins.location.contactPhone}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-slate-300 text-xs italic">—</span>
+                        )}
                       </td>
                       <td className="px-5 py-3.5">
                         <span
@@ -1172,11 +1250,24 @@ function InspectionsTab({
                           {st.label}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 text-sm text-slate-500">
-                        {ins.inspector?.name || (
-                          <span className="text-slate-300 italic">
-                            Chưa gán
+                      <td className="px-5 py-3.5">
+                        {ins.inspectionResult ? (
+                          <span
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
+                              ins.inspectionResult === "PASSED"
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-red-100 text-red-600"
+                            }`}
+                          >
+                            {ins.inspectionResult === "PASSED" ? "✓ Đạt" : "✗ Không đạt"}
                           </span>
+                        ) : (
+                          <span className="text-slate-300 text-xs">—</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 text-sm text-slate-500">
+                        {ins.inspector?.name || ins.inspector?.username || (
+                          <span className="text-slate-300 italic">Chưa gán</span>
                         )}
                       </td>
                       <td className="px-5 py-3.5">
@@ -1201,17 +1292,35 @@ function InspectionsTab({
       {assignModal && (
         <Modal title="Gán Inspector" onClose={() => setAssignModal(null)}>
           <div className="space-y-4">
-            <div className="p-3 bg-slate-50 rounded-xl text-sm text-slate-600 space-y-1">
+            <div className="p-3 bg-slate-50 rounded-xl text-sm text-slate-600 space-y-1.5">
               <p>
                 <span className="font-bold">Loại:</span>{" "}
                 {assignModal.inspectionType === "COMPANY"
-                  ? "Tại Công Ty"
-                  : "Tại Chỗ"}
+                  ? "🏢 Tại Công Ty"
+                  : "📍 Tại Chỗ"}
               </p>
               {assignModal.scheduledAt && (
                 <p>
                   <span className="font-bold">Lịch hẹn:</span>{" "}
-                  {new Date(assignModal.scheduledAt).toLocaleString("vi-VN")}
+                  {formatDateTime(assignModal.scheduledAt)}
+                </p>
+              )}
+              {assignModal.location?.addressLine && (
+                <p>
+                  <span className="font-bold">Địa chỉ:</span>{" "}
+                  {assignModal.location.addressLine}
+                </p>
+              )}
+              {assignModal.location?.contactName && (
+                <p>
+                  <span className="font-bold">Người liên hệ:</span>{" "}
+                  {assignModal.location.contactName}
+                </p>
+              )}
+              {assignModal.location?.contactPhone && (
+                <p>
+                  <span className="font-bold">Điện thoại:</span>{" "}
+                  {assignModal.location.contactPhone}
                 </p>
               )}
             </div>
@@ -1927,12 +2036,10 @@ function ListingsTab({
     | "DELETED"
     | "EXPIRED";
   const [filter, setFilter] = useState<ListFilter>("ALL");
-  const [processing, setProcessing] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   const filtered = listings.filter((l) => {
     const matchStatus = filter === "ALL" || l.status === filter;
-    // defensive: title may be undefined/null if backend returns malformed data
     const title = l.title || "";
     const matchSearch =
       !search ||
@@ -1942,26 +2049,6 @@ function ListingsTab({
   });
 
   const pendingCount = listings.filter((l) => l.status === "PENDING").length;
-
-  const handleApprove = async (id: string) => {
-    setProcessing(id);
-    const ok = await listingService.approveListing(id);
-    if (ok) {
-      alert("Đã duyệt bài đăng!");
-      onRefresh();
-    } else alert("Thao tác thất bại, vui lòng thử lại.");
-    setProcessing(null);
-  };
-
-  const handleReject = async (id: string) => {
-    setProcessing(id);
-    const ok = await listingService.rejectListing(id);
-    if (ok) {
-      alert("Đã từ chối bài đăng!");
-      onRefresh();
-    } else alert("Thao tác thất bại, vui lòng thử lại.");
-    setProcessing(null);
-  };
 
   const filterTabs: { key: ListFilter; label: string }[] = [
     { key: "ALL",      label: "Tất cả" },
@@ -2026,7 +2113,6 @@ function ListingsTab({
                   <th className="px-5 py-3.5">Thương hiệu</th>
                   <th className="px-5 py-3.5">Giá</th>
                   <th className="px-5 py-3.5">Trạng thái</th>
-                  <th className="px-5 py-3.5">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -2035,7 +2121,6 @@ function ListingsTab({
                     label: listing.status,
                     color: "bg-slate-100 text-slate-600",
                   };
-                  const isProc = processing === listing.id;
                   const thumb = listing.images?.[0]?.secureUrl;
                   return (
                     <tr
@@ -2088,32 +2173,6 @@ function ListingsTab({
                         >
                           {st.label}
                         </span>
-                      </td>
-                      {/* Actions */}
-                      <td className="px-5 py-3">
-                        {listing.status === "PENDING" && (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleReject(listing.id)}
-                              disabled={isProc}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition disabled:opacity-50"
-                            >
-                              <XCircle size={13} /> Từ chối
-                            </button>
-                            <button
-                              onClick={() => handleApprove(listing.id)}
-                              disabled={isProc}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold transition disabled:opacity-50 shadow-sm"
-                            >
-                              {isProc ? (
-                                <RefreshCw size={13} className="animate-spin" />
-                              ) : (
-                                <CheckCircle size={13} />
-                              )}{" "}
-                              Duyệt
-                            </button>
-                          </div>
-                        )}
                       </td>
                     </tr>
                   );

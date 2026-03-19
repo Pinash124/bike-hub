@@ -45,6 +45,36 @@ const SCORE_IMAGE_ORDER: { key: ScoreImageType; label: string }[] = [
   { key: "REAR_VIEW", label: "Góc sau (REAR_VIEW)" },
 ];
 
+/**
+ * Handle both ISO strings and Java LocalDateTime arrays [y, m, d, h, i, s, n]
+ */
+function formatDateTime(val: any, options: { onlyDate?: boolean } = {}): string {
+  if (!val) return "—";
+  try {
+    let date: Date;
+    if (Array.isArray(val)) {
+      const [y, m, d, h = 0, i = 0, s = 0] = val;
+      date = new Date(y, m - 1, d, h, i, s);
+    } else {
+      date = new Date(val);
+    }
+    if (isNaN(date.getTime())) return "—";
+
+    const DD = date.getDate().toString().padStart(2, "0");
+    const MM = (date.getMonth() + 1).toString().padStart(2, "0");
+    const YYYY = date.getFullYear();
+    const HH = date.getHours().toString().padStart(2, "0");
+    const II = date.getMinutes().toString().padStart(2, "0");
+
+    if (options.onlyDate) {
+      return `${DD}/${MM}/${YYYY}`;
+    }
+    return `${HH}:${II} ${DD}/${MM}/${YYYY}`;
+  } catch (e) {
+    return "—";
+  }
+}
+
 export default function InspectorDashboard() {
   const { user } = useAuth();
   const [myTasks, setMyTasks] = useState<InspectionTask[]>([]);
@@ -297,7 +327,7 @@ export default function InspectorDashboard() {
                     <span className="flex items-center gap-1">
                       📅 Lịch hẹn:{" "}
                       <span className="font-medium text-slate-700">
-                        {new Date(task.scheduledAt).toLocaleDateString("vi-VN")}
+                        {formatDateTime(task.scheduledAt)}
                       </span>
                     </span>
                   )}
@@ -651,6 +681,16 @@ export default function InspectorDashboard() {
                       Thông tin liên hệ và địa chỉ kiểm tra
                     </div>
                     <div className="space-y-3">
+                      {currentTask?.scheduledAt && (
+                        <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                          <span className="font-medium text-slate-600">
+                            📅 Lịch hẹn:
+                          </span>
+                          <span className="font-bold text-slate-800">
+                            {formatDateTime(currentTask.scheduledAt)}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center py-2 border-b border-slate-100">
                         <span className="font-medium text-slate-600">
                           Loại:
