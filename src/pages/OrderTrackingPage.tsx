@@ -22,8 +22,18 @@ const toIsoDate = (value?: string | null): string | null => {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 };
 
-const mapOrderStatus = (status?: string): TrackingOrder["status"] => {
-  switch ((status || "").toUpperCase()) {
+const mapOrderStatus = (
+  status?: string,
+  sellerStatus?: string,
+): TrackingOrder["status"] => {
+  const normalizedSeller = (sellerStatus || "").toUpperCase();
+  const normalizedStatus = (status || "").toUpperCase();
+
+  if (normalizedSeller === "REJECTED") {
+    return normalizedStatus === "REFUND" ? "refunded" : "cancelled";
+  }
+
+  switch (normalizedStatus) {
     case "PENDING":
     case "PAID":
       return "processing";
@@ -72,7 +82,10 @@ export default function OrderTrackingPage() {
               image: bikeImage,
             },
           ],
-          status: mapOrderStatus(order.orderStatus || order.status),
+          status: mapOrderStatus(
+            order.orderStatus || order.status,
+            order.sellerStatus,
+          ),
           totalAmount: total,
           deliveryAddress: "Giao hàng tận nơi",
           createdAt:
