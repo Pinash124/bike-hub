@@ -1,4 +1,4 @@
-import { Search, ShoppingCart, ChevronDown, PlusCircle, Bike } from 'lucide-react'
+import { Search, ShoppingCart, ChevronDown, PlusCircle, Bike, Package } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useCart } from '../../contexts/CartContext'
@@ -89,18 +89,29 @@ export default function Header() {
             )}
 
             {(!user || user.role === 'buyer') && (
-              <button
-                onClick={() => navigate('/buyer/cart')}
-                className={`relative p-3 transition-all rounded-full ${isScrolled ? 'text-gray-800 hover:bg-gray-100' : 'text-white hover:bg-white/10'
-                  }`}
-              >
-                <ShoppingCart size={26} strokeWidth={2} />
-                {items.length > 0 && (
-                  <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center text-[10px] font-bold border-2 border-white shadow-sm">
-                    {items.length}
-                  </span>
-                )}
-              </button>
+              <>
+                <button
+                  onClick={() => navigate('/buyer/cart')}
+                  className={`relative p-3 transition-all rounded-full ${isScrolled ? 'text-gray-800 hover:bg-gray-100' : 'text-white hover:bg-white/10'
+                    }`}
+                  aria-label="Giỏ hàng"
+                >
+                  <ShoppingCart size={26} strokeWidth={2} />
+                  {items.length > 0 && (
+                    <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center text-[10px] font-bold border-2 border-white shadow-sm">
+                      {items.length}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => navigate('/buyer/orders')}
+                  className={`relative p-3 transition-all rounded-full ${isScrolled ? 'text-gray-800 hover:bg-gray-100' : 'text-white hover:bg-white/10'
+                    }`}
+                  aria-label="Đơn hàng"
+                >
+                  <Package size={24} strokeWidth={2} />
+                </button>
+              </>
             )}
 
             <div className={`w-px h-8 hidden sm:block ${isScrolled ? 'bg-gray-200' : 'bg-white/20'}`}></div>

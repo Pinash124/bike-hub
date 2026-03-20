@@ -21,6 +21,22 @@ import { listingService, type Listing } from "../../services/listing.service";
 import { orderService, type Order } from "../../services/order.service";
 import { subscriptionService } from "../../services/subscription.service";
 
+const parseApiDate = (value?: string | null): Date | null => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  const m = trimmed.match(
+    /^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/,
+  );
+  if (m) {
+    const [, dd, mm, yyyy, hh, min, ss] = m;
+    const iso = `${yyyy}-${mm}-${dd}T${hh}:${min}:${ss ?? "00"}`;
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  const d = new Date(trimmed);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
 const PAID_LISTING_IDS_KEY = "paidListingIds";
 const SCHEDULED_LISTING_IDS_KEY = "scheduledInspectionListingIds";
 
@@ -769,9 +785,9 @@ export default function SellerDashboard() {
                           </p>
                           <p className="text-sm text-slate-500 mt-1">
                             Ngày mua:{" "}
-                            {new Date(order.createdAt).toLocaleDateString(
+                            {parseApiDate(order.createdAt)?.toLocaleDateString(
                               "vi-VN",
-                            )}
+                            ) || "—"}
                           </p>
                           <p className="text-sm text-slate-500 mt-1">
                             Trạng thái đơn:{" "}
