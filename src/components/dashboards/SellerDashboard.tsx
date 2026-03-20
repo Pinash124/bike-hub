@@ -16,7 +16,7 @@ import {
   DollarSign,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { listingService, type Listing } from "../../services/listing.service";
 import { orderService, type Order } from "../../services/order.service";
 import { subscriptionService } from "../../services/subscription.service";
@@ -185,6 +185,15 @@ export default function SellerDashboard() {
   const [scheduledListingIds, setScheduledListingIds] = useState<Set<string>>(
     () => readListingIdsByKey(SCHEDULED_LISTING_IDS_KEY),
   );
+  const [isDeliverModalOpen, setIsDeliverModalOpen] = useState(false);
+  const [deliverOrderId, setDeliverOrderId] = useState<string | null>(null);
+  const [deliverFile, setDeliverFile] = useState<File | null>(null);
+  const [deliverPreviewUrl, setDeliverPreviewUrl] = useState<string | null>(
+    null,
+  );
+  const [deliverError, setDeliverError] = useState<string | null>(null);
+  const [isDelivering, setIsDelivering] = useState(false);
+  const deliverInputRef = useRef<HTMLInputElement | null>(null);
 
   const fetchAllData = async () => {
     try {
@@ -248,6 +257,64 @@ export default function SellerDashboard() {
     setIsRefreshing(true);
     await fetchAllData();
     setIsRefreshing(false);
+  };
+
+  const resetDeliverState = () => {
+    if (deliverPreviewUrl) {
+      URL.revokeObjectURL(deliverPreviewUrl);
+    }
+    setDeliverFile(null);
+    setDeliverPreviewUrl(null);
+    setDeliverError(null);
+    setIsDelivering(false);
+    setDeliverOrderId(null);
+  };
+
+  const openDeliverModal = (orderId: string) => {
+    resetDeliverState();
+    setDeliverOrderId(orderId);
+    setIsDeliverModalOpen(true);
+  };
+
+  const closeDeliverModal = () => {
+    setIsDeliverModalOpen(false);
+    resetDeliverState();
+  };
+
+  const handleDeliverFile = (file?: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setDeliverError("Vui lòng chọn file ảnh (JPG, PNG, WEBP).");
+      return;
+    }
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setDeliverError("Ảnh quá lớn. Vui lòng chọn ảnh dưới 5MB.");
+      return;
+    }
+    if (deliverPreviewUrl) {
+      URL.revokeObjectURL(deliverPreviewUrl);
+    }
+    setDeliverError(null);
+    setDeliverFile(file);
+    setDeliverPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleDeliverSubmit = async () => {
+    if (!deliverOrderId || !deliverFile) {
+      setDeliverError("Bạn cần tải lên ảnh trước khi xác nhận.");
+      return;
+    }
+    try {
+      setIsDelivering(true);
+      await orderService.deliverOrder(deliverOrderId, deliverFile);
+      await handleRefresh();
+      closeDeliverModal();
+    } catch (err) {
+      console.error("Deliver order failed:", err);
+      setDeliverError("Tải ảnh thất bại. Vui lòng thử lại.");
+      setIsDelivering(false);
+    }
   };
 
   useEffect(() => {
@@ -833,28 +900,7 @@ export default function SellerDashboard() {
                         )}
                         {order.orderStatus === "IN_TRANSIT" && (
                           <button
-                            onClick={async () => {
-                              const input = document.createElement("input");
-                              input.type = "file";
-                              input.accept = "image/*";
-                              input.onchange = async () => {
-                                const file = input.files?.[0];
-                                if (!file) return;
-                                try {
-                                  await orderService.deliverOrder(
-                                    order.id,
-                                    file,
-                                  );
-                                  handleRefresh();
-                                } catch (err) {
-                                  console.error(
-                                    "Deliver order failed:",
-                                    err,
-                                  );
-                                }
-                              };
-                              input.click();
-                            }}
+                            onClick={() => openDeliverModal(order.id)}
                             className="bg-blue-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-blue-700"
                           >
                             Xác nhận đã giao xe
@@ -885,6 +931,126 @@ export default function SellerDashboard() {
           </div>
         )}
       </div>
+
+      {isDeliverModalOpen && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/60 px-4">
+          <div className="w-full max-w-2xl rounded-3xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                  Quản Lý Đơn Hàng
+                </p>
+                <h3 className="text-xl font-black text-slate-800">
+                  Xác nhận đã giao xe
+                </h3>
+              </div>
+              <button
+                onClick={closeDeliverModal}
+                className="text-slate-400 hover:text-slate-600 font-bold text-xl"
+                aria-label="Đóng"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="px-6 py-6 space-y-5">
+              <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 text-sm text-blue-700">
+                Vui lòng tải ảnh bằng chứng giao xe. Ảnh rõ nét giúp xử lý nhanh
+                nếu có tranh chấp.
+              </div>
+
+              <div
+                className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all ${
+                  deliverFile
+                    ? "border-green-300 bg-green-50/40"
+                    : "border-slate-200 hover:border-green-300 hover:bg-slate-50"
+                }`}
+                onClick={() => deliverInputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  handleDeliverFile(e.dataTransfer.files?.[0]);
+                }}
+              >
+                <input
+                  ref={deliverInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleDeliverFile(e.target.files?.[0])}
+                />
+
+                {!deliverFile ? (
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-slate-600">
+                      Kéo thả ảnh vào đây hoặc bấm để chọn
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      Hỗ trợ JPG, PNG, WEBP · Tối đa 5MB
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-4">
+                    {deliverPreviewUrl && (
+                      <img
+                        src={deliverPreviewUrl}
+                        alt="Ảnh bằng chứng"
+                        className="w-48 h-48 object-cover rounded-2xl shadow"
+                      />
+                    )}
+                    <div>
+                      <p className="text-sm font-semibold text-slate-700">
+                        {deliverFile.name}
+                      </p>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deliverInputRef.current?.click();
+                        }}
+                        className="text-xs font-bold text-blue-600 hover:text-blue-700 mt-2"
+                      >
+                        Đổi ảnh
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="text-xs text-slate-500">
+                Gợi ý: chụp xe đã giao + người nhận (hoặc địa điểm bàn giao) để
+                làm bằng chứng.
+              </div>
+
+              {deliverError && (
+                <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3">
+                  {deliverError}
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-5 border-t border-slate-100 flex items-center justify-end gap-3">
+              <button
+                onClick={closeDeliverModal}
+                className="px-4 py-2 rounded-xl font-bold text-slate-600 hover:bg-slate-100"
+                disabled={isDelivering}
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleDeliverSubmit}
+                className={`px-5 py-2 rounded-xl font-bold text-white transition-all ${
+                  deliverFile
+                    ? "bg-blue-600 hover:bg-blue-700"
+                    : "bg-slate-300 cursor-not-allowed"
+                }`}
+                disabled={!deliverFile || isDelivering}
+              >
+                {isDelivering ? "Đang tải ảnh..." : "Xác nhận giao xe"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
