@@ -296,6 +296,34 @@ export default function SellerDashboard() {
     (o) => o.sellerStatus === "PENDING",
   ).length;
 
+  const getOrderStatusLabel = (status?: string) => {
+    switch ((status || "").toUpperCase()) {
+      case "IN_TRANSIT":
+        return "Đang giao xe";
+      case "DELIVERED":
+        return "Đã giao - chờ buyer xác nhận";
+      case "CONFIRMED":
+      case "COMPLETE":
+      case "COMPLETED":
+        return "Hoàn tất";
+      case "PAID":
+        return "Đã thanh toán - chờ giao";
+      case "PENDING":
+        return "Chờ seller xác nhận";
+      case "REJECT":
+      case "REJECTED":
+        return "Đã từ chối";
+      case "EXPIRED":
+        return "Hết hạn";
+      case "REFUND":
+        return "Đã hoàn tiền";
+      case "CANCELLED":
+        return "Đã hủy";
+      default:
+        return status || "—";
+    }
+  };
+
   const stats = [
     {
       label: "Xe đang bán",
@@ -745,6 +773,12 @@ export default function SellerDashboard() {
                               "vi-VN",
                             )}
                           </p>
+                          <p className="text-sm text-slate-500 mt-1">
+                            Trạng thái đơn:{" "}
+                            <span className="font-semibold text-slate-700">
+                              {getOrderStatusLabel(order.orderStatus)}
+                            </span>
+                          </p>
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-black text-green-600">
@@ -781,9 +815,7 @@ export default function SellerDashboard() {
                             </button>
                           </>
                         )}
-                        {["ACCEPTED", "IN_TRANSIT", "PAID"].includes(
-                          order.sellerStatus || "",
-                        ) && (
+                        {order.orderStatus === "IN_TRANSIT" && (
                           <button
                             onClick={async () => {
                               const input = document.createElement("input");
