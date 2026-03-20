@@ -3,6 +3,25 @@ import OrderTracking from "../components/buyer/Orders/OrderTracking";
 import type { Order as TrackingOrder } from "../components/buyer/Orders/OrderTracking";
 import { orderService } from "../services/order.service";
 
+const toIsoDate = (value?: string | null): string | null => {
+  if (!value) return null;
+  const trimmed = value.trim();
+
+  // Format: DD-MM-YYYY HH:mm
+  const m = trimmed.match(
+    /^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/,
+  );
+  if (m) {
+    const [, dd, mm, yyyy, hh, min, ss] = m;
+    const iso = `${yyyy}-${mm}-${dd}T${hh}:${min}:${ss ?? "00"}`;
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString();
+  }
+
+  const d = new Date(trimmed);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+};
+
 const mapOrderStatus = (status?: string): TrackingOrder["status"] => {
   switch ((status || "").toUpperCase()) {
     case "PENDING":
@@ -56,8 +75,12 @@ export default function OrderTrackingPage() {
           status: mapOrderStatus(order.orderStatus || order.status),
           totalAmount: total,
           deliveryAddress: "Giao hàng tận nơi",
-          createdAt: new Date(order.createdAt).toISOString(),
-          estimatedDelivery: order.expiresAt || order.createdAt,
+          createdAt:
+            toIsoDate(order.createdAt) ?? new Date().toISOString(),
+          estimatedDelivery:
+            toIsoDate(order.expiresAt || order.createdAt) ??
+            toIsoDate(order.createdAt) ??
+            new Date().toISOString(),
         };
       });
 

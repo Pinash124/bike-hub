@@ -78,10 +78,16 @@ export const orderService = {
   getMyOrders: async (): Promise<Order[]> => {
     try {
       const response = await api.get(API_ENDPOINTS.ORDER_MY);
-      if (response.data?.code === 1000) {
-        const rows = Array.isArray(response.data.result)
-          ? response.data.result
-          : [];
+      if (Number(response.data?.code) === 1000) {
+        const payload =
+          response.data?.result ?? response.data?.data ?? response.data;
+        const rows = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : Array.isArray(payload?.content)
+              ? payload.content
+              : [];
         return rows.map(normaliseOrder);
       }
       return [];
@@ -94,10 +100,16 @@ export const orderService = {
   getAllOrders: async (): Promise<Order[]> => {
     try {
       const response = await api.get(API_ENDPOINTS.ORDER_ALL);
-      if (response.data?.code === 1000) {
-        const rows = Array.isArray(response.data.result)
-          ? response.data.result
-          : [];
+      if (Number(response.data?.code) === 1000) {
+        const payload =
+          response.data?.result ?? response.data?.data ?? response.data;
+        const rows = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : Array.isArray(payload?.content)
+              ? payload.content
+              : [];
         return rows.map(normaliseOrder);
       }
       return [];

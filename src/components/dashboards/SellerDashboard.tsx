@@ -786,17 +786,26 @@ export default function SellerDashboard() {
                         ) && (
                           <button
                             onClick={async () => {
-                              // Dummy file upload for prototype
-                              const dummyImage = new File(
-                                [""],
-                                "delivery.jpg",
-                                { type: "image/jpeg" },
-                              );
-                              await orderService.deliverOrder(
-                                order.id,
-                                dummyImage,
-                              );
-                              handleRefresh();
+                              const input = document.createElement("input");
+                              input.type = "file";
+                              input.accept = "image/*";
+                              input.onchange = async () => {
+                                const file = input.files?.[0];
+                                if (!file) return;
+                                try {
+                                  await orderService.deliverOrder(
+                                    order.id,
+                                    file,
+                                  );
+                                  handleRefresh();
+                                } catch (err) {
+                                  console.error(
+                                    "Deliver order failed:",
+                                    err,
+                                  );
+                                }
+                              };
+                              input.click();
                             }}
                             className="bg-blue-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-blue-700"
                           >
