@@ -219,17 +219,63 @@ export default function ScheduleInspectionPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-4xl p-6">
-        <h2 className="mb-4 text-xl font-bold">Chọn lịch kiểm tra</h2>
-        {error && <div className="mb-3 text-red-600">{error}</div>}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="mx-auto max-w-3xl p-6">
+        {/* Header */}
+        <div className="mb-8">
+          <button
+            type="button"
+            onClick={() => navigate("/seller/dashboard")}
+            className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900"
+          >
+            ← Quay lại
+          </button>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">
+              Đặt lịch kiểm tra
+            </h1>
+            <p className="mt-2 text-slate-600">
+              Chọn loại kiểm tra, địa điểm và thời gian phù hợp
+            </p>
+          </div>
+        </div>
 
-        <div className="rounded-lg bg-white p-6 shadow">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium">Loại kiểm tra</label>
+        {/* Error Alert */}
+        {error && (
+          <div className="mb-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
+            <svg
+              className="mt-0.5 h-5 w-5 flex-shrink-0"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <div className="flex-1">
+              <p className="font-medium">Có lỗi xảy ra</p>
+              <p className="mt-1 text-sm">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Main Form Card */}
+        <div className="rounded-xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Step 1: Inspection Type */}
+            <div className="space-y-4">
+              <div className="flex items-baseline gap-3">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-green-600 text-sm font-bold text-white">
+                  1
+                </span>
+                <label className="text-lg font-semibold text-slate-900">
+                  Chọn loại kiểm tra
+                </label>
+              </div>
               <select
-                className="mt-1 w-full rounded border p-2"
+                className="w-full rounded-lg border border-slate-300 px-4 py-3 text-slate-900 transition-colors hover:border-slate-400 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200"
                 value={inspectionType}
                 onChange={(e) =>
                   handleInspectionTypeChange(
@@ -237,57 +283,72 @@ export default function ScheduleInspectionPage() {
                   )
                 }
               >
-                <option value="ONSITE">Tại nhà (kiểm tra tại nơi bán)</option>
-                <option value="COMPANY">Tại trung tâm</option>
+                <option value="ONSITE">
+                  🏠 Tại nhà (kiểm tra tại nơi bán)
+                </option>
+                <option value="COMPANY">🏢 Tại trung tâm của chúng tôi</option>
               </select>
             </div>
 
-            {inspectionType === "ONSITE" && (
-              <div className="space-y-3">
-                <div className="rounded border border-blue-200 bg-blue-50 p-4 text-sm text-blue-700">
-                  <p className="font-semibold">Kiểm tra tại nhà</p>
-                  <p className="mt-1">
-                    Kiểm tra viên sẽ đến địa chỉ bạn đã lưu trong Profile.
-                  </p>
-                </div>
+            {/* Step 2: Location Info */}
+            <div className="space-y-4 border-t border-slate-200 pt-8">
+              <div className="flex items-baseline gap-3">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-green-600 text-sm font-bold text-white">
+                  2
+                </span>
+                <label className="text-lg font-semibold text-slate-900">
+                  {inspectionType === "ONSITE"
+                    ? "Thông tin liên hệ"
+                    : "Chọn địa điểm kiểm tra"}
+                </label>
+              </div>
 
-                <div className="rounded border p-4">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <label className="block text-sm font-medium">
-                      Thông tin liên hệ
-                    </label>
+              {inspectionType === "ONSITE" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between rounded-lg bg-blue-50 p-4 ring-1 ring-blue-200">
+                    <p className="text-sm text-blue-900">
+                      <span className="font-semibold">ℹ️ Gợi ý:</span> Kiểm tra
+                      viên sẽ đến địa chỉ bạn đã lưu trong Profile
+                    </p>
                     <button
                       type="button"
                       onClick={goToProfile}
-                      className="text-sm font-semibold text-green-600"
+                      className="ml-4 inline-block whitespace-nowrap text-sm font-semibold text-blue-600 hover:text-blue-700"
                     >
-                      Cập nhật trong Profile
+                      Cập nhật →
                     </button>
                   </div>
 
                   {isLoadingAddresses ? (
-                    <p>Đang tải thông tin liên hệ...</p>
+                    <div className="flex items-center justify-center rounded-lg border border-slate-200 py-8">
+                      <div className="space-y-2 text-center">
+                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-300 border-t-green-600 mx-auto"></div>
+                        <p className="text-sm text-slate-600">
+                          Đang tải thông tin liên hệ...
+                        </p>
+                      </div>
+                    </div>
                   ) : addresses.length === 0 ? (
-                    <div className="rounded border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-900">
                       <p className="font-semibold">
-                        Chưa có thông tin liên hệ cho kiểm định tại nhà.
+                        ⚠️ Chưa có thông tin liên hệ
                       </p>
-                      <p className="mt-1">
+                      <p className="mt-2 text-sm">
                         Vui lòng vào Profile để thêm tên liên hệ, số điện thoại
                         và địa chỉ trước khi tiếp tục.
                       </p>
                       <button
                         type="button"
                         onClick={goToProfile}
-                        className="mt-3 rounded bg-amber-500 px-3 py-2 text-xs font-bold uppercase tracking-widest text-white"
+                        className="mt-4 rounded-lg bg-amber-600 px-4 py-2 font-semibold text-white hover:bg-amber-700"
                       >
                         Đi tới Profile
                       </button>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <select
-                        className="w-full rounded border p-2"
+                        className="w-full rounded-lg border border-slate-300 px-4 py-3 text-slate-900 transition-colors hover:border-slate-400 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200"
                         value={selectedAddressId ?? ""}
                         onChange={(e) =>
                           setSelectedAddressId(e.target.value || null)
@@ -298,96 +359,125 @@ export default function ScheduleInspectionPage() {
                             key={String(address.id)}
                             value={String(address.id)}
                           >
-                            {address.nameContact} - {address.phoneContact} -{" "}
-                            {address.addressLine}
+                            {address.nameContact} - {address.phoneContact}
                           </option>
                         ))}
                       </select>
 
                       {selectedAddress && (
-                        <div className="space-y-1 text-sm text-slate-700">
-                          <p>
-                            <span className="font-semibold">Tên:</span>{" "}
-                            {selectedAddress.nameContact}
-                          </p>
-                          <p>
-                            <span className="font-semibold">Điện thoại:</span>{" "}
-                            {selectedAddress.phoneContact}
-                          </p>
-                          <p>
-                            <span className="font-semibold">Địa chỉ:</span>{" "}
-                            {selectedAddress.addressLine}
-                          </p>
+                        <div className="rounded-lg bg-slate-50 p-4 ring-1 ring-slate-200">
+                          <div className="space-y-3 text-sm">
+                            <div className="flex items-start gap-3">
+                              <span className="mt-1 text-lg">👤</span>
+                              <div>
+                                <p className="font-medium text-slate-600">
+                                  Tên
+                                </p>
+                                <p className="text-slate-900">
+                                  {selectedAddress.nameContact}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                              <span className="mt-1 text-lg">📱</span>
+                              <div>
+                                <p className="font-medium text-slate-600">
+                                  Điện thoại
+                                </p>
+                                <p className="text-slate-900">
+                                  {selectedAddress.phoneContact}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-3">
+                              <span className="mt-1 text-lg">📍</span>
+                              <div>
+                                <p className="font-medium text-slate-600">
+                                  Địa chỉ
+                                </p>
+                                <p className="text-slate-900">
+                                  {selectedAddress.addressLine}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
                   )}
                 </div>
-              </div>
-            )}
+              )}
 
-            {inspectionType === "COMPANY" && (
-              <div>
-                <label className="block text-sm font-medium">
-                  Chọn địa điểm kiểm tra
+              {inspectionType === "COMPANY" && (
+                <div className="space-y-3">
+                  {isLoadingLocations ? (
+                    <div className="flex items-center justify-center rounded-lg border border-slate-200 py-8">
+                      <div className="space-y-2 text-center">
+                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-300 border-t-green-600 mx-auto"></div>
+                        <p className="text-sm text-slate-600">
+                          Đang tải địa điểm...
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <select
+                      className="w-full rounded-lg border border-slate-300 px-4 py-3 text-slate-900 transition-colors hover:border-slate-400 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200"
+                      value={inspectionLocationId}
+                      onChange={(e) => setInspectionLocationId(e.target.value)}
+                    >
+                      <option value="">-- Chọn địa điểm --</option>
+                      {locations.map((location) => (
+                        <option key={location.id} value={location.id}>
+                          {location.addressLine ||
+                            location.contactName ||
+                            location.id}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Step 3: Date Time */}
+            <div className="space-y-4 border-t border-slate-200 pt-8">
+              <div className="flex items-baseline gap-3">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-green-600 text-sm font-bold text-white">
+                  3
+                </span>
+                <label className="text-lg font-semibold text-slate-900">
+                  Chọn thời gian kiểm tra
                 </label>
-                {isLoadingLocations ? (
-                  <p>Đang tải địa điểm...</p>
-                ) : (
-                  <select
-                    className="mt-1 w-full rounded border p-2"
-                    value={inspectionLocationId}
-                    onChange={(e) => setInspectionLocationId(e.target.value)}
-                  >
-                    <option value="">-- Chọn địa điểm --</option>
-                    {locations.map((location) => (
-                      <option key={location.id} value={location.id}>
-                        {location.addressLine ||
-                          location.contactName ||
-                          location.id}
-                      </option>
-                    ))}
-                  </select>
-                )}
               </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium">
-                Thời gian dự kiến
-              </label>
               <input
-                className="mt-1 w-full rounded border p-2"
+                className="w-full rounded-lg border border-slate-300 px-4 py-3 text-slate-900 transition-colors hover:border-slate-400 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200"
                 type="datetime-local"
                 min={minDateTime}
                 value={scheduledAt}
                 onChange={(e) => setScheduledAt(e.target.value)}
               />
+              <p className="text-xs text-slate-500">
+                ℹ️ Vui lòng chọn thời gian trong tương lai
+              </p>
             </div>
 
-            <div className="flex gap-3">
+            {/* Action Buttons */}
+            <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-8 sm:flex-row sm:justify-end">
               <button
-                className="rounded bg-green-600 px-4 py-2 text-white"
-                onClick={handleSubmit}
-              >
-                Xác nhận và đặt lịch
-              </button>
-              <button
-                className="rounded border px-4 py-2"
-                onClick={() =>
-                  listingId && navigate(`/seller/choose-plan/${listingId}`)
-                }
-              >
-                Chọn gói trước
-              </button>
-              <button
-                className="rounded border px-4 py-2"
+                type="button"
                 onClick={() => navigate("/seller/dashboard")}
+                className="rounded-lg border border-slate-300 px-6 py-3 font-semibold text-slate-900 transition-colors hover:bg-slate-50"
               >
                 Hủy
               </button>
+              <button
+                type="submit"
+                className="rounded-lg bg-gradient-to-r from-green-600 to-green-700 px-8 py-3 font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:from-green-700 hover:to-green-800 disabled:opacity-50"
+              >
+                ✓ Xác nhận và đặt lịch
+              </button>
             </div>
-          </div>
+          </form>
         </div>
       </div>
     </div>
