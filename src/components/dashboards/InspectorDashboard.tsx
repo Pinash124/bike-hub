@@ -708,7 +708,7 @@ export default function InspectorDashboard() {
                     value={scoreValue}
                     onChange={(e) => setScoreValue(e.target.value)}
                     placeholder="Nhập điểm"
-                    className="w-full sm:w-40 rounded-xl border-2 border-slate-200 px-4 py-3 text-center text-2xl font-black text-indigo-700 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                    className="w-full sm:w-40 rounded-xl border-2 border-slate-200 px-4 py-3 text-center text-2xl font-black text-indigo-700 placeholder:text-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                   />
                   <p className="text-xs text-slate-500">
                     Gợi ý: nhập số nguyên từ 0 đến 10 để tránh sai định dạng.
