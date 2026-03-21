@@ -1,11 +1,5 @@
 // src/components/dashboards/InspectorDashboard.tsx
-import {
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Edit,
-  Eye,
-} from "lucide-react";
+import { CheckCircle, XCircle, AlertCircle, Edit, Eye } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   inspectionService,
@@ -46,7 +40,10 @@ const SCORE_IMAGE_ORDER: { key: ScoreImageType; label: string }[] = [
 /**
  * Handle both ISO strings and Java LocalDateTime arrays [y, m, d, h, i, s, n]
  */
-function formatDateTime(val: any, options: { onlyDate?: boolean } = {}): string {
+function formatDateTime(
+  val: any,
+  options: { onlyDate?: boolean } = {},
+): string {
   if (!val) return "—";
   try {
     let date: Date;
@@ -58,11 +55,20 @@ function formatDateTime(val: any, options: { onlyDate?: boolean } = {}): string 
       date = new Date(val);
 
       // If invalid, try parsing DD-MM-YYYY HH:mm or DD/MM/YYYY HH:mm
-      if (isNaN(date.getTime()) && typeof val === 'string') {
-        const dmyMatch = val.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+      if (isNaN(date.getTime()) && typeof val === "string") {
+        const dmyMatch = val.match(
+          /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/,
+        );
         if (dmyMatch) {
           const [_, d, m, y, h = 0, i = 0, s = 0] = dmyMatch;
-          date = new Date(Number(y), Number(m) - 1, Number(d), Number(h), Number(i), Number(s));
+          date = new Date(
+            Number(y),
+            Number(m) - 1,
+            Number(d),
+            Number(h),
+            Number(i),
+            Number(s),
+          );
         }
       }
     }
@@ -86,6 +92,13 @@ function formatDateTime(val: any, options: { onlyDate?: boolean } = {}): string 
 export default function InspectorDashboard() {
   const [myTasks, setMyTasks] = useState<InspectionTask[]>([]);
   const [isLoadingMy, setIsLoadingMy] = useState(true);
+
+  // Filter and Sort State
+  const [sortBy, setSortBy] = useState<"earliest" | "latest" | "status">(
+    "earliest",
+  );
+  const [filterStatus, setFilterStatus] = useState<string>("ALL");
+  const [filterType, setFilterType] = useState<string>("ALL");
 
   // Scoring Modal
   const [isScoring, setIsScoring] = useState(false);
@@ -230,6 +243,72 @@ export default function InspectorDashboard() {
     scoreValue.trim() !== "" &&
     SCORE_IMAGE_ORDER.every((item) => scoreImages[item.key]);
 
+  // Helper function to parse date for sorting
+  const parseDateTime = (val: any): Date | null => {
+    if (!val) return null;
+    try {
+      let date: Date;
+      if (Array.isArray(val)) {
+        const [y, m, d, h = 0, i = 0, s = 0] = val;
+        date = new Date(y, m - 1, d, h, i, s);
+      } else {
+        date = new Date(val);
+        if (isNaN(date.getTime()) && typeof val === "string") {
+          const dmyMatch = val.match(
+            /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/,
+          );
+          if (dmyMatch) {
+            const [_, d, m, y, h = 0, i = 0, s = 0] = dmyMatch;
+            date = new Date(
+              Number(y),
+              Number(m) - 1,
+              Number(d),
+              Number(h),
+              Number(i),
+              Number(s),
+            );
+          }
+        }
+      }
+      return !isNaN(date.getTime()) ? date : null;
+    } catch {
+      return null;
+    }
+  };
+
+  // Filter and sort tasks
+  const filteredAndSortedTasks = myTasks
+    .filter((task) => {
+      if (filterStatus !== "ALL" && task.status !== filterStatus) return false;
+      if (filterType !== "ALL" && task.inspectionType !== filterType)
+        return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === "earliest") {
+        const dateA = parseDateTime(a.scheduledAt);
+        const dateB = parseDateTime(b.scheduledAt);
+        if (!dateA || !dateB) return 0;
+        return dateA.getTime() - dateB.getTime();
+      } else if (sortBy === "latest") {
+        const dateA = parseDateTime(a.scheduledAt);
+        const dateB = parseDateTime(b.scheduledAt);
+        if (!dateA || !dateB) return 0;
+        return dateB.getTime() - dateA.getTime();
+      } else if (sortBy === "status") {
+        const statusOrder: Record<string, number> = {
+          IN_PROGRESS: 0,
+          ASSIGNED: 1,
+          PENDING_ASSIGNED: 2,
+          COMPLETED: 3,
+          REJECTED: 4,
+          PENDING: 5,
+        };
+        return (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99);
+      }
+      return 0;
+    });
+
   const stats = [
     {
       label: "Việc đang làm",
@@ -256,14 +335,18 @@ export default function InspectorDashboard() {
   ) => {
     if (loading)
       return (
-        <div className="p-6 text-center text-slate-500 font-medium">
-          Đang tải dữ liệu...
+        <div className="p-12 text-center">
+          <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-slate-100 mb-4 animate-spin">
+            <div className="h-8 w-8 rounded-full border-4 border-slate-300 border-t-green-600"></div>
+          </div>
+          <p className="text-slate-600 font-medium">Đang tải dữ liệu...</p>
         </div>
       );
     if (tasks.length === 0)
       return (
-        <div className="p-6 text-center text-slate-500 font-medium">
-          {emptyMsg}
+        <div className="p-12 text-center">
+          <div className="text-4xl mb-3">📭</div>
+          <p className="text-slate-600 font-medium">{emptyMsg}</p>
         </div>
       );
     return (
@@ -271,56 +354,64 @@ export default function InspectorDashboard() {
         {tasks.map((task) => (
           <div
             key={task.inspectionId}
-            className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 transition-colors"
+            className="p-6 hover:bg-slate-50 transition-colors"
           >
-            <div className="flex items-center gap-4 flex-1">
-              <div className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center text-2xl border border-indigo-100">
-                🛠️
-              </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-slate-800">
-                  Mã đơn: {task.inspectionId.split("-")[0]}
-                </h3>
-                <p className="text-indigo-600 font-bold tracking-tight">
-                  Loại:{" "}
-                  {task.inspectionType === "COMPANY"
-                    ? "Tại Trung Tâm"
-                    : "Tận Nơi"}
-                </p>
-                <div className="text-sm text-slate-500 mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
-                  {task.scheduledAt && (
-                    <span className="flex items-center gap-1">
-                      📅 Lịch hẹn:{" "}
-                      <span className="font-medium text-slate-700">
-                        {formatDateTime(task.scheduledAt)}
-                      </span>
+            <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
+              {/* Task Info */}
+              <div className="flex items-start gap-4 flex-1">
+                <div className="w-14 h-14 bg-gradient-to-br from-green-50 to-emerald-50 text-green-600 rounded-xl flex items-center justify-center text-xl border border-green-200 flex-shrink-0">
+                  🚲
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline gap-2 mb-1 flex-wrap">
+                    <h3 className="font-bold text-slate-900 text-base">
+                      Đơn #{task.inspectionId.split("-")[0]}
+                    </h3>
+                    <span
+                      className={`text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-full ${
+                        STATUS_COLOR[task.status] ??
+                        "bg-slate-100 text-slate-700"
+                      }`}
+                    >
+                      {STATUS_LABEL[task.status] ?? task.status}
                     </span>
-                  )}
-                  {!isPendingQueue && task.inspector && (
-                    <span className="flex items-center gap-1">
-                      🕵️ KĐV:{" "}
-                      <span className="font-medium text-slate-700">
-                        {task.inspector.name || task.inspector.username}
+                  </div>
+                  <div className="text-sm text-slate-600 space-y-1.5 mt-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-400">📍</span>
+                      <span className="font-medium">
+                        {task.inspectionType === "COMPANY"
+                          ? "Kiểm tra tại trung tâm"
+                          : "Kiểm tra tại nhà"}
                       </span>
-                    </span>
-                  )}
+                    </div>
+                    {task.scheduledAt && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-400">📅</span>
+                        <span className="font-medium">
+                          {formatDateTime(task.scheduledAt)}
+                        </span>
+                      </div>
+                    )}
+                    {!isPendingQueue && task.inspector && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-400">👤</span>
+                        <span className="font-medium">
+                          {task.inspector.name || task.inspector.username}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <span
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest ${STATUS_COLOR[task.status] ?? "bg-slate-100 text-slate-700"}`}
-              >
-                {STATUS_LABEL[task.status] ?? task.status}
-              </span>
 
-              {/* Actions */}
-              <div className="flex items-center gap-2">
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                 <button
                   onClick={() => openLocationModal(task)}
-                  className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-lg hover:bg-blue-700 transition shadow-sm active:scale-95"
+                  className="flex-1 sm:flex-none px-4 py-2.5 bg-slate-100 text-slate-900 text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-slate-200 transition flex items-center justify-center gap-2"
                 >
-                  <Eye size={14} /> Xem chi tiết
+                  <Eye size={16} /> Chi tiết
                 </button>
                 {!isPendingQueue &&
                   ["PENDING_ASSIGNED", "ASSIGNED", "IN_PROGRESS"].includes(
@@ -328,9 +419,9 @@ export default function InspectorDashboard() {
                   ) && (
                     <button
                       onClick={() => openScoreModal(task)}
-                      className="px-4 py-1.5 bg-indigo-600 text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 rounded-lg hover:bg-indigo-700 transition shadow-sm active:scale-95"
+                      className="flex-1 sm:flex-none px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white text-xs font-bold uppercase tracking-widest rounded-lg hover:from-green-700 hover:to-emerald-700 transition shadow-md shadow-green-600/20 flex items-center justify-center gap-2"
                     >
-                      <Edit size={14} /> Chấm điểm
+                      <Edit size={16} /> Chấm điểm
                     </button>
                   )}
               </div>
@@ -342,35 +433,45 @@ export default function InspectorDashboard() {
   };
 
   return (
-    <div className="bg-slate-50 min-h-[calc(100vh-80px)] font-sans">
-      <div className="max-w-6xl mx-auto px-6 py-8">
+    <div className="bg-gradient-to-br from-slate-50 to-slate-100 min-h-[calc(100vh-80px)] font-sans">
+      <div
+        className={`max-w-6xl mx-auto px-6 py-8 transition-all duration-200 ${
+          isScoring ? "blur-[2px] pointer-events-none select-none" : ""
+        }`}
+      >
+        {/* Header Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">
-            Bảng Điều Khiển KĐV
-          </h1>
-          <p className="text-slate-500 font-medium">
-            Quản lý và nhập điểm đánh giá tình trạng xe đạp cũ.
+          <div className="flex items-baseline gap-3 mb-2">
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight">
+              📋 Bảng Điều Khiển
+            </h1>
+            <span className="text-sm font-semibold text-slate-500 bg-slate-200 px-3 py-1 rounded-full">
+              Kiểm Tra Viên
+            </span>
+          </div>
+          <p className="text-slate-600 font-medium">
+            Quản lý và nhập điểm đánh giá tình trạng xe đạp cũ
           </p>
         </div>
 
-        {/* Stats */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {stats.map((stat) => {
             const Icon = stat.icon;
             return (
               <div
                 key={stat.label}
-                className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition"
+                className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all hover:border-slate-300"
               >
                 <div className="flex items-center gap-4">
-                  <div className="p-3.5 bg-indigo-50 rounded-xl">
-                    <Icon size={24} className="text-indigo-600" />
+                  <div className="p-3.5 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
+                    <Icon size={24} className="text-green-600" />
                   </div>
                   <div>
-                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">
+                    <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">
                       {stat.label}
                     </p>
-                    <p className="text-2xl font-black text-slate-800 leading-none">
+                    <p className="text-3xl font-black text-slate-900 leading-none">
                       {stat.value}
                     </p>
                   </div>
@@ -380,19 +481,98 @@ export default function InspectorDashboard() {
           })}
         </div>
 
-
         {/* My Assigned Tasks */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-8">
-          <div className="border-b border-slate-50 bg-gradient-to-r from-indigo-50 to-white px-6 py-5 flex items-center justify-between">
-            <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
-              <span className="text-indigo-500">📋</span> Việc Của Tôi
-            </h2>
-            <span className="text-xs font-bold text-indigo-700 bg-indigo-100 px-3 py-1 rounded-full">
-              {myTasks.length} việc
-            </span>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          {/* Header with Title and Badge */}
+          <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-6 py-6 flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
+                <span>🏠</span> Việc Của Tôi
+              </h2>
+              <p className="text-xs font-medium text-slate-500 mt-1">
+                {filteredAndSortedTasks.length} / {myTasks.length} đơn
+              </p>
+            </div>
+            <div className="inline-flex items-center px-3 py-1 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 rounded-full text-xs font-bold">
+              ✓ {completedCount} hoàn thành
+            </div>
           </div>
+
+          {/* Filter and Sort Bar */}
+          <div className="border-b border-slate-100 bg-slate-50 px-6 py-4">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center flex-wrap">
+              {/* Sort */}
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-bold text-slate-600 uppercase tracking-widest shrink-0">
+                  📅 Sắp xếp theo:
+                </label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white text-slate-900 font-medium hover:border-slate-400 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200 transition cursor-pointer"
+                >
+                  <option value="earliest">⏰ Sớm nhất trước</option>
+                  <option value="latest">⏰ Muộn nhất trước</option>
+                  <option value="status">📊 Theo trạng thái</option>
+                </select>
+              </div>
+
+              {/* Filter Status */}
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-bold text-slate-600 uppercase tracking-widest shrink-0">
+                  🏷️ Trạng thái:
+                </label>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white text-slate-900 font-medium hover:border-slate-400 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200 transition cursor-pointer"
+                >
+                  <option value="ALL">Tất cả</option>
+                  <option value="IN_PROGRESS">Đang kiểm tra</option>
+                  <option value="ASSIGNED">Đã phân công</option>
+                  <option value="PENDING_ASSIGNED">Chờ phân công</option>
+                  <option value="COMPLETED">Hoàn thành</option>
+                  <option value="REJECTED">Từ chối</option>
+                </select>
+              </div>
+
+              {/* Filter Type */}
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-bold text-slate-600 uppercase tracking-widest shrink-0">
+                  📍 Loại:
+                </label>
+                <select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white text-slate-900 font-medium hover:border-slate-400 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200 transition cursor-pointer"
+                >
+                  <option value="ALL">Tất cả</option>
+                  <option value="ONSITE">Tại nhà</option>
+                  <option value="COMPANY">Tại trung tâm</option>
+                </select>
+              </div>
+
+              {/* Reset Filters */}
+              {(filterStatus !== "ALL" ||
+                filterType !== "ALL" ||
+                sortBy !== "earliest") && (
+                <button
+                  onClick={() => {
+                    setSortBy("earliest");
+                    setFilterStatus("ALL");
+                    setFilterType("ALL");
+                  }}
+                  className="px-3 py-2 text-xs font-bold text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 transition"
+                >
+                  ↻ Reset
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Task List */}
           {renderTaskList(
-            myTasks,
+            filteredAndSortedTasks,
             isLoadingMy,
             "Bạn chưa có đơn kiểm tra nào đang xử lý.",
             false,
@@ -402,7 +582,7 @@ export default function InspectorDashboard() {
 
       {/* Scoring Modal */}
       {isScoring && currentTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
             <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <div>
@@ -422,9 +602,12 @@ export default function InspectorDashboard() {
             </div>
 
             <div className="p-6 overflow-y-auto flex-1 space-y-6">
-              <div className="bg-indigo-50 text-indigo-800 text-xs font-medium p-4 rounded-xl">
-                Vui lòng nhập điểm tổng, nhận xét và tải đủ 4 ảnh theo đúng thứ
-                tự: LEFT_VIEW, RIGHT_VIEW, FRONT_VIEW, REAR_VIEW.
+              <div className="rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-sky-50 p-4 text-sm text-indigo-900">
+                <p className="font-bold">Hướng dẫn chính</p>
+                <p className="mt-1">
+                  Nhập điểm, ghi nhận xét và tải đủ 4 ảnh theo đúng thứ tự:
+                  LEFT, RIGHT, FRONT, REAR.
+                </p>
               </div>
 
               <div className="border border-slate-200 rounded-2xl overflow-hidden">
@@ -508,23 +691,32 @@ export default function InspectorDashboard() {
                 </div>
               </div>
 
-              <div className="grid gap-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-widest shrink-0">
+              <div className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-xs font-bold uppercase tracking-widest text-slate-500">
                     Điểm tổng
                   </span>
+                  <div className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-bold text-indigo-700">
+                    0 - 10
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <input
                     type="number"
                     min="0"
                     value={scoreValue}
                     onChange={(e) => setScoreValue(e.target.value)}
                     placeholder="Nhập điểm"
-                    className="w-full sm:w-40 px-3 py-2 border-2 border-slate-200 rounded-lg text-center font-black text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition"
+                    className="w-full sm:w-40 rounded-xl border-2 border-slate-200 px-4 py-3 text-center text-2xl font-black text-indigo-700 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                   />
+                  <p className="text-xs text-slate-500">
+                    Gợi ý: nhập số nguyên từ 0 đến 10 để tránh sai định dạng.
+                  </p>
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                  <label className="text-xs font-bold uppercase tracking-widest text-slate-500">
                     Nhận xét
                   </label>
                   <textarea
@@ -532,53 +724,89 @@ export default function InspectorDashboard() {
                     onChange={(e) => setComment(e.target.value)}
                     placeholder="Ghi chú tình trạng xe (tùy chọn)"
                     rows={3}
-                    className="mt-2 w-full px-3 py-2 border-2 border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition"
+                    className="mt-2 w-full rounded-xl border-2 border-slate-200 px-3 py-2 text-sm text-slate-800 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                   />
                 </div>
               </div>
 
-              <div>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">
-                  Ảnh hiện trạng xe (4 ảnh)
-                </p>
-                <div className="space-y-3">
-                  {SCORE_IMAGE_ORDER.map((item) => (
-                    <div
-                      key={item.key}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-slate-200 rounded-xl p-3"
-                    >
-                      <div className="text-sm font-semibold text-slate-700">
-                        {item.label}
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-bold uppercase tracking-widest text-slate-600">
+                    Ảnh hiện trạng xe (4 ảnh bắt buộc)
+                  </p>
+                  <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-bold text-indigo-700">
+                    {Object.values(scoreImages).filter(Boolean).length}/4 đã tải
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {SCORE_IMAGE_ORDER.map((item, index) => {
+                    const selectedFile = scoreImages[item.key];
+                    return (
+                      <div
+                        key={item.key}
+                        className={`rounded-xl border p-3 transition ${
+                          selectedFile
+                            ? "border-emerald-300 bg-emerald-50"
+                            : "border-slate-200 bg-white"
+                        }`}
+                      >
+                        <div className="mb-2 flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                              Bước {index + 1}
+                            </p>
+                            <p className="text-sm font-semibold text-slate-800">
+                              {item.label}
+                            </p>
+                          </div>
+                          <span
+                            className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${
+                              selectedFile
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-slate-100 text-slate-600"
+                            }`}
+                          >
+                            {selectedFile ? "Đã chọn" : "Chưa có"}
+                          </span>
+                        </div>
+
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) =>
+                            handleScoreImageChange(
+                              item.key,
+                              e.target.files?.[0] ?? null,
+                            )
+                          }
+                          className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-600 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-white hover:file:bg-indigo-700"
+                        />
+
+                        <p className="mt-2 truncate text-xs text-slate-500">
+                          {selectedFile
+                            ? `Tệp: ${selectedFile.name}`
+                            : "Chưa chọn tệp"}
+                        </p>
                       </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) =>
-                          handleScoreImageChange(
-                            item.key,
-                            e.target.files?.[0] ?? null,
-                          )
-                        }
-                        className="text-sm text-slate-600"
-                      />
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
 
-            <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+            <div className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50 p-6">
               <button
                 onClick={closeScoreModal}
                 disabled={isSubmitting}
-                className="px-6 py-2.5 rounded-xl font-bold text-sm text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 transition shadow-sm"
+                className="rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-sm font-bold text-slate-600 shadow-sm transition hover:bg-slate-100"
               >
                 Trở lại
               </button>
               <button
                 onClick={handleSubmitScores}
                 disabled={isSubmitting || !canSubmitScores}
-                className="px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-md shadow-indigo-600/20 flex items-center gap-2"
+                className="flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-indigo-600/20 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSubmitting ? "Đang gửi..." : "Xác nhận & Hoàn thành"}
               </button>
