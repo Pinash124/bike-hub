@@ -9,6 +9,7 @@ export interface PaymentCreationResponse {
 export interface PaymentResponse {
   paymentId: number;
   type: "PAYMENT" | "PAYOUT" | "REFUND";
+  referenceType?: "ORDER" | "SUBSCRIPTION";
   referenceId: string;
   amount: number;
   status: "PENDING" | "SUCCESS" | "FAILED" | "REFUNDED";
@@ -84,7 +85,9 @@ export const paymentService = {
   getAllPayments: async (): Promise<PaymentResponse[]> => {
     try {
       const response = await api.get(API_ENDPOINTS.PAYMENT_ALL);
-      if (response.data?.code === 1000) return response.data.result ?? [];
+      if (response.data?.code === 1000 || response.data?.code === 0) {
+        return response.data.result ?? [];
+      }
       return [];
     } catch (error) {
       console.error("Error fetching all payments:", error);

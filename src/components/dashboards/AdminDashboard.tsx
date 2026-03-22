@@ -1499,82 +1499,133 @@ function PaymentsTab({
   loading: boolean;
   onRefresh: () => void;
 }) {
-  const [filter, setFilter] = useState<PaymentResult["status"] | "ALL">("ALL");
+  const [typeFilter, setTypeFilter] = useState<
+    PaymentResult["type"] | "ALL"
+  >("ALL");
+  const [refTypeFilter, setRefTypeFilter] = useState<
+    PaymentResult["referenceType"] | "ALL"
+  >("ALL");
   const [search, setSearch] = useState("");
 
   const filtered = payments.filter((p: any) => {
-    const matchStatus = filter === "ALL" || p.status === filter;
+    const matchType = typeFilter === "ALL" || p.type === typeFilter;
+    const matchRefType = refTypeFilter === "ALL" || p.referenceType === refTypeFilter;
     const searchLow = search.toLowerCase();
     const matchSearch =
       !search ||
       String(p.paymentId || p.id || "").toLowerCase().includes(searchLow) ||
-      String(p.orderId || p.subscriptionId || "").toLowerCase().includes(searchLow) ||
-      String(p.description || "").toLowerCase().includes(searchLow) ||
-      String(p.orderCode || "").toLowerCase().includes(searchLow);
-    return matchStatus && matchSearch;
+      String(p.referenceId || p.orderId || p.subscriptionId || "").toLowerCase().includes(searchLow) ||
+      String(p.transactionRef || "").toLowerCase().includes(searchLow) ||
+      String(p.payosOrderCode || "").toLowerCase().includes(searchLow);
+    return matchType && matchRefType && matchSearch;
   });
 
-  const totalRevenue = payments.reduce(
-    (sum, p) => sum + (p.status === "SUCCESS" ? (p.amount ?? 0) : 0),
-    0,
+  const successPayments = payments.filter((p) => p.status === "SUCCESS");
+  const sumAmount = (list: PaymentResult[]) =>
+    list.reduce((sum, p) => sum + (p.amount ?? 0), 0);
+  const successByType = (type: PaymentResult["type"]) =>
+    sumAmount(successPayments.filter((p) => p.type === type));
+
+  const successPaymentTotal = successByType("PAYMENT");
+  const successPayoutTotal = successByType("PAYOUT");
+  const successRefundTotal = successByType("REFUND");
+
+  const orderPayment = sumAmount(
+    successPayments.filter(
+      (p) => p.type === "PAYMENT" && p.referenceType === "ORDER",
+    ),
   );
+  const orderPayout = sumAmount(
+    successPayments.filter(
+      (p) => p.type === "PAYOUT" && p.referenceType === "ORDER",
+    ),
+  );
+  const orderRefund = sumAmount(
+    successPayments.filter(
+      (p) => p.type === "REFUND" && p.referenceType === "ORDER",
+    ),
+  );
+  const heldOrderAmount = orderPayment - orderPayout - orderRefund;
 
   return (
     <div className="space-y-4">
+      <div className="bg-white rounded-2xl border border-slate-100 p-4 text-sm text-slate-600">
+        <p className="font-bold text-slate-800 mb-1">Luồng nguồn tiền (Admin)</p>
+        <ul className="list-disc ml-5 space-y-1">
+          <li>PaymentStatus: PENDING, SUCCESS</li>
+          <li>ReferenceType: ORDER, SUBSCRIPTION</li>
+          <li>PaymentType: PAYOUT, PAYMENT, REFUND</li>
+          <li>PAYOUT: tiền hệ thống đã trả cho Người bán</li>
+          <li>PAYMENT: tiền Người mua/Người bán chuyển vào hệ thống (cọc ORDER hoặc gói SUBSCRIPTION)</li>
+          <li>Tiền tạm giữ (ORDER) = PAYMENT - PAYOUT - REFUND</li>
+        </ul>
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
         <div className="bg-white rounded-xl border border-slate-100 p-4">
           <p className="text-xs text-slate-500 font-bold uppercase mb-1">
-            Tổng Doanh Thu
+            PAYMENT thành công
           </p>
           <p className="text-2xl font-black text-green-600">
-            {totalRevenue.toLocaleString("vi-VN")} ₫
+            {successPaymentTotal.toLocaleString("vi-VN")} ₫
           </p>
         </div>
         <div className="bg-white rounded-xl border border-slate-100 p-4">
           <p className="text-xs text-slate-500 font-bold uppercase mb-1">
-            Tổng Giao Dịch
+            PAYOUT thành công
           </p>
           <p className="text-2xl font-black text-slate-800">
-            {payments.length}
+            {successPayoutTotal.toLocaleString("vi-VN")} ₫
           </p>
         </div>
         <div className="bg-white rounded-xl border border-slate-100 p-4">
           <p className="text-xs text-slate-500 font-bold uppercase mb-1">
-            Thành Công
+            REFUND thành công
           </p>
           <p className="text-2xl font-black text-emerald-600">
-            {payments.filter((p) => p.status === "SUCCESS").length}
+            {successRefundTotal.toLocaleString("vi-VN")} ₫
           </p>
         </div>
         <div className="bg-white rounded-xl border border-slate-100 p-4">
           <p className="text-xs text-slate-500 font-bold uppercase mb-1">
-            Thất Bại
+            Tiền tạm giữ (ORDER)
           </p>
           <p className="text-2xl font-black text-red-600">
-            {payments.filter((p) => p.status === "FAILED").length}
+            {heldOrderAmount.toLocaleString("vi-VN")} ₫
           </p>
         </div>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        {(["ALL", "PENDING", "SUCCESS", "FAILED", "REFUNDED"] as const).map(
-          (f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${filter === f
-                ? "bg-slate-900 text-white"
-                : "bg-white border border-slate-200 text-slate-500 hover:border-slate-400"
-                }`}
-            >
-              {f === "ALL" ? "Tất cả" : f}
-            </button>
-          ),
-        )}
+        <select
+          value={typeFilter}
+          onChange={(e) =>
+            setTypeFilter(e.target.value as PaymentResult["type"] | "ALL")
+          }
+          className="px-3 py-1.5 text-xs font-bold rounded-full border border-slate-200 bg-white text-slate-600"
+        >
+          <option value="ALL">Tất cả loại</option>
+          <option value="PAYMENT">PAYMENT</option>
+          <option value="PAYOUT">PAYOUT</option>
+          <option value="REFUND">REFUND</option>
+        </select>
+        <select
+          value={refTypeFilter}
+          onChange={(e) =>
+            setRefTypeFilter(
+              e.target.value as PaymentResult["referenceType"] | "ALL",
+            )
+          }
+          className="px-3 py-1.5 text-xs font-bold rounded-full border border-slate-200 bg-white text-slate-600"
+        >
+          <option value="ALL">Tất cả nguồn</option>
+          <option value="ORDER">ORDER</option>
+          <option value="SUBSCRIPTION">SUBSCRIPTION</option>
+        </select>
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Tìm ID / nội dung..."
+          placeholder="Tìm ID / tham chiếu / mã giao dịch..."
           className="ml-auto px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-400 w-52"
         />
         <button
@@ -1595,12 +1646,16 @@ function PaymentsTab({
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-50 text-slate-500 text-[11px] font-bold uppercase tracking-wider border-b border-slate-100">
-                  <th className="px-6 py-3.5">Mã Giao Dịch</th>
-                  <th className="px-6 py-3.5">Mã Đơn / Sub</th>
-                  <th className="px-6 py-3.5">Nội Dung</th>
-                  <th className="px-6 py-3.5">Số Tiền</th>
-                  <th className="px-6 py-3.5">Trạng Thái</th>
-                  <th className="px-6 py-3.5">Ngày</th>
+                  <th className="px-6 py-3.5">Mã giao dịch</th>
+                  <th className="px-6 py-3.5">Loại</th>
+                  <th className="px-6 py-3.5">Nguồn</th>
+                  <th className="px-6 py-3.5">Tham chiếu</th>
+                  <th className="px-6 py-3.5">Số tiền</th>
+                  <th className="px-6 py-3.5">Trạng thái</th>
+                  <th className="px-6 py-3.5">Mã giao dịch (transactionRef)</th>
+                  <th className="px-6 py-3.5">Mã PayOS</th>
+                  <th className="px-6 py-3.5">Thanh toán lúc</th>
+                  <th className="px-6 py-3.5">Tạo lúc</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -1613,10 +1668,13 @@ function PaymentsTab({
                       {String(payment.paymentId || (payment as any).id || "N/A").slice(0, 8)}
                     </td>
                     <td className="px-6 py-3.5 text-sm text-slate-600">
-                      {String(payment.orderId || (payment as any).subscriptionId || "N/A").slice(0, 8)}
+                      {payment.type || "—"}
                     </td>
-                    <td className="px-6 py-3.5 text-sm text-slate-500 max-w-[200px] truncate">
-                      {payment.description || "—"}
+                    <td className="px-6 py-3.5 text-sm text-slate-600">
+                      {payment.referenceType || "—"}
+                    </td>
+                    <td className="px-6 py-3.5 text-sm text-slate-600">
+                      {String(payment.referenceId || payment.orderId || (payment as any).subscriptionId || "N/A").slice(0, 10)}
                     </td>
                     <td className="px-6 py-3.5 text-sm font-bold text-slate-800">
                       {(payment.amount ?? 0).toLocaleString("vi-VN")} ₫
@@ -1636,11 +1694,16 @@ function PaymentsTab({
                       </span>
                     </td>
                     <td className="px-6 py-3.5 text-sm text-slate-500">
-                      {payment.createdAt
-                        ? new Date(payment.createdAt).toLocaleDateString(
-                          "vi-VN",
-                        )
-                        : "N/A"}
+                      {payment.transactionRef || "—"}
+                    </td>
+                    <td className="px-6 py-3.5 text-sm text-slate-500">
+                      {payment.payosOrderCode ?? "—"}
+                    </td>
+                    <td className="px-6 py-3.5 text-sm text-slate-500">
+                      {formatDateTime(payment.paidAt)}
+                    </td>
+                    <td className="px-6 py-3.5 text-sm text-slate-500">
+                      {formatDateTime(payment.createAt || payment.createdAt)}
                     </td>
                   </tr>
                 ))}
@@ -1652,6 +1715,7 @@ function PaymentsTab({
     </div>
   );
 }
+
 
 // ─── Catalog Tab (Brands) ───────────────────────────────────────────────────
 
@@ -2725,7 +2789,7 @@ export default function AdminDashboard() {
       { tab: "orders", label: "Đơn Hàng", icon: ShoppingCart, badge: undefined },
       {
         tab: "payments",
-        label: "Thanh Toán",
+        label: "Lịch sử giao dịch",
         icon: CreditCard,
         badge: undefined,
       },
