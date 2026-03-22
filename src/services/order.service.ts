@@ -2,6 +2,11 @@
 import api from "../api/axiosConfig";
 import { API_ENDPOINTS } from "../config/api";
 import type { Listing } from "./listing.service";
+import {
+  buildScopedCacheKey,
+  invalidateRequestCache,
+  withRequestCache,
+} from "./requestCache";
 
 export type OrderStatus =
   | "PENDING"
@@ -76,65 +81,99 @@ function normaliseOrder(raw: any): Order {
 
 export const orderService = {
   getMyOrders: async (): Promise<Order[]> => {
-    try {
-      const response = await api.get(API_ENDPOINTS.ORDER_MY);
-      if (Number(response.data?.code) === 1000) {
-        const payload =
-          response.data?.result ?? response.data?.data ?? response.data;
-        const rows = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload?.data)
-            ? payload.data
-            : Array.isArray(payload?.content)
-              ? payload.content
-              : [];
-        return rows.map(normaliseOrder);
-      }
-      return [];
-    } catch (error) {
-      console.error("Error fetching my orders:", error);
-      return [];
-    }
+    return withRequestCache(
+      buildScopedCacheKey("orders", "my"),
+      async () => {
+        try {
+          const response = await api.get(API_ENDPOINTS.ORDER_MY);
+          if (Number(response.data?.code) === 1000) {
+            const payload =
+              response.data?.result ?? response.data?.data ?? response.data;
+            const rows = Array.isArray(payload)
+              ? payload
+              : Array.isArray(payload?.data)
+                ? payload.data
+                : Array.isArray(payload?.content)
+                  ? payload.content
+                  : [];
+            return rows.map(normaliseOrder);
+          }
+          return [];
+        } catch (error) {
+          console.error("Error fetching my orders:", error);
+          return [];
+        }
+      },
+      8_000,
+    );
   },
 
   getAllOrders: async (): Promise<Order[]> => {
-    try {
-      const response = await api.get(API_ENDPOINTS.ORDER_ALL);
-      if (Number(response.data?.code) === 1000) {
-        const payload =
-          response.data?.result ?? response.data?.data ?? response.data;
-        const rows = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload?.data)
-            ? payload.data
-            : Array.isArray(payload?.content)
-              ? payload.content
-              : [];
-        return rows.map(normaliseOrder);
-      }
-      return [];
-    } catch (error) {
-      console.error("Error fetching all orders:", error);
-      return [];
-    }
+    return withRequestCache(
+      buildScopedCacheKey("orders", "all"),
+      async () => {
+        try {
+          const extractRows = (data: any) => {
+            const payload = data?.result ?? data?.data ?? data;
+            return Array.isArray(payload)
+              ? payload
+              : Array.isArray(payload?.data)
+                ? payload.data
+                : Array.isArray(payload?.content)
+                  ? payload.content
+                  : [];
+          };
+
+          // Some BE deployments paginate /order with a small default page size.
+          try {
+            const response = await api.get(API_ENDPOINTS.ORDER_ALL, {
+              params: { page: 0, size: 1000 },
+            });
+            if (Number(response.data?.code) === 1000) {
+              return extractRows(response.data).map(normaliseOrder);
+            }
+          } catch {
+            // Fallback to legacy request without query params.
+          }
+
+          const fallbackResponse = await api.get(API_ENDPOINTS.ORDER_ALL);
+          if (Number(fallbackResponse.data?.code) === 1000) {
+            return extractRows(fallbackResponse.data).map(normaliseOrder);
+          }
+          return [];
+        } catch (error) {
+          console.error("Error fetching all orders:", error);
+          return [];
+        }
+      },
+      8_000,
+    );
   },
 
   getOrderById: async (id: string): Promise<Order | null> => {
-    try {
-      const response = await api.get(API_ENDPOINTS.ORDER_DETAIL(id));
-      if (response.data?.code === 1000)
-        return normaliseOrder(response.data.result);
-      return null;
-    } catch (error) {
-      console.error("Error fetching order:", error);
-      return null;
-    }
+    return withRequestCache(
+      buildScopedCacheKey("orders", "detail", id),
+      async () => {
+        try {
+          const response = await api.get(API_ENDPOINTS.ORDER_DETAIL(id));
+          if (response.data?.code === 1000)
+            return normaliseOrder(response.data.result);
+          return null;
+        } catch (error) {
+          console.error("Error fetching order:", error);
+          return null;
+        }
+      },
+      10_000,
+    );
   },
 
   acceptOrder: async (id: string): Promise<boolean> => {
     try {
       const response = await api.put(API_ENDPOINTS.ORDER_ACCEPT(id));
-      return response.data?.code === 1000;
+      const ok = response.data?.code === 1000;
+      if (ok) invalidateRequestCache("orders:");
+      return ok;
     } catch (error) {
       console.error("Error accepting order:", error);
       return false;
@@ -144,7 +183,9 @@ export const orderService = {
   rejectOrder: async (id: string): Promise<boolean> => {
     try {
       const response = await api.put(API_ENDPOINTS.ORDER_REJECT(id));
-      return response.data?.code === 1000;
+      const ok = response.data?.code === 1000;
+      if (ok) invalidateRequestCache("orders:");
+      return ok;
     } catch (error) {
       console.error("Error rejecting order:", error);
       return false;
@@ -159,8 +200,10 @@ export const orderService = {
         API_ENDPOINTS.ORDER_DELIVERED(id),
         formData,
       );
-      if (response.data?.code === 1000)
+      if (response.data?.code === 1000) {
+        invalidateRequestCache("orders:");
         return normaliseOrder(response.data.result);
+      }
       return null;
     } catch (error) {
       console.error("Error delivering order:", error);
@@ -171,8 +214,10 @@ export const orderService = {
   claimOrder: async (id: string): Promise<Order | null> => {
     try {
       const response = await api.put(API_ENDPOINTS.ORDER_CLAIM(id));
-      if (response.data?.code === 1000)
+      if (response.data?.code === 1000) {
+        invalidateRequestCache("orders:");
         return normaliseOrder(response.data.result);
+      }
       return null;
     } catch (error) {
       console.error("Error claiming order:", error);
@@ -181,14 +226,22 @@ export const orderService = {
   },
 
   getOrderLog: async (orderId: string): Promise<OrderLog[]> => {
-    try {
-      const response = await api.get(API_ENDPOINTS.ORDER_LOG_BY_ORDER(orderId));
-      if (response.data?.code === 1000) return response.data.result ?? [];
-      return [];
-    } catch (error) {
-      console.error("Error fetching order log:", error);
-      return [];
-    }
+    return withRequestCache(
+      buildScopedCacheKey("orders", "log", orderId),
+      async () => {
+        try {
+          const response = await api.get(
+            API_ENDPOINTS.ORDER_LOG_BY_ORDER(orderId),
+          );
+          if (response.data?.code === 1000) return response.data.result ?? [];
+          return [];
+        } catch (error) {
+          console.error("Error fetching order log:", error);
+          return [];
+        }
+      },
+      5_000,
+    );
   },
 
   // Legacy compatibility shim.

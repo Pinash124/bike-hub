@@ -1,6 +1,7 @@
 // src/services/brand.service.ts
 import api from "../api/axiosConfig";
 import { API_ENDPOINTS } from "../config/api";
+import { invalidateRequestCache, withRequestCache } from "./requestCache";
 
 export interface Brand {
   id: number;
@@ -9,20 +10,26 @@ export interface Brand {
 
 export const brandService = {
   getAllBrands: async (): Promise<Brand[]> => {
-    try {
-      const response = await api.get(API_ENDPOINTS.BRAND);
-      // Support multiple possible response shapes: { code, result }, { code, data }, or direct array
-      const payload =
-        response.data?.result ?? response.data?.data ?? response.data;
-      if (Array.isArray(payload)) return payload;
-      // some APIs wrap with { data: { data: [...] } }
-      if (payload && Array.isArray((payload as any).data))
-        return (payload as any).data;
-      return [];
-    } catch (error) {
-      console.error("Error fetching brands:", error);
-      return [];
-    }
+    return withRequestCache(
+      "brands:all",
+      async () => {
+        try {
+          const response = await api.get(API_ENDPOINTS.BRAND);
+          // Support multiple possible response shapes: { code, result }, { code, data }, or direct array
+          const payload =
+            response.data?.result ?? response.data?.data ?? response.data;
+          if (Array.isArray(payload)) return payload;
+          // some APIs wrap with { data: { data: [...] } }
+          if (payload && Array.isArray((payload as any).data))
+            return (payload as any).data;
+          return [];
+        } catch (error) {
+          console.error("Error fetching brands:", error);
+          return [];
+        }
+      },
+      60_000,
+    );
   },
 
   createBrand: async (name: string): Promise<Brand | null> => {
@@ -30,8 +37,14 @@ export const brandService = {
       const response = await api.post(API_ENDPOINTS.BRAND, { name });
       const payload =
         response.data?.result ?? response.data?.data ?? response.data;
-      if (payload && !Array.isArray(payload)) return payload;
-      if (Array.isArray(payload) && payload.length > 0) return payload[0];
+      if (payload && !Array.isArray(payload)) {
+        invalidateRequestCache("brands:");
+        return payload;
+      }
+      if (Array.isArray(payload) && payload.length > 0) {
+        invalidateRequestCache("brands:");
+        return payload[0];
+      }
       return null;
     } catch (error) {
       console.error("Error creating brand:", error);
@@ -48,8 +61,14 @@ export const brandService = {
       const response = await api.put(API_ENDPOINTS.BRAND, { id, name });
       const payload =
         response.data?.result ?? response.data?.data ?? response.data;
-      if (payload && !Array.isArray(payload)) return payload;
-      if (Array.isArray(payload) && payload.length > 0) return payload[0];
+      if (payload && !Array.isArray(payload)) {
+        invalidateRequestCache("brands:");
+        return payload;
+      }
+      if (Array.isArray(payload) && payload.length > 0) {
+        invalidateRequestCache("brands:");
+        return payload[0];
+      }
       return null;
     } catch (error) {
       console.error("Error updating brand:", error);
@@ -68,9 +87,14 @@ export const brandService = {
       const response = await api.put(API_ENDPOINTS.BRAND, { brands });
       const payload = response.data?.code ?? response.data;
       // If code exists, treat 1000 as success; otherwise fallback to boolean check
-      if (typeof response.data?.code === "number")
-        return response.data.code === 1000;
-      return !!payload;
+      if (typeof response.data?.code === "number") {
+        const ok = response.data.code === 1000;
+        if (ok) invalidateRequestCache("brands:");
+        return ok;
+      }
+      const ok = !!payload;
+      if (ok) invalidateRequestCache("brands:");
+      return ok;
     } catch (error) {
       console.error("Error updating brands:", error);
       return false;
@@ -86,9 +110,14 @@ export const brandService = {
       const response = await api.delete(
         API_ENDPOINTS.BRAND_DETAIL(String(brandId)),
       );
-      if (typeof response.data?.code === "number")
-        return response.data.code === 1000;
-      return !!response.data;
+      if (typeof response.data?.code === "number") {
+        const ok = response.data.code === 1000;
+        if (ok) invalidateRequestCache("brands:");
+        return ok;
+      }
+      const ok = !!response.data;
+      if (ok) invalidateRequestCache("brands:");
+      return ok;
     } catch (error) {
       console.error("Error deleting brand:", error);
       return false;

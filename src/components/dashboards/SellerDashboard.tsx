@@ -168,7 +168,10 @@ const STATUS_CONFIG: Record<
 
 export default function SellerDashboard() {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const user = useMemo(
+    () => JSON.parse(localStorage.getItem("user") || "{}"),
+    [],
+  );
   const [listings, setListings] = useState<Listing[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState<"listings" | "orders">("listings");
@@ -348,7 +351,7 @@ export default function SellerDashboard() {
     }
 
     // Sort
-    return filtered.sort((a, b) => {
+    return [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "price-low":
           return a.price - b.price;

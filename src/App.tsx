@@ -1,4 +1,10 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { lazy, Suspense } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
 // --- Layout & Common Components ---
 import Header from "./components/common/Header";
@@ -17,34 +23,47 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 // --- Sections (Homepage) ---
 
 // --- Auth Components ---
-import Login from "./components/auth/Login";
-import Register from "./components/auth/Register";
-import KYC from "./components/auth/KYC"; // Bổ sung tệp KYC đã tạo
+const Login = lazy(() => import("./components/auth/Login"));
+const Register = lazy(() => import("./components/auth/Register"));
+const KYC = lazy(() => import("./components/auth/KYC"));
 
 // --- Dashboards & Pages ---
-import SellerDashboard from "./components/dashboards/SellerDashboard";
-
-import AdminDashboard from "./components/dashboards/AdminDashboard";
-import InspectorDashboard from "./components/dashboards/InspectorDashboard";
-import ProfilePage from "./pages/ProfilePage"; // Bổ sung ProfilePage
-import CartPage from "./pages/CartPage"; // Bổ sung CartPage
-import SearchPage from "./pages/SearchPage";
-import ProductDetailPage from "./pages/ProductDetailPage";
-import CheckoutPage from "./pages/CheckoutPage";
-import OrderTrackingPage from "./pages/OrderTrackingPage";
-import CreateListingPage from "./pages/CreateListingPage";
-import ScheduleInspectionPage from "./pages/ScheduleInspectionPage";
-import DebugPage from "./pages/DebugPage";
-import ChoosePlanPage from "./pages/seller/ChoosePlanPage";
-import PaymentResultPage from "./pages/seller/PaymentResultPage";
-import EditListingPage from "./pages/EditListingPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+const SellerDashboard = lazy(
+  () => import("./components/dashboards/SellerDashboard"),
+);
+const AdminDashboard = lazy(
+  () => import("./components/dashboards/AdminDashboard"),
+);
+const InspectorDashboard = lazy(
+  () => import("./components/dashboards/InspectorDashboard"),
+);
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const CartPage = lazy(() => import("./pages/CartPage"));
+const SearchPage = lazy(() => import("./pages/SearchPage"));
+const ProductDetailPage = lazy(() => import("./pages/ProductDetailPage"));
+const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
+const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage"));
+const CreateListingPage = lazy(() => import("./pages/CreateListingPage"));
+const ScheduleInspectionPage = lazy(
+  () => import("./pages/ScheduleInspectionPage"),
+);
+const DebugPage = lazy(() => import("./pages/DebugPage"));
+const ChoosePlanPage = lazy(() => import("./pages/seller/ChoosePlanPage"));
+const PaymentResultPage = lazy(
+  () => import("./pages/seller/PaymentResultPage"),
+);
+const EditListingPage = lazy(() => import("./pages/EditListingPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
 
 // --- Contexts & Protection ---
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
-import { GuestMarketplace } from "./components/guest/GuestMarketplace";
+const GuestMarketplace = lazy(() =>
+  import("./components/guest/GuestMarketplace").then((m) => ({
+    default: m.GuestMarketplace,
+  })),
+);
 
 /**
  * Trang thông báo khi không có quyền truy cập
@@ -68,8 +87,18 @@ function Unauthorized() {
   );
 }
 
-import { Navigate } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
+
+function PageFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mb-4"></div>
+        <p className="text-slate-500">Đang tải trang...</p>
+      </div>
+    </div>
+  );
+}
 
 // guard wrapper for profile route to prevent admins from accessing
 function ProfileGuard() {
@@ -124,198 +153,200 @@ function App() {
     <AuthProvider>
       <CartProvider>
         <Router>
-          <Routes>
-            {/* --- Public Routes --- */}
-            <Route path="/" element={<Home />} />
-            <Route
-              path="/unauthorized"
-              element={
-                <AppLayout>
-                  <Unauthorized />
-                </AppLayout>
-              }
-            />
-            <Route path="/debug" element={<DebugPage />} />
-            <Route
-              path="/marketplace"
-              element={
-                <AppLayout>
-                  <GuestMarketplace />
-                </AppLayout>
-              }
-            />
-            {/* AUTH ROUTES */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            {/* Payment Return Callback */}
-            <Route
-              path="/payment/result"
-              element={
-                <AppLayout>
-                  <PaymentResultPage />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/seller/payment/result"
-              element={
-                <AppLayout>
-                  <PaymentResultPage />
-                </AppLayout>
-              }
-            />
-            {/* --- Product Discovery --- */}
-            <Route
-              path="/search"
-              element={
-                <AppLayout>
-                  <SearchPage />
-                </AppLayout>
-              }
-            />
-            <Route
-              path="/product/:id"
-              element={
-                <AppLayout>
-                  <ProductDetailPage />
-                </AppLayout>
-              }
-            />
-            {/* --- KYC Route --- */}
-            <Route
-              path="/kyc"
-              element={
-                <ProtectedRoute>
-                  <KYC />
-                </ProtectedRoute>
-              }
-            />
-            {/* --- Profile Route (All Authenticated Users) --- */}
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <ProfileGuard />
-                </ProtectedRoute>
-              }
-            />
-            {/* --- Protected Routes - Seller --- */}
-            <Route
-              path="/seller/dashboard"
-              element={
-                <ProtectedRoute requiredRole="seller">
+          <Suspense fallback={<PageFallback />}>
+            <Routes>
+              {/* --- Public Routes --- */}
+              <Route path="/" element={<Home />} />
+              <Route
+                path="/unauthorized"
+                element={
                   <AppLayout>
-                    <SellerDashboard />
+                    <Unauthorized />
                   </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/seller/new-bike"
-              element={
-                <ProtectedRoute requiredRole="seller">
+                }
+              />
+              <Route path="/debug" element={<DebugPage />} />
+              <Route
+                path="/marketplace"
+                element={
                   <AppLayout>
-                    <CreateListingPage />
+                    <GuestMarketplace />
                   </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/seller/schedule"
-              element={
-                <ProtectedRoute requiredRole="seller">
+                }
+              />
+              {/* AUTH ROUTES */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              {/* Payment Return Callback */}
+              <Route
+                path="/payment/result"
+                element={
                   <AppLayout>
-                    <ScheduleInspectionPage />
+                    <PaymentResultPage />
                   </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/seller/choose-plan/:listingId"
-              element={
-                <ProtectedRoute requiredRole="seller">
+                }
+              />
+              <Route
+                path="/seller/payment/result"
+                element={
                   <AppLayout>
-                    <ChoosePlanPage />
+                    <PaymentResultPage />
                   </AppLayout>
-                </ProtectedRoute>
-              }
-            />
+                }
+              />
+              {/* --- Product Discovery --- */}
+              <Route
+                path="/search"
+                element={
+                  <AppLayout>
+                    <SearchPage />
+                  </AppLayout>
+                }
+              />
+              <Route
+                path="/product/:id"
+                element={
+                  <AppLayout>
+                    <ProductDetailPage />
+                  </AppLayout>
+                }
+              />
+              {/* --- KYC Route --- */}
+              <Route
+                path="/kyc"
+                element={
+                  <ProtectedRoute>
+                    <KYC />
+                  </ProtectedRoute>
+                }
+              />
+              {/* --- Profile Route (All Authenticated Users) --- */}
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <ProfileGuard />
+                  </ProtectedRoute>
+                }
+              />
+              {/* --- Protected Routes - Seller --- */}
+              <Route
+                path="/seller/dashboard"
+                element={
+                  <ProtectedRoute requiredRole="seller">
+                    <AppLayout>
+                      <SellerDashboard />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/seller/new-bike"
+                element={
+                  <ProtectedRoute requiredRole="seller">
+                    <AppLayout>
+                      <CreateListingPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/seller/schedule"
+                element={
+                  <ProtectedRoute requiredRole="seller">
+                    <AppLayout>
+                      <ScheduleInspectionPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/seller/choose-plan/:listingId"
+                element={
+                  <ProtectedRoute requiredRole="seller">
+                    <AppLayout>
+                      <ChoosePlanPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/seller/edit/:id"
-              element={
-                <ProtectedRoute requiredRole="seller">
-                  <AppLayout>
-                    <EditListingPage />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/seller/edit/:id"
+                element={
+                  <ProtectedRoute requiredRole="seller">
+                    <AppLayout>
+                      <EditListingPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/buyer/cart"
-              element={
-                <ProtectedRoute requiredRole="buyer">
+              <Route
+                path="/buyer/cart"
+                element={
+                  <ProtectedRoute requiredRole="buyer">
+                    <AppLayout>
+                      <CartPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/buyer/checkout"
+                element={
+                  <ProtectedRoute requiredRole="buyer">
+                    <AppLayout>
+                      <CheckoutPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/buyer/orders"
+                element={
+                  <ProtectedRoute requiredRole="buyer">
+                    <AppLayout>
+                      <OrderTrackingPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              {/* --- Protected Routes - Admin & Inspector --- */}
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AppLayout>
+                      <AdminDashboard />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/inspector/dashboard"
+                element={
+                  <ProtectedRoute requiredRole="inspector">
+                    <AppLayout>
+                      <InspectorDashboard />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              {/* --- 404 Route --- */}
+              <Route
+                path="*"
+                element={
                   <AppLayout>
-                    <CartPage />
+                    <div className="py-20 text-center font-bold text-slate-400">
+                      404 - TRANG KHÔNG TỒN TẠI
+                    </div>
                   </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/buyer/checkout"
-              element={
-                <ProtectedRoute requiredRole="buyer">
-                  <AppLayout>
-                    <CheckoutPage />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/buyer/orders"
-              element={
-                <ProtectedRoute requiredRole="buyer">
-                  <AppLayout>
-                    <OrderTrackingPage />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            {/* --- Protected Routes - Admin & Inspector --- */}
-            <Route
-              path="/admin/dashboard"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <AppLayout>
-                    <AdminDashboard />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/inspector/dashboard"
-              element={
-                <ProtectedRoute requiredRole="inspector">
-                  <AppLayout>
-                    <InspectorDashboard />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-            {/* --- 404 Route --- */}
-            <Route
-              path="*"
-              element={
-                <AppLayout>
-                  <div className="py-20 text-center font-bold text-slate-400">
-                    404 - TRANG KHÔNG TỒN TẠI
-                  </div>
-                </AppLayout>
-              }
-            />
-          </Routes>
+                }
+              />
+            </Routes>
+          </Suspense>
         </Router>
       </CartProvider>
     </AuthProvider>
