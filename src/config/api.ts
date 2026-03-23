@@ -4,7 +4,7 @@
 const isProd = import.meta.env.PROD;
 
 export const API_BASE_URL = isProd
-  ? "https://bikehub-production-1c50.up.railway.app"
+  ? "https://bikehub-production-731a.up.railway.app"
   : "";
 
 export const API_ENDPOINTS = {
