@@ -121,25 +121,25 @@ const ROLE_COLOR: Record<string, string> = {
   ADMIN: "bg-rose-100 text-rose-700",
 };
 const INSPECTION_STATUS_MAP: Record<string, { label: string; color: string }> =
-{
-  PENDING_ASSIGNED: {
-    label: "Chờ gán",
-    color: "bg-amber-100 text-amber-700",
-  },
-  ASSIGNED: { label: "Đã gán", color: "bg-blue-100 text-blue-700" },
-  IN_PROGRESS: {
-    label: "Đang thực hiện",
-    color: "bg-indigo-100 text-indigo-700",
-  },
-  COMPLETED: {
-    label: "Hoàn thành",
-    color: "bg-emerald-100 text-emerald-700",
-  },
-  EXPIRED: {
-    label: "Hết hạn",
-    color: "bg-red-100 text-red-600",
-  },
-};
+  {
+    PENDING_ASSIGNED: {
+      label: "Chờ gán",
+      color: "bg-amber-100 text-amber-700",
+    },
+    ASSIGNED: { label: "Đã gán", color: "bg-blue-100 text-blue-700" },
+    IN_PROGRESS: {
+      label: "Đang thực hiện",
+      color: "bg-indigo-100 text-indigo-700",
+    },
+    COMPLETED: {
+      label: "Hoàn thành",
+      color: "bg-emerald-100 text-emerald-700",
+    },
+    EXPIRED: {
+      label: "Hết hạn",
+      color: "bg-red-100 text-red-600",
+    },
+  };
 const KYC_STATUS_MAP: Record<
   string,
   { label: string; color: string; icon: React.ElementType }
@@ -175,14 +175,24 @@ const LISTING_STATUS_MAP: Record<string, { label: string; color: string }> = {
 /**
  * Handle both ISO strings and Java LocalDateTime arrays [y, m, d, h, i, s, n]
  */
-function formatDateTime(val: any, options: { onlyDate?: boolean; fallbackFrom?: any } = {}): string {
+function formatDateTime(
+  val: any,
+  options: { onlyDate?: boolean; fallbackFrom?: any } = {},
+): string {
   let targetVal = val;
 
   // If specific value is missing, try to find a similar key in the fallback object
   if (!targetVal && options.fallbackFrom) {
     const keys = Object.keys(options.fallbackFrom);
-    const similarKey = keys.find(k =>
-      ['scheduledAt', 'scheduleAt', 'appointmentAt', 'appointmentDate', 'date', 'time'].includes(k)
+    const similarKey = keys.find((k) =>
+      [
+        "scheduledAt",
+        "scheduleAt",
+        "appointmentAt",
+        "appointmentDate",
+        "date",
+        "time",
+      ].includes(k),
     );
     if (similarKey) targetVal = options.fallbackFrom[similarKey];
   }
@@ -199,11 +209,20 @@ function formatDateTime(val: any, options: { onlyDate?: boolean; fallbackFrom?: 
       date = new Date(targetVal);
 
       // If invalid, try parsing DD-MM-YYYY HH:mm or DD/MM/YYYY HH:mm
-      if (isNaN(date.getTime()) && typeof targetVal === 'string') {
-        const dmyMatch = targetVal.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+      if (isNaN(date.getTime()) && typeof targetVal === "string") {
+        const dmyMatch = targetVal.match(
+          /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/,
+        );
         if (dmyMatch) {
           const [_, d, m, y, h = 0, i = 0, s = 0] = dmyMatch;
-          date = new Date(Number(y), Number(m) - 1, Number(d), Number(h), Number(i), Number(s));
+          date = new Date(
+            Number(y),
+            Number(m) - 1,
+            Number(d),
+            Number(h),
+            Number(i),
+            Number(s),
+          );
         }
       }
     }
@@ -395,7 +414,7 @@ function PlansTab({
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className={`bg-white rounded-2xl border ${plan.isActive ? 'border-indigo-100' : 'border-slate-200 opacity-60'} shadow-sm p-6 hover:shadow-md transition group relative`}
+              className={`bg-white rounded-2xl border ${plan.isActive ? "border-indigo-100" : "border-slate-200 opacity-60"} shadow-sm p-6 hover:shadow-md transition group relative`}
             >
               <div className="absolute top-4 right-4 flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
                 <button
@@ -413,13 +432,17 @@ function PlansTab({
               </div>
 
               <div className="flex items-center gap-3 mb-4">
-                <div className={`p-2 rounded-xl ${plan.isActive ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-100 text-slate-400'}`}>
+                <div
+                  className={`p-2 rounded-xl ${plan.isActive ? "bg-indigo-50 text-indigo-600" : "bg-slate-100 text-slate-400"}`}
+                >
                   <Zap size={20} />
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-800">{plan.name}</h3>
-                  <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${plan.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600'}`}>
-                    {plan.isActive ? 'Đang bật' : 'Đã tắt'}
+                  <span
+                    className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${plan.isActive ? "bg-green-100 text-green-700" : "bg-slate-200 text-slate-600"}`}
+                  >
+                    {plan.isActive ? "Đang bật" : "Đã tắt"}
                   </span>
                 </div>
               </div>
@@ -430,15 +453,21 @@ function PlansTab({
 
               <div className="flex items-end justify-between border-t border-slate-50 pt-4">
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Giá gói</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    Giá gói
+                  </p>
                   <p className="text-xl font-black text-slate-900">
-                    {plan.price.toLocaleString('vi-VN')}
+                    {plan.price.toLocaleString("vi-VN")}
                     <span className="text-xs ml-0.5 mt-1 font-bold">₫</span>
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Thời hạn</p>
-                  <p className="text-sm font-bold text-slate-700">{plan.durationDays} ngày</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    Thời hạn
+                  </p>
+                  <p className="text-sm font-bold text-slate-700">
+                    {plan.durationDays} ngày
+                  </p>
                 </div>
               </div>
             </div>
@@ -465,7 +494,9 @@ function PlansTab({
               <textarea
                 required
                 value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
                 placeholder="VD: Hiển thị ưu tiên trong 30 ngày..."
                 rows={3}
                 className={`${inputCls} resize-none`}
@@ -477,7 +508,9 @@ function PlansTab({
                   required
                   type="number"
                   value={form.price}
-                  onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+                  onChange={(e) =>
+                    setForm({ ...form, price: Number(e.target.value) })
+                  }
                   className={inputCls}
                 />
               </FormField>
@@ -486,7 +519,9 @@ function PlansTab({
                   required
                   type="number"
                   value={form.durationDays}
-                  onChange={(e) => setForm({ ...form, durationDays: Number(e.target.value) })}
+                  onChange={(e) =>
+                    setForm({ ...form, durationDays: Number(e.target.value) })
+                  }
                   className={inputCls}
                 />
               </FormField>
@@ -496,10 +531,17 @@ function PlansTab({
                 type="checkbox"
                 id="isActive"
                 checked={form.isActive}
-                onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
+                onChange={(e) =>
+                  setForm({ ...form, isActive: e.target.checked })
+                }
                 className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
               />
-              <label htmlFor="isActive" className="text-sm font-bold text-slate-700">Kích hoạt gói ngay</label>
+              <label
+                htmlFor="isActive"
+                className="text-sm font-bold text-slate-700"
+              >
+                Kích hoạt gói ngay
+              </label>
             </div>
 
             <div className="flex gap-3 pt-4">
@@ -926,8 +968,10 @@ function KycTab({
               icon: Clock,
             };
             const Icon = st.icon;
-            const realId = String(kyc.id || '');
-            const effectiveId = realId.startsWith('__no_id__') ? (kyc.idNumber || '') : realId;
+            const realId = String(kyc.id || "");
+            const effectiveId = realId.startsWith("__no_id__")
+              ? kyc.idNumber || ""
+              : realId;
             const isProc = processing === effectiveId;
             const canVerify = !!effectiveId;
             return (
@@ -958,9 +1002,7 @@ function KycTab({
                 <div className="bg-slate-50 rounded-xl p-3 space-y-1.5 text-xs">
                   {kyc.fullName && (
                     <div className="flex justify-between">
-                      <span className="text-slate-400 font-medium">
-                        Tên
-                      </span>
+                      <span className="text-slate-400 font-medium">Tên</span>
                       <span className="font-bold text-slate-700">
                         {kyc.fullName}
                       </span>
@@ -1108,7 +1150,9 @@ function InspectionsTab({
   const [assignModal, setAssignModal] = useState<InspectionTask | null>(null);
   const [selectedInspector, setSelectedInspector] = useState("");
   const [assigning, setAssigning] = useState(false);
-  const [availableInspectors, setAvailableInspectors] = useState<AdminUser[]>([]);
+  const [availableInspectors, setAvailableInspectors] = useState<AdminUser[]>(
+    [],
+  );
   const [fetchingAvailable, setFetchingAvailable] = useState(false);
 
   const inspectors = users.filter((u) => getPrimaryRole(u) === "INSPECTOR");
@@ -1123,7 +1167,9 @@ function InspectionsTab({
     if (ins.scheduledAt) {
       setFetchingAvailable(true);
       try {
-        const available = await inspectionService.getAvailableInspectors(ins.scheduledAt);
+        const available = await inspectionService.getAvailableInspectors(
+          ins.scheduledAt,
+        );
         setAvailableInspectors(available.length > 0 ? available : inspectors);
       } catch (err) {
         setAvailableInspectors(inspectors); // fallback
@@ -1250,7 +1296,9 @@ function InspectionsTab({
                             )}
                           </div>
                         ) : (
-                          <span className="text-slate-300 text-xs italic">—</span>
+                          <span className="text-slate-300 text-xs italic">
+                            —
+                          </span>
                         )}
                       </td>
                       <td className="px-5 py-3.5">
@@ -1263,12 +1311,15 @@ function InspectionsTab({
                       <td className="px-5 py-3.5">
                         {ins.inspectionResult ? (
                           <span
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${ins.inspectionResult === "PASSED"
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-red-100 text-red-600"
-                              }`}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
+                              ins.inspectionResult === "PASSED"
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-red-100 text-red-600"
+                            }`}
                           >
-                            {ins.inspectionResult === "PASSED" ? "✓ Đạt" : "✗ Không đạt"}
+                            {ins.inspectionResult === "PASSED"
+                              ? "✓ Đạt"
+                              : "✗ Không đạt"}
                           </span>
                         ) : (
                           <span className="text-slate-300 text-xs">—</span>
@@ -1276,7 +1327,9 @@ function InspectionsTab({
                       </td>
                       <td className="px-5 py-3.5 text-sm text-slate-500">
                         {ins.inspector?.name || ins.inspector?.username || (
-                          <span className="text-slate-300 italic">Chưa gán</span>
+                          <span className="text-slate-300 italic">
+                            Chưa gán
+                          </span>
                         )}
                       </td>
                       <td className="px-5 py-3.5">
@@ -1408,10 +1461,11 @@ function OrdersTab({
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${filter === f
-              ? "bg-slate-900 text-white"
-              : "bg-white border border-slate-200 text-slate-500 hover:border-slate-400"
-              }`}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
+              filter === f
+                ? "bg-slate-900 text-white"
+                : "bg-white border border-slate-200 text-slate-500 hover:border-slate-400"
+            }`}
           >
             {f === "ALL" ? "Tất cả" : f}
           </button>
@@ -1462,14 +1516,15 @@ function OrdersTab({
                     </td>
                     <td className="px-6 py-3.5">
                       <span
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${order.status === "COMPLETED"
-                          ? "bg-green-100 text-green-700"
-                          : order.status === "PENDING"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : order.status === "CANCELLED"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-blue-100 text-blue-700"
-                          }`}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
+                          order.status === "COMPLETED"
+                            ? "bg-green-100 text-green-700"
+                            : order.status === "PENDING"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : order.status === "CANCELLED"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-blue-100 text-blue-700"
+                        }`}
                       >
                         {order.status}
                       </span>
@@ -1499,11 +1554,13 @@ function PaymentsTab({
   loading: boolean;
   onRefresh: () => void;
 }) {
-  type ReferenceTypeFilter = Exclude<PaymentResult["referenceType"], null> | "ALL";
+  type ReferenceTypeFilter =
+    | Exclude<PaymentResult["referenceType"], null>
+    | "ALL";
 
-  const [typeFilter, setTypeFilter] = useState<
-    PaymentResult["type"] | "ALL"
-  >("ALL");
+  const [typeFilter, setTypeFilter] = useState<PaymentResult["type"] | "ALL">(
+    "ALL",
+  );
   const [refTypeFilter, setRefTypeFilter] =
     useState<ReferenceTypeFilter>("ALL");
   const [statusFilter, setStatusFilter] = useState<
@@ -1536,15 +1593,24 @@ function PaymentsTab({
 
   const filtered = sortedPayments.filter((p: any) => {
     const matchType = typeFilter === "ALL" || p.type === typeFilter;
-    const matchRefType = refTypeFilter === "ALL" || p.referenceType === refTypeFilter;
+    const matchRefType =
+      refTypeFilter === "ALL" || p.referenceType === refTypeFilter;
     const matchStatus = statusFilter === "ALL" || p.status === statusFilter;
     const searchLow = search.toLowerCase();
     const matchSearch =
       !search ||
-      String(p.paymentId || p.id || "").toLowerCase().includes(searchLow) ||
-      String(p.referenceId || p.orderId || p.subscriptionId || "").toLowerCase().includes(searchLow) ||
-      String(p.transactionRef || "").toLowerCase().includes(searchLow) ||
-      String(p.payosOrderCode || "").toLowerCase().includes(searchLow);
+      String(p.paymentId || p.id || "")
+        .toLowerCase()
+        .includes(searchLow) ||
+      String(p.referenceId || p.orderId || p.subscriptionId || "")
+        .toLowerCase()
+        .includes(searchLow) ||
+      String(p.transactionRef || "")
+        .toLowerCase()
+        .includes(searchLow) ||
+      String(p.payosOrderCode || "")
+        .toLowerCase()
+        .includes(searchLow);
     return matchType && matchRefType && matchStatus && matchSearch;
   });
 
@@ -1585,15 +1651,26 @@ function PaymentsTab({
   return (
     <div className="space-y-4">
       <div className="bg-white rounded-2xl border border-slate-100 p-4 text-sm text-slate-600">
-        <p className="font-bold text-slate-800 mb-1">Luồng nguồn tiền (Admin)</p>
+        <p className="font-bold text-slate-800 mb-1">
+          Luồng nguồn tiền (Admin)
+        </p>
         <ul className="list-disc ml-5 space-y-1">
           <li>PaymentStatus: PENDING, SUCCESS</li>
           <li>ReferenceType: ORDER, SUBSCRIPTION</li>
           <li>PaymentType: PAYOUT, PAYMENT, REFUND</li>
           <li>PAYOUT: tiền hệ thống đã trả cho Người bán</li>
-          <li>PAYMENT: tiền Người mua/Người bán chuyển vào hệ thống (cọc ORDER hoặc gói SUBSCRIPTION)</li>
-          <li>Doanh thu tiền gói (SUBSCRIPTION) = tổng PAYMENT SUCCESS có referenceType = SUBSCRIPTION</li>
-          <li>Tiền giữ giùm đơn hàng (ORDER) = PAYMENT SUCCESS(ORDER) - PAYOUT SUCCESS(ORDER) - REFUND SUCCESS(ORDER)</li>
+          <li>
+            PAYMENT: tiền Người mua/Người bán chuyển vào hệ thống (cọc ORDER
+            hoặc gói SUBSCRIPTION)
+          </li>
+          <li>
+            Doanh thu tiền gói (SUBSCRIPTION) = tổng PAYMENT SUCCESS có
+            referenceType = SUBSCRIPTION
+          </li>
+          <li>
+            Tiền giữ giùm đơn hàng (ORDER) = PAYMENT SUCCESS(ORDER) - PAYOUT
+            SUCCESS(ORDER) - REFUND SUCCESS(ORDER)
+          </li>
         </ul>
       </div>
 
@@ -1719,7 +1796,9 @@ function PaymentsTab({
                     className="hover:bg-slate-50/60 transition"
                   >
                     <td className="px-6 py-3.5 text-sm font-semibold text-slate-800">
-                      {String(payment.paymentId || (payment as any).id || "N/A").slice(0, 8)}
+                      {String(
+                        payment.paymentId || (payment as any).id || "N/A",
+                      ).slice(0, 8)}
                     </td>
                     <td className="px-6 py-3.5 text-sm text-slate-600">
                       {payment.type || "—"}
@@ -1728,21 +1807,27 @@ function PaymentsTab({
                       {payment.referenceType || "—"}
                     </td>
                     <td className="px-6 py-3.5 text-sm text-slate-600">
-                      {String(payment.referenceId || payment.orderId || (payment as any).subscriptionId || "N/A").slice(0, 10)}
+                      {String(
+                        payment.referenceId ||
+                          payment.orderId ||
+                          (payment as any).subscriptionId ||
+                          "N/A",
+                      ).slice(0, 10)}
                     </td>
                     <td className="px-6 py-3.5 text-sm font-bold text-slate-800">
                       {(payment.amount ?? 0).toLocaleString("vi-VN")} ₫
                     </td>
                     <td className="px-6 py-3.5">
                       <span
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${payment.status === "SUCCESS"
-                          ? "bg-green-100 text-green-700"
-                          : payment.status === "FAILED"
-                            ? "bg-red-100 text-red-700"
-                            : payment.status === "PENDING"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-slate-100 text-slate-700"
-                          }`}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
+                          payment.status === "SUCCESS"
+                            ? "bg-green-100 text-green-700"
+                            : payment.status === "FAILED"
+                              ? "bg-red-100 text-red-700"
+                              : payment.status === "PENDING"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-slate-100 text-slate-700"
+                        }`}
                       >
                         {payment.status}
                       </span>
@@ -1769,7 +1854,6 @@ function PaymentsTab({
     </div>
   );
 }
-
 
 // ─── Catalog Tab (Brands) ───────────────────────────────────────────────────
 
@@ -2198,10 +2282,11 @@ function ListingsTab({
           <button
             key={key}
             onClick={() => setFilter(key)}
-            className={`px-4 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 ${filter === key
-              ? "bg-slate-900 text-white"
-              : "bg-white border border-slate-200 text-slate-500 hover:border-slate-400"
-              }`}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1.5 ${
+              filter === key
+                ? "bg-slate-900 text-white"
+                : "bg-white border border-slate-200 text-slate-500 hover:border-slate-400"
+            }`}
           >
             {label}
             {key === "PENDING" && pendingCount > 0 && (
@@ -2825,33 +2910,33 @@ export default function AdminDashboard() {
     icon: React.ElementType;
     badge?: number;
   }[] = [
-      { tab: "overview", label: "Tổng Quan", icon: LayoutDashboard },
-      { tab: "users", label: "Người Dùng", icon: Users },
-      { tab: "kyc", label: "Xác Minh KYC", icon: FileCheck, badge: pendingKYC },
-      {
-        tab: "listings",
-        label: "Duyệt Bài Đăng",
-        icon: Tag,
-        badge: pendingListings,
-      },
-      {
-        tab: "inspections",
-        label: "Kiểm Định",
-        icon: ClipboardList,
-        badge: pendingInsp,
-      },
-      { tab: "orders", label: "Đơn Hàng", icon: ShoppingCart, badge: undefined },
-      {
-        tab: "payments",
-        label: "Lịch sử giao dịch",
-        icon: CreditCard,
-        badge: undefined,
-      },
-      { tab: "create-inspector", label: "Tạo Kiểm Định Viên", icon: UserPlus },
-      { tab: "catalog", label: "Thương Hiệu", icon: Wrench },
-      { tab: "locations", label: "Cơ Sở Kiểm Định", icon: MapPin },
-      { tab: "plans", label: "Quản Lý Gói", icon: Zap },
-    ];
+    { tab: "overview", label: "Tổng Quan", icon: LayoutDashboard },
+    { tab: "users", label: "Người Dùng", icon: Users },
+    { tab: "kyc", label: "Xác Minh KYC", icon: FileCheck, badge: pendingKYC },
+    {
+      tab: "listings",
+      label: "Duyệt Bài Đăng",
+      icon: Tag,
+      badge: pendingListings,
+    },
+    {
+      tab: "inspections",
+      label: "Kiểm Định",
+      icon: ClipboardList,
+      badge: pendingInsp,
+    },
+    { tab: "orders", label: "Đơn Hàng", icon: ShoppingCart, badge: undefined },
+    {
+      tab: "payments",
+      label: "Lịch sử giao dịch",
+      icon: CreditCard,
+      badge: undefined,
+    },
+    { tab: "create-inspector", label: "Tạo Kiểm Định Viên", icon: UserPlus },
+    { tab: "catalog", label: "Thương Hiệu", icon: Wrench },
+    { tab: "locations", label: "Cơ Sở Kiểm Định", icon: MapPin },
+    { tab: "plans", label: "Quản Lý Gói", icon: Zap },
+  ];
 
   return (
     <DashboardErrorBoundary>

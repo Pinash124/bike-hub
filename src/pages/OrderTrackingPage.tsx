@@ -78,7 +78,8 @@ export default function OrderTrackingPage() {
 
   const totalSpent = buyerPayments
     .filter(
-      (payment) => payment.type === "PAYMENT" && isPaymentSuccess(payment.status),
+      (payment) =>
+        payment.type === "PAYMENT" && isPaymentSuccess(payment.status),
     )
     .reduce((sum, payment) => sum + (payment.amount || 0), 0);
 
@@ -155,8 +156,7 @@ export default function OrderTrackingPage() {
           ),
           totalAmount: total,
           deliveryAddress: "Giao hàng tận nơi",
-          createdAt:
-            toIsoDate(order.createdAt) ?? new Date().toISOString(),
+          createdAt: toIsoDate(order.createdAt) ?? new Date().toISOString(),
           estimatedDelivery:
             toIsoDate(order.expiresAt || order.createdAt) ??
             toIsoDate(order.createdAt) ??
@@ -265,7 +265,9 @@ export default function OrderTrackingPage() {
         <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100">
           <div className="flex items-center gap-3 mb-6">
             <CreditCard size={24} className="text-green-600" />
-            <h2 className="text-2xl font-black text-green-600">Lịch sử giao dịch</h2>
+            <h2 className="text-2xl font-black text-green-600">
+              Lịch sử giao dịch
+            </h2>
           </div>
 
           <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -309,16 +311,29 @@ export default function OrderTrackingPage() {
                   <tr>
                     <th className="px-4 py-3 text-left font-semibold">Mã GD</th>
                     <th className="px-4 py-3 text-left font-semibold">Loại</th>
-                    <th className="px-4 py-3 text-left font-semibold">Số tiền</th>
-                    <th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
-                    <th className="px-4 py-3 text-left font-semibold">Thời gian tạo</th>
+                    <th className="px-4 py-3 text-left font-semibold">
+                      Số tiền
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold">
+                      Trạng thái
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold">
+                      Thời gian tạo
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {buyerPayments.map((payment) => (
-                    <tr key={payment.paymentId} className="border-t border-slate-100">
-                      <td className="px-4 py-3 font-medium text-slate-800">#{payment.paymentId}</td>
-                      <td className="px-4 py-3 text-slate-700">{payment.type}</td>
+                    <tr
+                      key={payment.paymentId}
+                      className="border-t border-slate-100"
+                    >
+                      <td className="px-4 py-3 font-medium text-slate-800">
+                        #{payment.paymentId}
+                      </td>
+                      <td className="px-4 py-3 text-slate-700">
+                        {payment.type}
+                      </td>
                       <td className="px-4 py-3 font-semibold text-slate-900">
                         {formatMoney(payment.amount || 0)}
                       </td>

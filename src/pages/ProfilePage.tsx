@@ -137,7 +137,6 @@ export default function ProfilePage() {
       .finally(() => setIsLoadingContacts(false));
   }, [isSellerOrBuyer]);
 
-
   if (!user) return null;
 
   const handleLogout = () => {

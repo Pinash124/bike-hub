@@ -398,14 +398,15 @@ export default function SellerDashboard() {
       payment.referenceType === "SUBSCRIPTION" && payment.type === "PAYMENT",
   );
 
-  const payoutPayments = payments.filter((payment) => payment.type === "PAYOUT");
+  const payoutPayments = payments.filter(
+    (payment) => payment.type === "PAYOUT",
+  );
 
   const sellerCompletedPackageAmount = subscriptionPayments
-    .filter(
-      (payment) =>
-        ["SUCCESS", "PAID", "COMPLETED"].includes(
-          String(payment.status || "").toUpperCase(),
-        ),
+    .filter((payment) =>
+      ["SUCCESS", "PAID", "COMPLETED"].includes(
+        String(payment.status || "").toUpperCase(),
+      ),
     )
     .reduce((sum, payment) => sum + (payment.amount || 0), 0);
 
@@ -1022,11 +1023,21 @@ export default function SellerDashboard() {
                     <table className="min-w-full text-sm">
                       <thead className="bg-slate-50 text-slate-600">
                         <tr>
-                          <th className="px-4 py-3 text-left font-semibold">Mã GD</th>
-                          <th className="px-4 py-3 text-left font-semibold">Loại</th>
-                          <th className="px-4 py-3 text-left font-semibold">Số tiền</th>
-                          <th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
-                          <th className="px-4 py-3 text-left font-semibold">Thời gian tạo</th>
+                          <th className="px-4 py-3 text-left font-semibold">
+                            Mã GD
+                          </th>
+                          <th className="px-4 py-3 text-left font-semibold">
+                            Loại
+                          </th>
+                          <th className="px-4 py-3 text-left font-semibold">
+                            Số tiền
+                          </th>
+                          <th className="px-4 py-3 text-left font-semibold">
+                            Trạng thái
+                          </th>
+                          <th className="px-4 py-3 text-left font-semibold">
+                            Thời gian tạo
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1038,7 +1049,9 @@ export default function SellerDashboard() {
                             <td className="px-4 py-3 font-medium text-slate-800">
                               #{payment.paymentId}
                             </td>
-                            <td className="px-4 py-3 text-slate-700">{payment.type}</td>
+                            <td className="px-4 py-3 text-slate-700">
+                              {payment.type}
+                            </td>
                             <td className="px-4 py-3 font-semibold text-slate-900">
                               {(payment.amount || 0).toLocaleString("vi-VN")} ₫
                             </td>
@@ -1091,11 +1104,21 @@ export default function SellerDashboard() {
                     <table className="min-w-full text-sm">
                       <thead className="bg-slate-50 text-slate-600">
                         <tr>
-                          <th className="px-4 py-3 text-left font-semibold">Mã GD</th>
-                          <th className="px-4 py-3 text-left font-semibold">Nguồn</th>
-                          <th className="px-4 py-3 text-left font-semibold">Số tiền</th>
-                          <th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
-                          <th className="px-4 py-3 text-left font-semibold">Thời gian nhận</th>
+                          <th className="px-4 py-3 text-left font-semibold">
+                            Mã GD
+                          </th>
+                          <th className="px-4 py-3 text-left font-semibold">
+                            Nguồn
+                          </th>
+                          <th className="px-4 py-3 text-left font-semibold">
+                            Số tiền
+                          </th>
+                          <th className="px-4 py-3 text-left font-semibold">
+                            Trạng thái
+                          </th>
+                          <th className="px-4 py-3 text-left font-semibold">
+                            Thời gian nhận
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
