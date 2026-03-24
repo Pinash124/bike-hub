@@ -5,6 +5,7 @@ import {
   Eye,
   TrendingUp,
   Package,
+  CreditCard,
   CheckCircle,
   Bike,
   Calendar,
@@ -20,6 +21,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { listingService, type Listing } from "../../services/listing.service";
 import { orderService, type Order } from "../../services/order.service";
 import { subscriptionService } from "../../services/subscription.service";
+import {
+  paymentService,
+  type PaymentResponse,
+} from "../../services/payment.service";
 
 const parseApiDate = (value?: string | null): Date | null => {
   if (!value) return null;
@@ -174,7 +179,10 @@ export default function SellerDashboard() {
   );
   const [listings, setListings] = useState<Listing[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [activeTab, setActiveTab] = useState<"listings" | "orders">("listings");
+  const [payments, setPayments] = useState<PaymentResponse[]>([]);
+  const [activeTab, setActiveTab] = useState<
+    "listings" | "orders" | "payments" | "payouts"
+  >("listings");
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -204,6 +212,8 @@ export default function SellerDashboard() {
         listingService.getMyListings(),
         orderService.getAllOrders(),
       ]);
+
+      const myPayments = await paymentService.getMyPayments().catch(() => []);
 
       const draftListingIds = listingsData
         .filter((listing) => listing.status === "DRAFT")
@@ -247,6 +257,7 @@ export default function SellerDashboard() {
       setScheduledListingIds(readListingIdsByKey(SCHEDULED_LISTING_IDS_KEY));
       // Filter orders where current user is seller
       setOrders(ordersData.filter((o) => o.seller?.id === user.id));
+      setPayments(myPayments);
     } catch (error) {
       console.error("Failed to fetch data:", error);
     } finally {
@@ -381,6 +392,59 @@ export default function SellerDashboard() {
   const pendingOrdersCount = orders.filter(
     (o) => o.sellerStatus === "PENDING",
   ).length;
+
+  const subscriptionPayments = payments.filter(
+    (payment) =>
+      payment.referenceType === "SUBSCRIPTION" && payment.type === "PAYMENT",
+  );
+
+  const payoutPayments = payments.filter((payment) => payment.type === "PAYOUT");
+
+  const sellerCompletedPackageAmount = subscriptionPayments
+    .filter(
+      (payment) =>
+        ["SUCCESS", "PAID", "COMPLETED"].includes(
+          String(payment.status || "").toUpperCase(),
+        ),
+    )
+    .reduce((sum, payment) => sum + (payment.amount || 0), 0);
+
+  const sellerReceivedPayoutAmount = payoutPayments
+    .filter((payment) =>
+      ["SUCCESS", "PAID", "COMPLETED"].includes(
+        String(payment.status || "").toUpperCase(),
+      ),
+    )
+    .reduce((sum, payment) => sum + (payment.amount || 0), 0);
+
+  const getPaymentStatusLabel = (status?: string) => {
+    switch (String(status || "").toUpperCase()) {
+      case "SUCCESS":
+      case "PAID":
+      case "COMPLETED":
+        return "Thành công";
+      case "PENDING":
+        return "Đang xử lý";
+      case "REFUNDED":
+        return "Đã hoàn";
+      default:
+        return "Thất bại";
+    }
+  };
+
+  const getPaymentStatusClass = (status?: string) => {
+    const normalized = String(status || "").toUpperCase();
+    if (["SUCCESS", "PAID", "COMPLETED"].includes(normalized)) {
+      return "bg-green-50 text-green-700 border border-green-200";
+    }
+    if (normalized === "PENDING") {
+      return "bg-amber-50 text-amber-700 border border-amber-200";
+    }
+    if (normalized === "REFUNDED") {
+      return "bg-sky-50 text-sky-700 border border-sky-200";
+    }
+    return "bg-red-50 text-red-700 border border-red-200";
+  };
 
   const getOrderStatusLabel = (status?: string) => {
     switch ((status || "").toUpperCase()) {
@@ -584,6 +648,18 @@ export default function SellerDashboard() {
                       {pendingOrdersCount}
                     </span>
                   )}
+                </button>
+                <button
+                  onClick={() => setActiveTab("payments")}
+                  className={`pb-3 text-lg font-bold flex items-center gap-2 border-b-2 transition-colors ${activeTab === "payments" ? "border-green-600 text-green-600" : "border-transparent text-slate-500 hover:text-slate-800"}`}
+                >
+                  <CreditCard size={24} /> Lịch Sử Mua Gói
+                </button>
+                <button
+                  onClick={() => setActiveTab("payouts")}
+                  className={`pb-3 text-lg font-bold flex items-center gap-2 border-b-2 transition-colors ${activeTab === "payouts" ? "border-green-600 text-green-600" : "border-transparent text-slate-500 hover:text-slate-800"}`}
+                >
+                  <DollarSign size={24} /> Lịch Sử Nhận Tiền
                 </button>
               </div>
             </div>
@@ -912,6 +988,146 @@ export default function SellerDashboard() {
                       </div>
                     </div>
                   ))
+                )}
+              </div>
+            )}
+
+            {activeTab === "payments" && (
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-indigo-700">
+                      Lịch sử mua gói
+                    </p>
+                    <p className="mt-2 text-2xl font-black text-indigo-900">
+                      {subscriptionPayments.length} giao dịch
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-green-200 bg-green-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-green-700">
+                      Tiền gói đã hoàn thành
+                    </p>
+                    <p className="mt-2 text-2xl font-black text-green-900">
+                      {sellerCompletedPackageAmount.toLocaleString("vi-VN")} ₫
+                    </p>
+                  </div>
+                </div>
+
+                {subscriptionPayments.length === 0 ? (
+                  <div className="text-center py-10 text-slate-500">
+                    Chưa có giao dịch mua gói nào.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-slate-50 text-slate-600">
+                        <tr>
+                          <th className="px-4 py-3 text-left font-semibold">Mã GD</th>
+                          <th className="px-4 py-3 text-left font-semibold">Loại</th>
+                          <th className="px-4 py-3 text-left font-semibold">Số tiền</th>
+                          <th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
+                          <th className="px-4 py-3 text-left font-semibold">Thời gian tạo</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {subscriptionPayments.map((payment) => (
+                          <tr
+                            key={payment.paymentId}
+                            className="border-t border-slate-100"
+                          >
+                            <td className="px-4 py-3 font-medium text-slate-800">
+                              #{payment.paymentId}
+                            </td>
+                            <td className="px-4 py-3 text-slate-700">{payment.type}</td>
+                            <td className="px-4 py-3 font-semibold text-slate-900">
+                              {(payment.amount || 0).toLocaleString("vi-VN")} ₫
+                            </td>
+                            <td className="px-4 py-3">
+                              <span
+                                className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getPaymentStatusClass(payment.status)}`}
+                              >
+                                {getPaymentStatusLabel(payment.status)}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-slate-600">
+                              {payment.createAt || "-"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === "payouts" && (
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700">
+                      Lịch sử nhận tiền
+                    </p>
+                    <p className="mt-2 text-2xl font-black text-emerald-900">
+                      {payoutPayments.length} giao dịch
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-green-200 bg-green-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-green-700">
+                      Tiền đã nhận
+                    </p>
+                    <p className="mt-2 text-2xl font-black text-green-900">
+                      {sellerReceivedPayoutAmount.toLocaleString("vi-VN")} ₫
+                    </p>
+                  </div>
+                </div>
+
+                {payoutPayments.length === 0 ? (
+                  <div className="text-center py-10 text-slate-500">
+                    Chưa có giao dịch nhận tiền nào.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-slate-50 text-slate-600">
+                        <tr>
+                          <th className="px-4 py-3 text-left font-semibold">Mã GD</th>
+                          <th className="px-4 py-3 text-left font-semibold">Nguồn</th>
+                          <th className="px-4 py-3 text-left font-semibold">Số tiền</th>
+                          <th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
+                          <th className="px-4 py-3 text-left font-semibold">Thời gian nhận</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {payoutPayments.map((payment) => (
+                          <tr
+                            key={payment.paymentId}
+                            className="border-t border-slate-100"
+                          >
+                            <td className="px-4 py-3 font-medium text-slate-800">
+                              #{payment.paymentId}
+                            </td>
+                            <td className="px-4 py-3 text-slate-700">
+                              {payment.referenceType || "ORDER"}
+                            </td>
+                            <td className="px-4 py-3 font-semibold text-slate-900">
+                              {(payment.amount || 0).toLocaleString("vi-VN")} ₫
+                            </td>
+                            <td className="px-4 py-3">
+                              <span
+                                className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getPaymentStatusClass(payment.status)}`}
+                              >
+                                {getPaymentStatusLabel(payment.status)}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-slate-600">
+                              {payment.paidAt || payment.createAt || "-"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </div>
             )}

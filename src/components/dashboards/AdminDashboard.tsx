@@ -1499,17 +1499,45 @@ function PaymentsTab({
   loading: boolean;
   onRefresh: () => void;
 }) {
+  type ReferenceTypeFilter = Exclude<PaymentResult["referenceType"], null> | "ALL";
+
   const [typeFilter, setTypeFilter] = useState<
     PaymentResult["type"] | "ALL"
   >("ALL");
-  const [refTypeFilter, setRefTypeFilter] = useState<
-    PaymentResult["referenceType"] | "ALL"
+  const [refTypeFilter, setRefTypeFilter] =
+    useState<ReferenceTypeFilter>("ALL");
+  const [statusFilter, setStatusFilter] = useState<
+    PaymentResult["status"] | "ALL"
   >("ALL");
   const [search, setSearch] = useState("");
 
-  const filtered = payments.filter((p: any) => {
+  const parsePaymentTime = (value?: string) => {
+    if (!value) return 0;
+    const trimmed = value.trim();
+    const m = trimmed.match(
+      /^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/,
+    );
+    if (m) {
+      const [, dd, mm, yyyy, hh, min, ss] = m;
+      const t = new Date(
+        `${yyyy}-${mm}-${dd}T${hh}:${min}:${ss ?? "00"}`,
+      ).getTime();
+      return Number.isFinite(t) ? t : 0;
+    }
+    const fallback = new Date(trimmed).getTime();
+    return Number.isFinite(fallback) ? fallback : 0;
+  };
+
+  const sortedPayments = [...payments].sort((a, b) => {
+    const aTime = parsePaymentTime(a.createAt || a.createdAt);
+    const bTime = parsePaymentTime(b.createAt || b.createdAt);
+    return bTime - aTime;
+  });
+
+  const filtered = sortedPayments.filter((p: any) => {
     const matchType = typeFilter === "ALL" || p.type === typeFilter;
     const matchRefType = refTypeFilter === "ALL" || p.referenceType === refTypeFilter;
+    const matchStatus = statusFilter === "ALL" || p.status === statusFilter;
     const searchLow = search.toLowerCase();
     const matchSearch =
       !search ||
@@ -1517,7 +1545,7 @@ function PaymentsTab({
       String(p.referenceId || p.orderId || p.subscriptionId || "").toLowerCase().includes(searchLow) ||
       String(p.transactionRef || "").toLowerCase().includes(searchLow) ||
       String(p.payosOrderCode || "").toLowerCase().includes(searchLow);
-    return matchType && matchRefType && matchSearch;
+    return matchType && matchRefType && matchStatus && matchSearch;
   });
 
   const successPayments = payments.filter((p) => p.status === "SUCCESS");
@@ -1529,6 +1557,13 @@ function PaymentsTab({
   const successPaymentTotal = successByType("PAYMENT");
   const successPayoutTotal = successByType("PAYOUT");
   const successRefundTotal = successByType("REFUND");
+
+  // SUCCESS PAYMENT received for package subscriptions.
+  const successSubscriptionRevenue = sumAmount(
+    successPayments.filter(
+      (p) => p.type === "PAYMENT" && p.referenceType === "SUBSCRIPTION",
+    ),
+  );
 
   const orderPayment = sumAmount(
     successPayments.filter(
@@ -1557,7 +1592,8 @@ function PaymentsTab({
           <li>PaymentType: PAYOUT, PAYMENT, REFUND</li>
           <li>PAYOUT: tiền hệ thống đã trả cho Người bán</li>
           <li>PAYMENT: tiền Người mua/Người bán chuyển vào hệ thống (cọc ORDER hoặc gói SUBSCRIPTION)</li>
-          <li>Tiền tạm giữ (ORDER) = PAYMENT - PAYOUT - REFUND</li>
+          <li>Doanh thu tiền gói (SUBSCRIPTION) = tổng PAYMENT SUCCESS có referenceType = SUBSCRIPTION</li>
+          <li>Tiền giữ giùm đơn hàng (ORDER) = PAYMENT SUCCESS(ORDER) - PAYOUT SUCCESS(ORDER) - REFUND SUCCESS(ORDER)</li>
         </ul>
       </div>
 
@@ -1588,12 +1624,21 @@ function PaymentsTab({
         </div>
         <div className="bg-white rounded-xl border border-slate-100 p-4">
           <p className="text-xs text-slate-500 font-bold uppercase mb-1">
-            Tiền tạm giữ (ORDER)
+            Doanh thu gói (SUBSCRIPTION)
           </p>
-          <p className="text-2xl font-black text-red-600">
-            {heldOrderAmount.toLocaleString("vi-VN")} ₫
+          <p className="text-2xl font-black text-indigo-600">
+            {successSubscriptionRevenue.toLocaleString("vi-VN")} ₫
           </p>
         </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-slate-100 p-4 -mt-1">
+        <p className="text-xs text-slate-500 font-bold uppercase mb-1">
+          Tiền giữ giùm (ORDER)
+        </p>
+        <p className="text-2xl font-black text-red-600">
+          {heldOrderAmount.toLocaleString("vi-VN")} ₫
+        </p>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
@@ -1612,15 +1657,24 @@ function PaymentsTab({
         <select
           value={refTypeFilter}
           onChange={(e) =>
-            setRefTypeFilter(
-              e.target.value as PaymentResult["referenceType"] | "ALL",
-            )
+            setRefTypeFilter(e.target.value as ReferenceTypeFilter)
           }
           className="px-3 py-1.5 text-xs font-bold rounded-full border border-slate-200 bg-white text-slate-600"
         >
           <option value="ALL">Tất cả nguồn</option>
           <option value="ORDER">ORDER</option>
           <option value="SUBSCRIPTION">SUBSCRIPTION</option>
+        </select>
+        <select
+          value={statusFilter}
+          onChange={(e) =>
+            setStatusFilter(e.target.value as PaymentResult["status"] | "ALL")
+          }
+          className="px-3 py-1.5 text-xs font-bold rounded-full border border-slate-200 bg-white text-slate-600"
+        >
+          <option value="ALL">Tất cả trạng thái</option>
+          <option value="PENDING">PENDING</option>
+          <option value="SUCCESS">SUCCESS</option>
         </select>
         <input
           value={search}

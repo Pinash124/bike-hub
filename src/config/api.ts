@@ -1,11 +1,18 @@
 // src/config/api.ts
-// Dev local: relative path → Vite proxy forward đến Railway (tránh CORS)
-// Production: full Railway URL
+// Single source for backend URL. Configure once with VITE_API_BASE_URL.
+// - Dev default: "" (use Vite proxy to avoid CORS)
+// - Prod default: Railway fallback if env is missing
 const isProd = import.meta.env.PROD;
+const envBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
 
-export const API_BASE_URL = isProd
-  ? "https://bikehub-production-731a.up.railway.app"
-  : "";
+const defaultProdBaseUrl = "https://bikehub-production-731a.up.railway.app";
+
+export const API_BASE_URL =
+  envBaseUrl && envBaseUrl.length > 0
+    ? envBaseUrl.replace(/\/$/, "")
+    : isProd
+      ? defaultProdBaseUrl
+      : "";
 
 export const API_ENDPOINTS = {
   // ─── Auth ──────────────────────────────────────────────────────────────
