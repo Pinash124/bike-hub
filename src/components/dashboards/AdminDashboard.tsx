@@ -1566,6 +1566,7 @@ function PaymentsTab({
   const [statusFilter, setStatusFilter] = useState<
     PaymentResult["status"] | "ALL"
   >("ALL");
+  const [monthFilter, setMonthFilter] = useState<string>("ALL");
   const [search, setSearch] = useState("");
 
   const parsePaymentTime = (value?: string) => {
@@ -1585,17 +1586,44 @@ function PaymentsTab({
     return Number.isFinite(fallback) ? fallback : 0;
   };
 
+  const getPaymentMonth = (value?: string): string | null => {
+    if (!value) return null;
+    const trimmed = value.trim();
+    const m = trimmed.match(
+      /^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/,
+    );
+    if (m) {
+      const [, , mm, yyyy] = m;
+      return `${yyyy}-${mm}`;
+    }
+
+    const t = new Date(trimmed).getTime();
+    if (!Number.isFinite(t)) return null;
+    const d = new Date(t);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  };
+
   const sortedPayments = [...payments].sort((a, b) => {
     const aTime = parsePaymentTime(a.createAt || a.createdAt);
     const bTime = parsePaymentTime(b.createAt || b.createdAt);
     return bTime - aTime;
   });
 
+  const availableMonths = Array.from(
+    new Set(
+      sortedPayments
+        .map((p) => getPaymentMonth(p.createAt || p.createdAt))
+        .filter((m): m is string => m !== null),
+    ),
+  ).sort((a, b) => b.localeCompare(a));
+
   const filtered = sortedPayments.filter((p: any) => {
     const matchType = typeFilter === "ALL" || p.type === typeFilter;
     const matchRefType =
       refTypeFilter === "ALL" || p.referenceType === refTypeFilter;
     const matchStatus = statusFilter === "ALL" || p.status === statusFilter;
+    const paymentMonth = getPaymentMonth(p.createAt || p.createdAt);
+    const matchMonth = monthFilter === "ALL" || paymentMonth === monthFilter;
     const searchLow = search.toLowerCase();
     const matchSearch =
       !search ||
@@ -1611,7 +1639,9 @@ function PaymentsTab({
       String(p.payosOrderCode || "")
         .toLowerCase()
         .includes(searchLow);
-    return matchType && matchRefType && matchStatus && matchSearch;
+    return (
+      matchType && matchRefType && matchStatus && matchMonth && matchSearch
+    );
   });
 
   const successPayments = payments.filter((p) => p.status === "SUCCESS");
@@ -1631,22 +1661,8 @@ function PaymentsTab({
     ),
   );
 
-  const orderPayment = sumAmount(
-    successPayments.filter(
-      (p) => p.type === "PAYMENT" && p.referenceType === "ORDER",
-    ),
-  );
-  const orderPayout = sumAmount(
-    successPayments.filter(
-      (p) => p.type === "PAYOUT" && p.referenceType === "ORDER",
-    ),
-  );
-  const orderRefund = sumAmount(
-    successPayments.filter(
-      (p) => p.type === "REFUND" && p.referenceType === "ORDER",
-    ),
-  );
-  const heldOrderAmount = orderPayment - orderPayout - orderRefund;
+  const heldOrderAmount =
+    successPaymentTotal - successPayoutTotal - successRefundTotal;
 
   return (
     <div className="space-y-4">
@@ -1752,6 +1768,25 @@ function PaymentsTab({
           <option value="ALL">Tất cả trạng thái</option>
           <option value="PENDING">PENDING</option>
           <option value="SUCCESS">SUCCESS</option>
+        </select>
+        <select
+          value={monthFilter}
+          onChange={(e) => setMonthFilter(e.target.value)}
+          className="px-3 py-1.5 text-xs font-bold rounded-full border border-slate-200 bg-white text-slate-600"
+        >
+          <option value="ALL">Tất cả tháng</option>
+          {availableMonths.map((month) => {
+            const [year, monthNum] = month.split("-");
+            const date = new Date(Number(year), Number(monthNum) - 1, 1);
+            return (
+              <option key={month} value={month}>
+                {date.toLocaleDateString("vi-VN", {
+                  month: "long",
+                  year: "numeric",
+                })}
+              </option>
+            );
+          })}
         </select>
         <input
           value={search}
