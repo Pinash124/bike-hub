@@ -4,6 +4,7 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 
 // --- Layout & Common Components ---
@@ -116,6 +117,19 @@ function ProfileGuard() {
 
 function Home() {
   const { role, isLoading } = useAuth();
+  const location = useLocation();
+
+  const query = new URLSearchParams(location.search);
+  const hasPaymentCallbackParams =
+    query.has("code") ||
+    query.has("status") ||
+    query.has("orderCode") ||
+    query.has("cancel") ||
+    query.has("id");
+
+  if (hasPaymentCallbackParams) {
+    return <Navigate to={`/payment/result${location.search}`} replace />;
+  }
 
   // Wait for auth to fully load before rendering role-based redirects
   if (isLoading) {

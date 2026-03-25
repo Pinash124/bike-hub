@@ -171,17 +171,20 @@ export default function PaymentResultPage() {
 
   useEffect(() => {
     if (displayStatus !== "success") return;
-
-    if (isSubscriptionFlow) {
-      return;
-    }
-
     const timer = window.setTimeout(() => {
+      if (isSubscriptionFlow) {
+        const schedulePath = pendingListingId
+          ? `/seller/schedule?listingId=${encodeURIComponent(pendingListingId)}`
+          : "/seller/dashboard";
+        navigate(schedulePath, { replace: true });
+        return;
+      }
+
       navigate("/buyer/orders", { replace: true });
     }, 1800);
 
     return () => window.clearTimeout(timer);
-  }, [displayStatus, isSubscriptionFlow, navigate]);
+  }, [displayStatus, isSubscriptionFlow, navigate, pendingListingId]);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 font-sans">
