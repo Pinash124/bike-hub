@@ -95,7 +95,7 @@ export default function InspectorDashboard() {
 
   // Filter and Sort State
   const [sortBy, setSortBy] = useState<"earliest" | "latest" | "status">(
-    "earliest",
+    "latest",
   );
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [filterType, setFilterType] = useState<string>("ALL");
@@ -276,6 +276,10 @@ export default function InspectorDashboard() {
     }
   };
 
+  const getTaskSortDate = (task: InspectionTask): Date | null => {
+    return parseDateTime(task.createdAt) ?? parseDateTime(task.scheduledAt);
+  };
+
   // Filter and sort tasks
   const filteredAndSortedTasks = myTasks
     .filter((task) => {
@@ -286,13 +290,13 @@ export default function InspectorDashboard() {
     })
     .sort((a, b) => {
       if (sortBy === "earliest") {
-        const dateA = parseDateTime(a.scheduledAt);
-        const dateB = parseDateTime(b.scheduledAt);
+        const dateA = getTaskSortDate(a);
+        const dateB = getTaskSortDate(b);
         if (!dateA || !dateB) return 0;
         return dateA.getTime() - dateB.getTime();
       } else if (sortBy === "latest") {
-        const dateA = parseDateTime(a.scheduledAt);
-        const dateB = parseDateTime(b.scheduledAt);
+        const dateA = getTaskSortDate(a);
+        const dateB = getTaskSortDate(b);
         if (!dateA || !dateB) return 0;
         return dateB.getTime() - dateA.getTime();
       } else if (sortBy === "status") {
@@ -511,8 +515,8 @@ export default function InspectorDashboard() {
                   onChange={(e) => setSortBy(e.target.value as any)}
                   className="px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white text-slate-900 font-medium hover:border-slate-400 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200 transition cursor-pointer"
                 >
-                  <option value="earliest">⏰ Sớm nhất trước</option>
-                  <option value="latest">⏰ Muộn nhất trước</option>
+                  <option value="latest">🆕 Mới tạo nhất</option>
+                  <option value="earliest">🕰️ Tạo sớm nhất</option>
                   <option value="status">📊 Theo trạng thái</option>
                 </select>
               </div>
@@ -529,10 +533,7 @@ export default function InspectorDashboard() {
                 >
                   <option value="ALL">Tất cả</option>
                   <option value="IN_PROGRESS">Đang kiểm tra</option>
-                  <option value="ASSIGNED">Đã phân công</option>
-                  <option value="PENDING_ASSIGNED">Chờ phân công</option>
                   <option value="COMPLETED">Hoàn thành</option>
-                  <option value="REJECTED">Từ chối</option>
                 </select>
               </div>
 
@@ -555,10 +556,10 @@ export default function InspectorDashboard() {
               {/* Reset Filters */}
               {(filterStatus !== "ALL" ||
                 filterType !== "ALL" ||
-                sortBy !== "earliest") && (
+                sortBy !== "latest") && (
                 <button
                   onClick={() => {
-                    setSortBy("earliest");
+                    setSortBy("latest");
                     setFilterStatus("ALL");
                     setFilterType("ALL");
                   }}
