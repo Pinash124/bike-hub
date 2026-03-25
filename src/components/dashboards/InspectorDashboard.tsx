@@ -50,27 +50,26 @@ function formatDateTime(
     if (Array.isArray(val)) {
       const [y, m, d, h = 0, i = 0, s = 0] = val;
       date = new Date(y, m - 1, d, h, i, s);
-    } else {
-      // Try standard parsing
-      date = new Date(val);
-
-      // If invalid, try parsing DD-MM-YYYY HH:mm or DD/MM/YYYY HH:mm
-      if (isNaN(date.getTime()) && typeof val === "string") {
-        const dmyMatch = val.match(
-          /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/,
+    } else if (typeof val === "string") {
+      const trimmed = val.trim();
+      const dmyMatch = trimmed.match(
+        /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/,
+      );
+      if (dmyMatch) {
+        const [_, d, m, y, h = 0, i = 0, s = 0] = dmyMatch;
+        date = new Date(
+          Number(y),
+          Number(m) - 1,
+          Number(d),
+          Number(h),
+          Number(i),
+          Number(s),
         );
-        if (dmyMatch) {
-          const [_, d, m, y, h = 0, i = 0, s = 0] = dmyMatch;
-          date = new Date(
-            Number(y),
-            Number(m) - 1,
-            Number(d),
-            Number(h),
-            Number(i),
-            Number(s),
-          );
-        }
+      } else {
+        date = new Date(trimmed);
       }
+    } else {
+      date = new Date(val);
     }
     if (isNaN(date.getTime())) return "—";
 
@@ -193,9 +192,19 @@ export default function InspectorDashboard() {
   const handleSubmitScores = async () => {
     if (!currentTask) return;
 
-    const numericScore = Number.parseInt(scoreValue, 10);
-    if (Number.isNaN(numericScore)) {
-      alert("Vui lòng nhập điểm số hợp lệ.");
+    const normalizedScore = scoreValue.trim();
+    if (!/^\d+$/.test(normalizedScore)) {
+      alert("Điểm phải là số nguyên từ 0 đến 10.");
+      return;
+    }
+
+    const numericScore = Number(normalizedScore);
+    if (
+      !Number.isInteger(numericScore) ||
+      numericScore < 0 ||
+      numericScore > 10
+    ) {
+      alert("Điểm chỉ được nhập trong khoảng 0 đến 10.");
       return;
     }
 
@@ -251,24 +260,26 @@ export default function InspectorDashboard() {
       if (Array.isArray(val)) {
         const [y, m, d, h = 0, i = 0, s = 0] = val;
         date = new Date(y, m - 1, d, h, i, s);
+      } else if (typeof val === "string") {
+        const trimmed = val.trim();
+        const dmyMatch = trimmed.match(
+          /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/,
+        );
+        if (dmyMatch) {
+          const [_, d, m, y, h = 0, i = 0, s = 0] = dmyMatch;
+          date = new Date(
+            Number(y),
+            Number(m) - 1,
+            Number(d),
+            Number(h),
+            Number(i),
+            Number(s),
+          );
+        } else {
+          date = new Date(trimmed);
+        }
       } else {
         date = new Date(val);
-        if (isNaN(date.getTime()) && typeof val === "string") {
-          const dmyMatch = val.match(
-            /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/,
-          );
-          if (dmyMatch) {
-            const [_, d, m, y, h = 0, i = 0, s = 0] = dmyMatch;
-            date = new Date(
-              Number(y),
-              Number(m) - 1,
-              Number(d),
-              Number(h),
-              Number(i),
-              Number(s),
-            );
-          }
-        }
       }
       return !isNaN(date.getTime()) ? date : null;
     } catch {
@@ -276,8 +287,8 @@ export default function InspectorDashboard() {
     }
   };
 
-  const getTaskSortDate = (task: InspectionTask): Date | null => {
-    return parseDateTime(task.createdAt) ?? parseDateTime(task.scheduledAt);
+  const getTaskCreatedTimestamp = (task: InspectionTask): number => {
+    return parseDateTime(task.createdAt)?.getTime() ?? 0;
   };
 
   // Filter and sort tasks
@@ -290,15 +301,13 @@ export default function InspectorDashboard() {
     })
     .sort((a, b) => {
       if (sortBy === "earliest") {
-        const dateA = getTaskSortDate(a);
-        const dateB = getTaskSortDate(b);
-        if (!dateA || !dateB) return 0;
-        return dateA.getTime() - dateB.getTime();
+        const timeA = getTaskCreatedTimestamp(a);
+        const timeB = getTaskCreatedTimestamp(b);
+        return timeA - timeB;
       } else if (sortBy === "latest") {
-        const dateA = getTaskSortDate(a);
-        const dateB = getTaskSortDate(b);
-        if (!dateA || !dateB) return 0;
-        return dateB.getTime() - dateA.getTime();
+        const timeA = getTaskCreatedTimestamp(a);
+        const timeB = getTaskCreatedTimestamp(b);
+        return timeB - timeA;
       } else if (sortBy === "status") {
         const statusOrder: Record<string, number> = {
           IN_PROGRESS: 0,
@@ -706,8 +715,21 @@ export default function InspectorDashboard() {
                   <input
                     type="number"
                     min="0"
+                    max="10"
+                    step="1"
+                    inputMode="numeric"
                     value={scoreValue}
-                    onChange={(e) => setScoreValue(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === "") {
+                        setScoreValue("");
+                        return;
+                      }
+
+                      if (/^\d{1,2}$/.test(value) && Number(value) <= 10) {
+                        setScoreValue(value);
+                      }
+                    }}
                     placeholder="Nhập điểm"
                     className="w-full sm:w-40 rounded-xl border-2 border-slate-200 px-4 py-3 text-center text-2xl font-black text-indigo-700 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                   />

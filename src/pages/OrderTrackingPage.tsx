@@ -164,7 +164,13 @@ export default function OrderTrackingPage() {
         };
       });
 
-      setOrders(enrichedOrders);
+      const sortedOrders = [...enrichedOrders].sort((a, b) => {
+        const timeA = new Date(a.createdAt).getTime();
+        const timeB = new Date(b.createdAt).getTime();
+        return timeB - timeA;
+      });
+
+      setOrders(sortedOrders);
     } catch (error) {
       console.error("Error fetching orders for tracking:", error);
     } finally {
