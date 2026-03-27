@@ -25,6 +25,12 @@ import {
   UserPlus,
   Image as ImageIcon,
   Zap,
+  BarChart3,
+  DollarSign,
+  TrendingUp,
+  PieChart,
+  Filter,
+  Calendar as CalendarIcon,
 } from "lucide-react";
 import React, { useEffect, useState, useCallback } from "react";
 import { useAuth } from "../../contexts/AuthContext";
@@ -69,7 +75,8 @@ type Tab =
   | "payments"
   | "company-locations"
   | "create-inspector"
-  | "plans";
+  | "plans"
+  | "revenue";
 
 // ─── Error boundary ───────────────────────────────────────────────────────────
 
@@ -1890,6 +1897,284 @@ function PaymentsTab({
   );
 }
 
+// ─── Revenue Tab ─────────────────────────────────────────────────────────────
+
+function RevenueTab({
+  payments,
+  loading,
+  onRefresh,
+}: {
+  payments: PaymentResult[];
+  loading: boolean;
+  onRefresh: () => void;
+}) {
+  const [statusFilter, setStatusFilter] = useState<
+    PaymentResult["status"] | "ALL" | "SUCCESSFUL"
+  >("SUCCESSFUL");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
+  const parsePaymentDate = (val?: string) => {
+    if (!val) return null;
+    const trimmed = val.trim();
+    const m = trimmed.match(
+      /^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/,
+    );
+    if (m) {
+      const [, dd, mm, yyyy, hh, min, ss] = m;
+      return new Date(`${yyyy}-${mm}-${dd}T${hh}:${min}:${ss ?? "00"}`);
+    }
+    const d = new Date(trimmed);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  const filtered = payments.filter((p) => {
+    const isSuccessful = ["SUCCESS", "PAID", "COMPLETED", "COMPLETE", "CONFIRMED"].includes(p.status || "");
+    const matchStatus =
+      statusFilter === "ALL" ||
+      (statusFilter === "SUCCESSFUL" ? isSuccessful : p.status === statusFilter);
+    if (!matchStatus) return false;
+
+    const pDate = parsePaymentDate(p.createAt || p.createdAt);
+    if (!pDate) return true; // Keep if date is unparseable
+
+    if (startDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      if (pDate < start) return false;
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      if (pDate > end) return false;
+    }
+    return true;
+  });
+
+  const sum = (list: PaymentResult[]) =>
+    list.reduce((s, p) => s + (p.amount || 0), 0);
+
+  // Formulas from docs correctly implemented:
+  // Intermediary = received - paid_out - refunded (for orders)
+  const intermediary =
+    sum(
+      filtered.filter((p) => p.type === "PAYMENT" && p.referenceType === "ORDER"),
+    ) -
+    sum(
+      filtered.filter((p) => p.type === "PAYOUT" && p.referenceType === "ORDER"),
+    ) -
+    sum(
+      filtered.filter((p) => p.type === "REFUND" && p.referenceType === "ORDER"),
+    );
+
+  const refund = sum(filtered.filter((p) => p.type === "REFUND"));
+  const subscription = sum(
+    filtered.filter(
+      (p) => p.type === "PAYMENT" && p.referenceType === "SUBSCRIPTION",
+    ),
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Header & Filters */}
+      <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div>
+            <h2 className="text-xl font-bold text-slate-800 mb-1">
+              Phân Tích Doanh Thu
+            </h2>
+            <p className="text-sm text-slate-500 font-medium">
+              Theo dõi dòng tiền và doanh thu hệ thống
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                Trạng thái:
+              </span>
+              <select
+                value={statusFilter}
+                onChange={(e) =>
+                  setStatusFilter(
+                    e.target.value as PaymentResult["status"] | "ALL",
+                  )
+                }
+                className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-700 focus:ring-2 focus:ring-indigo-400 outline-none transition"
+              >
+                <option value="ALL">Tất cả</option>
+                <option value="SUCCESS">SUCCESS</option>
+                <option value="PENDING">PENDING</option>
+                <option value="FAILED">FAILED</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                Từ:
+              </span>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-700 focus:ring-2 focus:ring-indigo-400 outline-none transition"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                Đến:
+              </span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-700 focus:ring-2 focus:ring-indigo-400 outline-none transition"
+              />
+            </div>
+            <button
+              onClick={onRefresh}
+              className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition shadow-sm"
+            >
+              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Intermediary */}
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition group overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110"></div>
+          <div className="relative">
+            <div className="w-12 h-12 bg-amber-100 rounded-2xl flex items-center justify-center mb-4">
+              <DollarSign size={24} className="text-amber-600" />
+            </div>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">
+              Tiền Trung Gian
+            </p>
+            <h3 className="text-2xl font-black text-slate-800">
+              {intermediary.toLocaleString("vi-VN")} ₫
+            </h3>
+            <div className="mt-4 flex items-center gap-1.5 text-[10px] font-bold text-amber-600 bg-amber-50 w-fit px-2 py-1 rounded-lg">
+              <CalendarIcon size={10} /> {startDate || "ALL"} -{" "}
+              {endDate || "Nay"}
+            </div>
+          </div>
+        </div>
+
+        {/* Refunds */}
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition group overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-rose-50 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110"></div>
+          <div className="relative">
+            <div className="w-12 h-12 bg-rose-100 rounded-2xl flex items-center justify-center mb-4">
+              <TrendingUp size={24} className="text-rose-600 rotate-180" />
+            </div>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">
+              Tiền Đã Hoàn Trả
+            </p>
+            <h3 className="text-2xl font-black text-slate-800">
+              {refund.toLocaleString("vi-VN")} ₫
+            </h3>
+            <div className="mt-4 flex items-center gap-1.5 text-[10px] font-bold text-rose-600 bg-rose-50 w-fit px-2 py-1 rounded-lg">
+              <Filter size={10} /> {statusFilter}
+            </div>
+          </div>
+        </div>
+
+        {/* Subscriptions */}
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition group overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110"></div>
+          <div className="relative">
+            <div className="w-12 h-12 bg-indigo-100 rounded-2xl flex items-center justify-center mb-4">
+              <Zap size={24} className="text-indigo-600" />
+            </div>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">
+              Doanh Thu Gói
+            </p>
+            <h3 className="text-2xl font-black text-slate-800">
+              {subscription.toLocaleString("vi-VN")} ₫
+            </h3>
+            <div className="mt-4 flex items-center gap-1.5 text-[10px] font-bold text-indigo-600 bg-indigo-50 w-fit px-2 py-1 rounded-lg">
+              <BarChart3 size={10} /> PREMIUM FLOW
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Transactions list preview */}
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-50 flex items-center justify-between">
+          <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wider">
+            Chi Tiết Giao Dịch
+          </h3>
+          <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-100 text-slate-500 rounded-lg">
+            {filtered.length} kết quả
+          </span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-slate-50 text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-100">
+                <th className="px-6 py-4">Ngày</th>
+                <th className="px-6 py-4">Loại</th>
+                <th className="px-6 py-4">Tham Chiếu</th>
+                <th className="px-6 py-4">Số Tiền</th>
+                <th className="px-6 py-4 text-right">Trạng Thái</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {filtered.slice(0, 10).map((p, i) => (
+                <tr key={i} className="hover:bg-slate-50/60 transition group">
+                  <td className="px-6 py-4 text-sm font-medium text-slate-600">
+                    {formatDateTime(p.createAt || p.createdAt, {
+                      onlyDate: true,
+                    })}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-[10px] font-black px-2 py-1 bg-slate-100 text-slate-600 rounded-lg uppercase">
+                      {p.type}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-xs font-bold text-slate-500">
+                    {p.referenceType || "—"}
+                  </td>
+                  <td className="px-6 py-4 font-black text-sm text-slate-800">
+                    {(p.amount || 0).toLocaleString("vi-VN")} ₫
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <span
+                      className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase ${
+                        p.status === "SUCCESS"
+                          ? "bg-emerald-100 text-emerald-700"
+                          : p.status === "PENDING"
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-rose-100 text-rose-700"
+                      }`}
+                    >
+                      {p.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filtered.length > 10 && (
+            <div className="p-4 text-center border-t border-slate-50">
+              <p className="text-xs text-slate-400 font-medium italic">
+                Xem thêm trong tab Lịch sử giao dịch...
+              </p>
+            </div>
+          )}
+          {filtered.length === 0 && (
+            <div className="py-12 text-center text-slate-400 italic text-sm">
+              Không có dữ liệu phù hợp với bộ lọc
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Catalog Tab (Brands) ───────────────────────────────────────────────────
 
 function CatalogTab() {
@@ -2971,6 +3256,7 @@ export default function AdminDashboard() {
     { tab: "catalog", label: "Thương Hiệu", icon: Wrench },
     { tab: "locations", label: "Cơ Sở Kiểm Định", icon: MapPin },
     { tab: "plans", label: "Quản Lý Gói", icon: Zap },
+    { tab: "revenue", label: "Dashboard Doanh Thu", icon: BarChart3 },
   ];
 
   return (
@@ -3120,6 +3406,13 @@ export default function AdminDashboard() {
                   plans={plans}
                   loading={plansLoading}
                   onRefresh={fetchPlans}
+                />
+              )}
+              {activeTab === "revenue" && (
+                <RevenueTab
+                  payments={payments}
+                  loading={paymentsLoading}
+                  onRefresh={fetchPayments}
                 />
               )}
             </div>

@@ -15,6 +15,8 @@ import {
   Trash2,
   BarChart3,
   DollarSign,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -181,11 +183,12 @@ export default function SellerDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [payments, setPayments] = useState<PaymentResponse[]>([]);
   const [activeTab, setActiveTab] = useState<
-    "listings" | "orders" | "payments" | "payouts"
+    "listings" | "orders" | "payments" | "payouts" | "revenue"
   >("listings");
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [orderStatusFilter, setOrderStatusFilter] = useState<"all" | "pending" | "completed">("all");
   const [sortBy, setSortBy] = useState<"newest" | "price-low" | "price-high">(
     "newest",
   );
@@ -205,6 +208,11 @@ export default function SellerDashboard() {
   const [deliverError, setDeliverError] = useState<string | null>(null);
   const [isDelivering, setIsDelivering] = useState(false);
   const deliverInputRef = useRef<HTMLInputElement | null>(null);
+  const [monthFilter, setMonthFilter] = useState(() => {
+    const d = new Date();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    return `${d.getFullYear()}-${mm}`;
+  });
 
   const fetchAllData = async () => {
     try {
@@ -385,12 +393,20 @@ export default function SellerDashboard() {
   ]);
 
   const liveCount = listings.filter((l) => l.status === "LIVE").length;
-  const soldCount = listings.filter((l) => l.status === "SOLD").length;
-  const totalRevenue = listings
-    .filter((l) => l.status === "SOLD")
-    .reduce((sum, l) => sum + l.price, 0);
+  const revenueStatuses = ["IN_TRANSIT", "DELIVERED", "COMPLETE", "COMPLETED", "CONFIRMED"];
+  const soldCount = orders.filter((o) =>
+    revenueStatuses.includes(o.orderStatus as any),
+  ).length;
+  const totalRevenue = orders
+    .filter((o) => revenueStatuses.includes(o.orderStatus as any))
+    .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
   const pendingOrdersCount = orders.filter(
-    (o) => o.sellerStatus === "PENDING",
+    (o) =>
+      o.sellerStatus === "PENDING" ||
+      (o.orderStatus === "PAID" &&
+        o.sellerStatus !== "ACCEPTED" &&
+        o.sellerStatus !== "REJECTED" &&
+        o.sellerStatus !== "CANCELLED"),
   ).length;
 
   const subscriptionPayments = payments.filter(
@@ -483,6 +499,8 @@ export default function SellerDashboard() {
       color: "text-emerald-600",
       bg: "bg-emerald-100",
       trend: "+12%",
+      targetTab: "listings" as const,
+      targetFilter: "LIVE",
     },
     {
       label: "Yêu cầu đặt cọc",
@@ -491,6 +509,8 @@ export default function SellerDashboard() {
       color: "text-blue-600",
       bg: "bg-blue-100",
       trend: pendingOrdersCount > 0 ? "Mới" : "",
+      targetTab: "orders" as const,
+      targetFilter: "pending",
     },
     {
       label: "Xe đã bán",
@@ -499,16 +519,29 @@ export default function SellerDashboard() {
       color: "text-indigo-600",
       bg: "bg-indigo-100",
       trend: "+8%",
+      targetTab: "listings" as const, // We use listings tab for "Xe đã bán" based on soldCount logic
+      targetFilter: "SOLD",
     },
     {
       label: "Doanh thu",
-      value: `${(totalRevenue / 1000000).toFixed(1)}M`,
+      value: `${totalRevenue.toLocaleString("vi-VN")} ₫`,
       icon: DollarSign,
       color: "text-purple-600",
       bg: "bg-purple-100",
       trend: "+25%",
+      targetTab: "revenue" as const,
+      targetFilter: "all",
     },
   ];
+
+  const handleStatClick = (stat: (typeof stats)[0]) => {
+    setActiveTab(stat.targetTab);
+    if (stat.targetTab === "listings") {
+      setStatusFilter(stat.targetFilter);
+    } else if (stat.targetTab === "orders") {
+      setOrderStatusFilter(stat.targetFilter as any);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-green-50/30">
@@ -569,10 +602,16 @@ export default function SellerDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat) => {
             const Icon = stat.icon;
+            const isActive = activeTab === stat.targetTab;
             return (
               <div
                 key={stat.label}
-                className="group bg-white rounded-3xl p-6 shadow-lg border border-slate-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                onClick={() => handleStatClick(stat)}
+                className={`group cursor-pointer rounded-3xl p-6 shadow-lg border transition-all duration-300 hover:-translate-y-1 ${
+                  isActive
+                    ? "bg-white border-green-500 ring-2 ring-green-500/10 shadow-green-900/5 scale-[1.02]"
+                    : "bg-white border-slate-100 hover:shadow-xl hover:border-green-200"
+                }`}
               >
                 <div className="flex items-start justify-between mb-4">
                   <div
@@ -582,7 +621,7 @@ export default function SellerDashboard() {
                   </div>
                   <span
                     className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                      stat.trend.startsWith("+")
+                      stat.trend.startsWith("+") || stat.trend === "Mới"
                         ? "bg-green-100 text-green-700"
                         : "bg-red-100 text-red-700"
                     }`}
@@ -637,7 +676,13 @@ export default function SellerDashboard() {
                   onClick={() => setActiveTab("listings")}
                   className={`pb-3 text-lg font-bold flex items-center gap-2 border-b-2 transition-colors ${activeTab === "listings" ? "border-green-600 text-green-600" : "border-transparent text-slate-500 hover:text-slate-800"}`}
                 >
-                  <Bike size={24} /> Xe Đang Bán
+                  <Bike size={24} /> Xe Của Tôi
+                </button>
+                <button
+                  onClick={() => setActiveTab("revenue")}
+                  className={`pb-3 text-lg font-bold flex items-center gap-2 border-b-2 transition-colors ${activeTab === "revenue" ? "border-green-600 text-green-600" : "border-transparent text-slate-500 hover:text-slate-800"}`}
+                >
+                  <BarChart3 size={24} /> Doanh Thu
                 </button>
                 <button
                   onClick={() => setActiveTab("orders")}
@@ -909,17 +954,86 @@ export default function SellerDashboard() {
 
             {activeTab === "orders" && (
               <div className="space-y-4">
-                {orders.length === 0 ? (
+                {/* Orders Filter */}
+                <div className="flex items-center gap-4 mb-2 overflow-x-auto pb-2">
+                  {[
+                    { id: "all", label: "Tất cả đơn" },
+                    { id: "pending", label: "Cần xử lý" },
+                    { id: "completed", label: "Đã hoàn tất" },
+                  ].map((f) => (
+                    <button
+                      key={f.id}
+                      onClick={() => setOrderStatusFilter(f.id as any)}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                        orderStatusFilter === f.id
+                          ? "bg-green-600 text-white shadow-md"
+                          : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+
+                {orders.filter((o) => {
+                  if (orderStatusFilter === "all") return true;
+                  if (orderStatusFilter === "pending") {
+                    return (
+                      o.sellerStatus === "PENDING" ||
+                      (o.orderStatus === "PAID" &&
+                        o.sellerStatus !== "ACCEPTED" &&
+                        o.sellerStatus !== "REJECTED" &&
+                        o.sellerStatus !== "CANCELLED")
+                    );
+                  }
+                  if (orderStatusFilter === "completed") {
+                    return ["COMPLETED", "COMPLETE", "CONFIRMED"].includes(o.orderStatus as any);
+                  }
+                  return true;
+                }).length === 0 ? (
                   <div className="text-center py-10 text-slate-500">
-                    Chưa có đơn hàng nào.
+                    Chưa có đơn hàng nào trong mục này.
                   </div>
                 ) : (
-                  orders.map((order) => (
-                    <div
-                      key={order.id}
-                      className="border border-slate-200 rounded-xl p-5 hover:border-green-300 transition-colors"
-                    >
-                      <div className="flex justify-between items-start mb-4 border-b border-slate-100 pb-4">
+                  orders
+                    .filter((o) => {
+                      if (orderStatusFilter === "all") return true;
+                      if (orderStatusFilter === "pending") {
+                        return (
+                          o.sellerStatus === "PENDING" ||
+                          (o.orderStatus === "PAID" &&
+                            o.sellerStatus !== "ACCEPTED" &&
+                            o.sellerStatus !== "REJECTED" &&
+                            o.sellerStatus !== "CANCELLED")
+                        );
+                      }
+                      if (orderStatusFilter === "completed") {
+                        return ["COMPLETED", "COMPLETE", "CONFIRMED"].includes(o.orderStatus as any);
+                      }
+                      return true;
+                    })
+                    .map((order) => {
+                      const isActionRequired =
+                        order.sellerStatus === "PENDING" ||
+                        (order.orderStatus === "PAID" &&
+                          order.sellerStatus !== "ACCEPTED" &&
+                          order.sellerStatus !== "REJECTED");
+
+                    return (
+                      <div
+                        key={order.id}
+                        className={`relative border rounded-3xl p-6 transition-all duration-300 ${
+                          isActionRequired
+                            ? "border-amber-200 bg-amber-50/30 shadow-lg shadow-amber-900/5 ring-1 ring-amber-100"
+                            : "border-slate-100 bg-white hover:border-green-200"
+                        }`}
+                      >
+                        {isActionRequired && (
+                          <div className="absolute -top-3 left-6 px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">
+                            Cần xử lý
+                          </div>
+                        )}
+                        <div className="flex justify-between items-start mb-4 border-b border-slate-100 pb-4">
                         <div>
                           <p className="text-sm text-slate-400">
                             Mã đơn:{" "}
@@ -955,27 +1069,35 @@ export default function SellerDashboard() {
                           </p>
                         </div>
                       </div>
-                      <div className="flex gap-3 justify-end">
-                        {order.sellerStatus === "PENDING" && (
+                      <div className="flex flex-col sm:flex-row gap-3 justify-end items-center">
+                        {(order.sellerStatus === "PENDING" ||
+                          (order.orderStatus === "PAID" &&
+                            order.sellerStatus !== "ACCEPTED" &&
+                            order.sellerStatus !== "REJECTED")) && (
                           <>
-                            <button
-                              onClick={async () => {
-                                if (await orderService.acceptOrder(order.id))
-                                  handleRefresh();
-                              }}
-                              className="bg-green-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-green-700"
-                            >
-                              Chấp nhận
-                            </button>
-                            <button
-                              onClick={async () => {
-                                if (await orderService.rejectOrder(order.id))
-                                  handleRefresh();
-                              }}
-                              className="bg-red-50 text-red-600 px-5 py-2 rounded-lg font-bold hover:bg-red-100"
-                            >
-                              Từ chối
-                            </button>
+                            <div className="flex-1 w-full sm:w-auto h-px bg-slate-100 hidden sm:block"></div>
+                            <div className="flex items-center gap-3 w-full sm:w-auto">
+                              <button
+                                onClick={async () => {
+                                  if (await orderService.acceptOrder(order.id))
+                                    handleRefresh();
+                                }}
+                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-green-600 text-white px-6 py-2.5 rounded-xl font-bold hover:from-emerald-700 hover:to-green-700 transition-all shadow-lg shadow-emerald-900/10 active:scale-95"
+                              >
+                                <CheckCircle2 size={18} />
+                                Chấp nhận
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (await orderService.rejectOrder(order.id))
+                                    handleRefresh();
+                                }}
+                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white text-red-600 border-2 border-red-50 px-6 py-2.5 rounded-xl font-bold hover:bg-red-50 transition-all active:scale-95"
+                              >
+                                <XCircle size={18} />
+                                Từ chối
+                              </button>
+                            </div>
                           </>
                         )}
                         {order.orderStatus === "IN_TRANSIT" && (
@@ -986,10 +1108,11 @@ export default function SellerDashboard() {
                             Xác nhận đã giao xe
                           </button>
                         )}
+                        </div>
                       </div>
-                    </div>
-                  ))
-                )}
+                    );
+                    })
+                  )}
               </div>
             )}
 
@@ -1154,19 +1277,217 @@ export default function SellerDashboard() {
                 )}
               </div>
             )}
+
+            {activeTab === "revenue" && (
+              <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {/* Monthly Revenue Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-3xl border border-slate-100 shadow-sm transition-all hover:shadow-md">
+                  <div>
+                    <h2 className="text-2xl font-black text-slate-800 mb-1">
+                      Phân Tích Doanh Thu
+                    </h2>
+                    <p className="text-sm text-slate-500 font-medium tracking-tight">
+                      Xem chi tiết hiệu quả bán hàng theo thời gian
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        Chọn tháng xem:
+                      </span>
+                      <input
+                        type="month"
+                        value={monthFilter}
+                        onChange={(e) => setMonthFilter(e.target.value)}
+                        className="px-4 py-2.5 rounded-2xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500 font-black text-slate-700 transition-all cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* All-time */}
+                  <div className="bg-gradient-to-br from-green-600 via-emerald-600 to-green-700 p-8 rounded-[2rem] text-white shadow-xl shadow-green-900/10 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-24 -mt-24 group-hover:scale-125 transition-transform duration-700"></div>
+                    <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/5 rounded-full -ml-16 -mb-16"></div>
+                    <div className="relative">
+                      <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6">
+                        <TrendingUp size={24} className="text-white" />
+                      </div>
+                      <p className="text-green-100 text-xs font-black uppercase tracking-[0.2em] mb-2">
+                        Tổng doanh thu (All-time)
+                      </p>
+                      <h3 className="text-5xl font-black tracking-tighter">
+                        {totalRevenue.toLocaleString("vi-VN")}
+                        <span className="text-2xl ml-1 text-green-200">₫</span>
+                      </h3>
+                      <div className="mt-8 flex items-center gap-3">
+                        <div className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-bold">
+                          {soldCount} xe đã bán
+                        </div>
+                        <div className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-bold">
+                          Tăng trưởng ổn định
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Selected Month */}
+                  <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-xl transition-all duration-500">
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-slate-50 rounded-full -mr-24 -mt-24 group-hover:scale-125 transition-transform duration-700"></div>
+                    <div className="relative">
+                      <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center mb-6">
+                        <Calendar size={24} className="text-indigo-600" />
+                      </div>
+                      <p className="text-slate-400 text-xs font-black uppercase tracking-[0.2em] mb-2">
+                        Doanh thu tháng {monthFilter}
+                      </p>
+                      <h3 className="text-5xl font-black text-slate-800 tracking-tighter">
+                        {orders
+                          .filter((o) => {
+                            const d = parseApiDate(o.createdAt);
+                            if (!d) return false;
+                            const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+                            const revenueStatuses = [
+                              "IN_TRANSIT",
+                              "DELIVERED",
+                              "COMPLETE",
+                              "COMPLETED",
+                              "CONFIRMED",
+                            ];
+                            return (
+                              m === monthFilter &&
+                              revenueStatuses.includes(o.orderStatus as any)
+                            );
+                          })
+                          .reduce((s, o) => s + (o.totalPrice || 0), 0)
+                          .toLocaleString("vi-VN")}
+                        <span className="text-2xl ml-1 text-slate-300">₫</span>
+                      </h3>
+                      <div className="mt-8 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <p className="text-xs font-bold text-slate-500 leading-relaxed">
+                          ⚡️ Doanh thu tháng này dựa trên các giao dịch đã
+                          thanh toán và hoàn tất trong hệ thống.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Simple Bar Chart Visualization */}
+                <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm transition-all hover:shadow-md">
+                  <div className="flex items-center justify-between mb-10">
+                    <h3 className="text-lg font-black text-slate-800 uppercase tracking-wider">
+                      Xu hướng 6 tháng gần nhất
+                    </h3>
+                    <div className="flex items-center gap-4 text-xs font-bold">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span className="text-slate-500">Doanh thu</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-end justify-between h-64 gap-3 md:gap-6 px-4">
+                    {Array.from({ length: 6 })
+                      .map((_, i) => {
+                        const d = new Date();
+                        d.setMonth(d.getMonth() - (5 - i));
+                        const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+                        const mLabel = `T${d.getMonth() + 1}`;
+                        const mRevenue = orders
+                          .filter((o) => {
+                            const od = parseApiDate(o.createdAt);
+                            if (!od) return false;
+                            const om = `${od.getFullYear()}-${String(od.getMonth() + 1).padStart(2, "0")}`;
+                            const revenueStatuses = [
+                              "IN_TRANSIT",
+                              "DELIVERED",
+                              "COMPLETE",
+                              "COMPLETED",
+                              "CONFIRMED",
+                            ];
+                            return (
+                              om === mKey &&
+                              revenueStatuses.includes(o.orderStatus as any)
+                            );
+                          })
+                          .reduce((s, o) => s + (o.totalPrice || 0), 0);
+                        return { label: mLabel, value: mRevenue, key: mKey };
+                      })
+                      .map((item, idx) => {
+                        const maxVal = Math.max(
+                          ...Array.from({ length: 6 }).map((_, i) => {
+                            const d = new Date();
+                            d.setMonth(d.getMonth() - (5 - i));
+                            const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+                            return orders
+                              .filter((o) => {
+                                const od = parseApiDate(o.createdAt);
+                                if (!od) return false;
+                                const om = `${od.getFullYear()}-${String(od.getMonth() + 1).padStart(2, "0")}`;
+                                return (
+                                  om === mKey &&
+                                  (o.orderStatus === "COMPLETED" ||
+                                    o.orderStatus === "CONFIRMED" ||
+                                    o.orderStatus === "PAID")
+                                );
+                              })
+                              .reduce((s, o) => s + (o.totalPrice || 0), 0);
+                          }),
+                          1,
+                        );
+                        const heightPercent = (item.value / maxVal) * 100;
+                        const isCurrent = item.key === monthFilter;
+
+                        return (
+                          <div
+                            key={idx}
+                            className="flex-1 flex flex-col items-center gap-3 group"
+                          >
+                            <div className="w-full relative flex items-end justify-center h-full">
+                              <div
+                                className={`w-full max-w-[40px] rounded-t-xl transition-all duration-1000 ease-out relative group-hover:brightness-110 ${
+                                  isCurrent
+                                    ? "bg-gradient-to-t from-green-600 to-emerald-400"
+                                    : "bg-slate-100 group-hover:bg-slate-200"
+                                }`}
+                                style={{ height: `${Math.max(heightPercent, 5)}%` }}
+                              >
+                                <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                  {(item.value / 1000000).toFixed(1)}M
+                                </div>
+                              </div>
+                            </div>
+                            <span
+                              className={`text-[10px] font-black uppercase tracking-widest ${
+                                isCurrent ? "text-green-600" : "text-slate-400"
+                              }`}
+                            >
+                              {item.label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
+
         {/* Enhanced Verification Success Notice */}
         {user.isKYCVerified && (
-          <div className="bg-gradient-to-r from-green-50 via-emerald-50 to-green-50 border-2 border-green-200 rounded-3xl p-6 flex items-center gap-4">
+          <div className="bg-gradient-to-r from-green-50 via-emerald-50 to-green-50 border-2 border-green-200 rounded-3xl p-6 flex items-center gap-4 mt-8">
             <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center">
               <CheckCircle size={24} className="text-green-600" />
             </div>
             <div className="flex-1">
-              <p className="text-green-800 font-semibold text-base">
+              <p className="text-green-800 font-semibold text-base py-0 my-0 leading-tight">
                 ✅ Tài khoản đã được xác minh danh tính
               </p>
-              <p className="text-green-600 text-sm mt-1">
+              <p className="text-green-600 text-sm mt-1 py-0 my-0">
                 Bạn có thể tự do đăng bán xe trên nền tảng BikeHub.
               </p>
             </div>
