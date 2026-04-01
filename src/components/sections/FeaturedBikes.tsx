@@ -1,51 +1,113 @@
 // src/components/sections/FeaturedBikes.tsx
-import { useState, useEffect } from 'react';
-import BikeCard from './BikeCard';
-import { listingService, type Listing } from '../../services/listing.service';
+import { useState, useEffect } from "react";
+import BikeCard from "./BikeCard";
+import { listingService, type Listing } from "../../services/listing.service";
+import { favoriteService } from "../../services/favorite.service";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function FeaturedBikes() {
+  const { isAuthenticated } = useAuth();
   const [featuredBikes, setFeaturedBikes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [togglingFavoriteId, setTogglingFavoriteId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     fetchListings();
   }, []);
 
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      if (!isAuthenticated) {
+        setFavoriteIds(new Set());
+        return;
+      }
+
+      const favorites = await favoriteService.getMyFavorites();
+      setFavoriteIds(new Set(favorites.map((item) => String(item.listing.id))));
+    };
+
+    void fetchFavorites();
+  }, [isAuthenticated]);
+
   const fetchListings = async () => {
     try {
       const data = await listingService.getListings();
-      const activeListings = data.filter((listing: Listing) => listing.status === 'LIVE');
+      const activeListings = data.filter(
+        (listing: Listing) => listing.status === "LIVE",
+      );
       // Map API data to UI format
-      const mappedBikes = activeListings.slice(0, 4).map((listing: Listing) => ({
-        id: listing.id,
-        image: listing.images?.[0]?.secureUrl || 'https://images.unsplash.com/photo-1532298229144-0ee050c99d2b?q=80&w=800',
-        title: listing.title,
-        price: listing.price,
-        year: 2024, // Default or derived
-        location: listing.location || 'Toàn quốc',
-        mileage: listing.usageDuration || 0,
-        mileageUnit: 'nam' as const,
-        size: 'N/A',
-        condition: listing.condition || 'Used'
-      }));
+      const mappedBikes = activeListings
+        .slice(0, 4)
+        .map((listing: Listing) => ({
+          id: listing.id,
+          image:
+            listing.images?.[0]?.secureUrl ||
+            "https://images.unsplash.com/photo-1532298229144-0ee050c99d2b?q=80&w=800",
+          title: listing.title,
+          price: listing.price,
+          year: 2024, // Default or derived
+          location: listing.location || "Toàn quốc",
+          mileage: listing.usageDuration || 0,
+          mileageUnit: "nam" as const,
+          size: "N/A",
+          condition: listing.condition || "Used",
+        }));
       setFeaturedBikes(mappedBikes);
     } catch (error) {
-      console.error('Failed to fetch featured bikes', error);
+      console.error("Failed to fetch featured bikes", error);
       // Fallback to empty or skeletal state
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleToggleFavorite = async (listingId: string) => {
+    if (!isAuthenticated) {
+      alert("Vui lòng đăng nhập để thêm vào yêu thích");
+      return;
+    }
+
+    if (togglingFavoriteId) return;
+
+    setTogglingFavoriteId(listingId);
+    try {
+      if (favoriteIds.has(listingId)) {
+        const success = await favoriteService.removeFavorite(listingId);
+        if (success) {
+          setFavoriteIds((prev) => {
+            const next = new Set(prev);
+            next.delete(listingId);
+            return next;
+          });
+        }
+      } else {
+        const res = await favoriteService.addFavorite(listingId);
+        if (res) {
+          setFavoriteIds((prev) => {
+            const next = new Set(prev);
+            next.add(listingId);
+            return next;
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to toggle favorite:", error);
+      alert("Không thể cập nhật yêu thích. Vui lòng thử lại.");
+    } finally {
+      setTogglingFavoriteId(null);
+    }
+  };
+
   return (
     // Sử dụng màu nền cực nhạt để tạo chiều sâu cho Card trắng
     <section className="bg-[#f8fafc] py-24 border-b border-slate-100">
-
       {/* Đảm bảo div bọc ngoài có class 'content-layout' 
         để margin-left và margin-right khớp hoàn toàn với FilterSection
       */}
       <div className="content-layout px-4 md:px-8 max-w-[1440px] mx-auto">
-
         {/* HEADER SECTION: Đẩy cao tính thẩm mỹ tạp chí (Editorial) */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
           <div className="space-y-4">
@@ -66,7 +128,9 @@ export default function FeaturedBikes() {
           >
             <span>Khám phá tất cả mẫu xe</span>
             <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center border border-slate-100 group-hover:bg-green-600 group-hover:text-white group-hover:border-green-600 transition-all shadow-sm">
-              <span className="transform group-hover:translate-x-0.5 transition-transform">→</span>
+              <span className="transform group-hover:translate-x-0.5 transition-transform">
+                →
+              </span>
             </div>
           </a>
         </div>
@@ -79,14 +143,21 @@ export default function FeaturedBikes() {
               className="animate-in fade-in slide-in-from-bottom-6 duration-700 ease-out fill-mode-both"
               style={{ animationDelay: `${index * 150}ms` }} // Hiệu ứng hiện lần lượt
             >
-              <BikeCard {...bike} />
+              <BikeCard
+                {...bike}
+                isFavorite={favoriteIds.has(String(bike.id))}
+                onToggleFavorite={handleToggleFavorite}
+                favoriteDisabled={togglingFavoriteId === String(bike.id)}
+              />
             </div>
           ))}
           {!isLoading && featuredBikes.length === 0 && (
-            <p className="col-span-4 text-center text-slate-400">Chưa có sản phẩm nào nổi bật.</p>
+            <p className="col-span-4 text-center text-slate-400">
+              Chưa có sản phẩm nào nổi bật.
+            </p>
           )}
         </div>
       </div>
     </section>
-  )
+  );
 }

@@ -2,11 +2,18 @@ import { Filter, X, ChevronDown, RotateCcw } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import BikeCard from "./BikeCard";
 import { listingService, type Listing } from "../../services/listing.service";
+import { favoriteService } from "../../services/favorite.service";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function FilterSection() {
+  const { isAuthenticated } = useAuth();
   const [showFilters, setShowFilters] = useState(false);
   const [allBikes, setAllBikes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [togglingFavoriteId, setTogglingFavoriteId] = useState<string | null>(
+    null,
+  );
 
   // 1. TRẠNG THÁI BỘ LỌC
   const [filters, setFilters] = useState({
@@ -50,6 +57,57 @@ export default function FilterSection() {
     };
     fetchBikes();
   }, []);
+
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      if (!isAuthenticated) {
+        setFavoriteIds(new Set());
+        return;
+      }
+
+      const favorites = await favoriteService.getMyFavorites();
+      setFavoriteIds(new Set(favorites.map((item) => String(item.listing.id))));
+    };
+
+    void fetchFavorites();
+  }, [isAuthenticated]);
+
+  const handleToggleFavorite = async (listingId: string) => {
+    if (!isAuthenticated) {
+      alert("Vui lòng đăng nhập để thêm vào yêu thích");
+      return;
+    }
+
+    if (togglingFavoriteId) return;
+
+    setTogglingFavoriteId(listingId);
+    try {
+      if (favoriteIds.has(listingId)) {
+        const success = await favoriteService.removeFavorite(listingId);
+        if (success) {
+          setFavoriteIds((prev) => {
+            const next = new Set(prev);
+            next.delete(listingId);
+            return next;
+          });
+        }
+      } else {
+        const res = await favoriteService.addFavorite(listingId);
+        if (res) {
+          setFavoriteIds((prev) => {
+            const next = new Set(prev);
+            next.add(listingId);
+            return next;
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to toggle favorite:", error);
+      alert("Không thể cập nhật yêu thích. Vui lòng thử lại.");
+    } finally {
+      setTogglingFavoriteId(null);
+    }
+  };
 
   // 3. LOGIC LỌC DỮ LIỆU THỰC THỜI
   const filteredBikes = useMemo(() => {
@@ -252,7 +310,12 @@ export default function FilterSection() {
                 key={bike.id}
                 className="animate-in fade-in slide-in-from-bottom-4 duration-500"
               >
-                <BikeCard {...bike} />
+                <BikeCard
+                  {...bike}
+                  isFavorite={favoriteIds.has(String(bike.id))}
+                  onToggleFavorite={handleToggleFavorite}
+                  favoriteDisabled={togglingFavoriteId === String(bike.id)}
+                />
               </div>
             ))
           ) : (

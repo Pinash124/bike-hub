@@ -58,6 +58,24 @@ const mapOrderStatus = (
   }
 };
 
+const formatDeliveryAddress = (orderLocation?: {
+  addressLine?: string;
+  nameContact?: string;
+  phoneContact?: string;
+} | null) => {
+  if (!orderLocation) return "Chưa có địa chỉ giao hàng";
+
+  const lines = [
+    orderLocation.nameContact?.trim(),
+    orderLocation.phoneContact?.trim(),
+    orderLocation.addressLine?.trim(),
+  ].filter(Boolean);
+
+  return lines.length > 0
+    ? lines.join(" - ")
+    : "Chưa có địa chỉ giao hàng";
+};
+
 export default function OrderTrackingPage() {
   const [orders, setOrders] = useState<TrackingOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -155,7 +173,7 @@ export default function OrderTrackingPage() {
             order.sellerStatus,
           ),
           totalAmount: total,
-          deliveryAddress: "Giao hàng tận nơi",
+          deliveryAddress: formatDeliveryAddress(order.orderLocation),
           createdAt: toIsoDate(order.createdAt) ?? new Date().toISOString(),
           estimatedDelivery:
             toIsoDate(order.expiresAt || order.createdAt) ??

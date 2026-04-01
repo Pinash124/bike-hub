@@ -44,6 +44,7 @@ const SearchPage = lazy(() => import("./pages/SearchPage"));
 const ProductDetailPage = lazy(() => import("./pages/ProductDetailPage"));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
 const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage"));
+const FavoritesPage = lazy(() => import("./pages/FavoritesPage.tsx"));
 const CreateListingPage = lazy(() => import("./pages/CreateListingPage"));
 const ScheduleInspectionPage = lazy(
   () => import("./pages/ScheduleInspectionPage"),
@@ -323,6 +324,16 @@ function App() {
                   <ProtectedRoute requiredRole="buyer">
                     <AppLayout>
                       <OrderTrackingPage />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/buyer/favorites"
+                element={
+                  <ProtectedRoute requiredRole="buyer">
+                    <AppLayout>
+                      <FavoritesPage />
                     </AppLayout>
                   </ProtectedRoute>
                 }

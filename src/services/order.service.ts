@@ -34,11 +34,19 @@ export interface OrderUser {
   name: string;
 }
 
+export interface OrderLocation {
+  id: number;
+  addressLine: string;
+  phoneContact: string;
+  nameContact: string;
+}
+
 export interface Order {
   id: string;
   buyer: OrderUser;
   seller: OrderUser;
   listing: Listing | null;
+  orderLocation?: OrderLocation | null;
   orderStatus: OrderStatus;
   sellerStatus: SellerStatus;
   createdAt: string;
@@ -49,6 +57,11 @@ export interface Order {
   listingId: string;
   totalPrice: number;
 }
+
+const isSuccessCode = (code: unknown) => {
+  const numericCode = Number(code);
+  return numericCode === 0 || numericCode === 1000;
+};
 
 export interface OrderLog {
   id: number;
@@ -71,6 +84,7 @@ function normaliseOrder(raw: any): Order {
   return {
     ...raw,
     listing,
+    orderLocation: raw?.orderLocation ?? null,
     orderStatus,
     status: orderStatus,
     buyerId: raw?.buyer?.id ?? "",
@@ -86,7 +100,7 @@ export const orderService = {
       async () => {
         try {
           const response = await api.get(API_ENDPOINTS.ORDER_MY);
-          if (Number(response.data?.code) === 1000) {
+          if (isSuccessCode(response.data?.code)) {
             const payload =
               response.data?.result ?? response.data?.data ?? response.data;
             const rows = Array.isArray(payload)
@@ -129,7 +143,7 @@ export const orderService = {
             const response = await api.get(API_ENDPOINTS.ORDER_ALL, {
               params: { page: 0, size: 1000 },
             });
-            if (Number(response.data?.code) === 1000) {
+            if (isSuccessCode(response.data?.code)) {
               return extractRows(response.data).map(normaliseOrder);
             }
           } catch {
@@ -137,7 +151,7 @@ export const orderService = {
           }
 
           const fallbackResponse = await api.get(API_ENDPOINTS.ORDER_ALL);
-          if (Number(fallbackResponse.data?.code) === 1000) {
+          if (isSuccessCode(fallbackResponse.data?.code)) {
             return extractRows(fallbackResponse.data).map(normaliseOrder);
           }
           return [];
@@ -156,7 +170,7 @@ export const orderService = {
       async () => {
         try {
           const response = await api.get(API_ENDPOINTS.ORDER_DETAIL(id));
-          if (response.data?.code === 1000)
+          if (isSuccessCode(response.data?.code))
             return normaliseOrder(response.data.result);
           return null;
         } catch (error) {

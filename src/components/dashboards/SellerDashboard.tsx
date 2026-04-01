@@ -218,7 +218,7 @@ export default function SellerDashboard() {
     try {
       const [listingsData, ordersData] = await Promise.all([
         listingService.getMyListings(),
-        orderService.getAllOrders(),
+        orderService.getMyOrders(),
       ]);
 
       const myPayments = await paymentService.getMyPayments().catch(() => []);

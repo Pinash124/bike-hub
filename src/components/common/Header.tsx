@@ -1,56 +1,80 @@
-import { Search, ShoppingCart, ChevronDown, PlusCircle, Bike, Package } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
-import { useCart } from '../../contexts/CartContext'
-import { useAuth } from '../../contexts/AuthContext'
-import LoginModal from '../auth/Login'
-import { Container } from './Container' // Đảm bảo bạn đã tạo file Container.tsx
+import {
+  Search,
+  ShoppingCart,
+  ChevronDown,
+  PlusCircle,
+  Bike,
+  Package,
+  Heart,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useCart } from "../../contexts/CartContext";
+import { useAuth } from "../../contexts/AuthContext";
+import LoginModal from "../auth/Login";
+import { Container } from "./Container"; // Đảm bảo bạn đã tạo file Container.tsx
 
 export default function Header() {
-  const navigate = useNavigate()
-  const { items } = useCart()
-  const { user, isAuthenticated } = useAuth()
-  const [isScrolled, setIsScrolled] = useState(false)
-  const [isLoginOpen, setIsLoginOpen] = useState(false)
+  const navigate = useNavigate();
+  const { items } = useCart();
+  const { user, isAuthenticated } = useAuth();
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   // Xử lý hiệu ứng cuộn trang
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 20)
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // do not render header when logged in as admin
-  if (user?.role === 'admin') return null
+  if (user?.role === "admin") return null;
 
   return (
     <>
       <header
-        className={`sticky top-0 z-[1000] w-full transition-all duration-500 flex items-center ${isScrolled
-          ? 'h-20 bg-white/80 backdrop-blur-xl shadow-sm border-b border-gray-100'
-          : 'h-20 bg-green-600'
-          }`}
+        className={`sticky top-0 z-[1000] w-full transition-all duration-500 flex items-center ${
+          isScrolled
+            ? "h-20 bg-white/80 backdrop-blur-xl shadow-sm border-b border-gray-100"
+            : "h-20 bg-green-600"
+        }`}
       >
         {/* Sử dụng Container thay thế cho content-layout để thụt lề 2 bên chuẩn xác */}
         <Container className="w-full flex items-center justify-between gap-12">
-
           {/* 1. LOGO AREA */}
           <div
-            onClick={() => navigate('/')}
+            onClick={() => navigate("/")}
             className="flex items-center gap-4 cursor-pointer group flex-shrink-0"
           >
-            <div className={`p-3 rounded-2xl shadow-lg transition-all duration-300 ${isScrolled ? 'bg-green-600 text-white' : 'bg-white text-green-600'
-              }`}>
+            <div
+              className={`p-3 rounded-2xl shadow-lg transition-all duration-300 ${
+                isScrolled
+                  ? "bg-green-600 text-white"
+                  : "bg-white text-green-600"
+              }`}
+            >
               <Bike size={32} strokeWidth={2} />
             </div>
 
             <div className="flex flex-col leading-tight">
-              <span className={`text-xl font-bold tracking-tight uppercase transition-colors ${isScrolled ? 'text-gray-900' : 'text-white'
-                }`}>
-                Bike<span className={isScrolled ? 'text-green-600' : 'text-green-200'}>Hub</span>
+              <span
+                className={`text-xl font-bold tracking-tight uppercase transition-colors ${
+                  isScrolled ? "text-gray-900" : "text-white"
+                }`}
+              >
+                Bike
+                <span
+                  className={isScrolled ? "text-green-600" : "text-green-200"}
+                >
+                  Hub
+                </span>
               </span>
-              <span className={`text-[9px] font-bold tracking-[0.3em] uppercase opacity-60 ${isScrolled ? 'text-gray-500' : 'text-green-100'
-                }`}>
+              <span
+                className={`text-[9px] font-bold tracking-[0.3em] uppercase opacity-60 ${
+                  isScrolled ? "text-gray-500" : "text-green-100"
+                }`}
+              >
                 Premium Ecosystem
               </span>
             </div>
@@ -60,40 +84,46 @@ export default function Header() {
           <div className="hidden md:flex flex-1 max-w-xl relative group items-center">
             <Search
               size={18}
-              className={`absolute left-6 transition-colors ${isScrolled ? 'text-gray-400' : 'text-white/50'
-                }`}
+              className={`absolute left-6 transition-colors ${
+                isScrolled ? "text-gray-400" : "text-white/50"
+              }`}
             />
             <input
               type="text"
               placeholder="Tìm kiếm mẫu xe, phụ kiện..."
               className={`w-full rounded-full py-3.5 pl-14 pr-8 outline-none transition-all font-medium text-sm
-                ${isScrolled
-                  ? 'bg-gray-100 border-transparent focus:bg-white focus:ring-4 focus:ring-green-500/10 text-gray-900'
-                  : 'bg-white/10 border border-white/20 text-white placeholder:text-white/60 focus:bg-white focus:text-gray-900 focus:placeholder:text-gray-400 focus:ring-4 focus:ring-white/20'
+                ${
+                  isScrolled
+                    ? "bg-gray-100 border-transparent focus:bg-white focus:ring-4 focus:ring-green-500/10 text-gray-900"
+                    : "bg-white/10 border border-white/20 text-white placeholder:text-white/60 focus:bg-white focus:text-gray-900 focus:placeholder:text-gray-400 focus:ring-4 focus:ring-white/20"
                 }`}
             />
           </div>
 
           {/* 3. ACTIONS AREA */}
           <div className="flex items-center gap-6">
-            {(!user || user.role === 'seller') && (
+            {(!user || user.role === "seller") && (
               <button
-                onClick={() => navigate('/seller/dashboard')}
-                className={`hidden lg:flex items-center gap-2 px-7 py-3 text-[11px] font-bold uppercase tracking-widest transition-all active:scale-95 rounded-full ${isScrolled
-                  ? 'bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-600/20'
-                  : 'bg-white text-green-700 hover:bg-green-50 shadow-xl shadow-black/5'
-                  }`}
+                onClick={() => navigate("/seller/dashboard")}
+                className={`hidden lg:flex items-center gap-2 px-7 py-3 text-[11px] font-bold uppercase tracking-widest transition-all active:scale-95 rounded-full ${
+                  isScrolled
+                    ? "bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-600/20"
+                    : "bg-white text-green-700 hover:bg-green-50 shadow-xl shadow-black/5"
+                }`}
               >
                 <PlusCircle size={18} /> Đăng bán
               </button>
             )}
 
-            {(!user || user.role === 'buyer') && (
+            {(!user || user.role === "buyer") && (
               <>
                 <button
-                  onClick={() => navigate('/buyer/cart')}
-                  className={`relative p-3 transition-all rounded-full ${isScrolled ? 'text-gray-800 hover:bg-gray-100' : 'text-white hover:bg-white/10'
-                    }`}
+                  onClick={() => navigate("/buyer/cart")}
+                  className={`relative p-3 transition-all rounded-full ${
+                    isScrolled
+                      ? "text-gray-800 hover:bg-gray-100"
+                      : "text-white hover:bg-white/10"
+                  }`}
                   aria-label="Giỏ hàng"
                 >
                   <ShoppingCart size={26} strokeWidth={2} />
@@ -104,44 +134,70 @@ export default function Header() {
                   )}
                 </button>
                 <button
-                  onClick={() => navigate('/buyer/orders')}
-                  className={`relative p-3 transition-all rounded-full ${isScrolled ? 'text-gray-800 hover:bg-gray-100' : 'text-white hover:bg-white/10'
-                    }`}
+                  onClick={() => navigate("/buyer/orders")}
+                  className={`relative p-3 transition-all rounded-full ${
+                    isScrolled
+                      ? "text-gray-800 hover:bg-gray-100"
+                      : "text-white hover:bg-white/10"
+                  }`}
                   aria-label="Đơn hàng"
                 >
                   <Package size={24} strokeWidth={2} />
                 </button>
+                <button
+                  onClick={() => navigate("/buyer/favorites")}
+                  className={`relative p-3 transition-all rounded-full ${
+                    isScrolled
+                      ? "text-gray-800 hover:bg-gray-100"
+                      : "text-white hover:bg-white/10"
+                  }`}
+                  aria-label="Xe yêu thích"
+                >
+                  <Heart size={24} strokeWidth={2} />
+                </button>
               </>
             )}
 
-            <div className={`w-px h-8 hidden sm:block ${isScrolled ? 'bg-gray-200' : 'bg-white/20'}`}></div>
+            <div
+              className={`w-px h-8 hidden sm:block ${isScrolled ? "bg-gray-200" : "bg-white/20"}`}
+            ></div>
 
             {isAuthenticated && user ? (
               <div
-                onClick={() => navigate('/profile')}
-                className={`flex items-center gap-3 p-1.5 pr-4 cursor-pointer transition-all border rounded-full ${isScrolled ? 'bg-gray-50 border-gray-100 hover:border-green-200' : 'bg-white/10 border-white/10 hover:bg-white/20'
-                  }`}
+                onClick={() => navigate("/profile")}
+                className={`flex items-center gap-3 p-1.5 pr-4 cursor-pointer transition-all border rounded-full ${
+                  isScrolled
+                    ? "bg-gray-50 border-gray-100 hover:border-green-200"
+                    : "bg-white/10 border-white/10 hover:bg-white/20"
+                }`}
               >
                 <div className="w-9 h-9 bg-gradient-to-tr from-green-400 to-green-600 flex items-center justify-center font-bold text-white text-xs shadow-inner rounded-full">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
-                <ChevronDown size={14} className={isScrolled ? 'text-gray-400' : 'text-white/50'} />
+                <ChevronDown
+                  size={14}
+                  className={isScrolled ? "text-gray-400" : "text-white/50"}
+                />
               </div>
             ) : (
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setIsLoginOpen(true)}
-                  className={`px-6 py-3 font-bold text-[11px] uppercase tracking-widest transition-all rounded-full ${isScrolled ? 'text-gray-600 hover:bg-gray-100' : 'text-white hover:bg-white/10'
-                    }`}
+                  className={`px-6 py-3 font-bold text-[11px] uppercase tracking-widest transition-all rounded-full ${
+                    isScrolled
+                      ? "text-gray-600 hover:bg-gray-100"
+                      : "text-white hover:bg-white/10"
+                  }`}
                 >
                   Đăng nhập
                 </button>
                 <button
-                  onClick={() => navigate('/register')}
-                  className={`px-7 py-3.5 font-bold text-[11px] uppercase tracking-widest transition-all active:scale-95 rounded-full ${isScrolled
-                    ? 'bg-gray-900 text-white hover:bg-black'
-                    : 'border-2 border-white text-white hover:bg-white hover:text-green-600'
-                    }`}
+                  onClick={() => navigate("/register")}
+                  className={`px-7 py-3.5 font-bold text-[11px] uppercase tracking-widest transition-all active:scale-95 rounded-full ${
+                    isScrolled
+                      ? "bg-gray-900 text-white hover:bg-black"
+                      : "border-2 border-white text-white hover:bg-white hover:text-green-600"
+                  }`}
                 >
                   Đăng ký
                 </button>
@@ -151,10 +207,7 @@ export default function Header() {
         </Container>
       </header>
 
-      <LoginModal
-        isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
-      />
+      <LoginModal isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
     </>
-  )
+  );
 }

@@ -414,6 +414,24 @@ import { orderService } from "../../services/order.service";
 import { OrderTracking, type Order as UIOder } from "./Orders/OrderTracking";
 import type { Order as APIOrder } from "../../services/order.service";
 
+const formatDeliveryAddress = (orderLocation?: {
+  addressLine?: string;
+  nameContact?: string;
+  phoneContact?: string;
+} | null) => {
+  if (!orderLocation) return "Chưa có địa chỉ giao hàng";
+
+  const lines = [
+    orderLocation.nameContact?.trim(),
+    orderLocation.phoneContact?.trim(),
+    orderLocation.addressLine?.trim(),
+  ].filter(Boolean);
+
+  return lines.length > 0
+    ? lines.join(" - ")
+    : "Chưa có địa chỉ giao hàng";
+};
+
 const OrdersTab: React.FC = () => {
   const [orders, setOrders] = useState<UIOder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -450,7 +468,7 @@ const OrdersTab: React.FC = () => {
           ],
           status: statusMap(apiOrder.orderStatus || apiOrder.status),
           totalAmount: total,
-          deliveryAddress: "Delivery Address",
+          deliveryAddress: formatDeliveryAddress(apiOrder.orderLocation),
           createdAt: apiOrder.createdAt,
           estimatedDelivery: new Date(
             new Date(apiOrder.createdAt).getTime() + 5 * 24 * 60 * 60 * 1000,
