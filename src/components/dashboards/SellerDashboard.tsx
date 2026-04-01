@@ -188,7 +188,9 @@ export default function SellerDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [orderStatusFilter, setOrderStatusFilter] = useState<"all" | "pending" | "completed">("all");
+  const [orderStatusFilter, setOrderStatusFilter] = useState<
+    "all" | "pending" | "completed"
+  >("all");
   const [sortBy, setSortBy] = useState<"newest" | "price-low" | "price-high">(
     "newest",
   );
@@ -393,7 +395,13 @@ export default function SellerDashboard() {
   ]);
 
   const liveCount = listings.filter((l) => l.status === "LIVE").length;
-  const revenueStatuses = ["IN_TRANSIT", "DELIVERED", "COMPLETE", "COMPLETED", "CONFIRMED"];
+  const revenueStatuses = [
+    "IN_TRANSIT",
+    "DELIVERED",
+    "COMPLETE",
+    "COMPLETED",
+    "CONFIRMED",
+  ];
   const soldCount = orders.filter((o) =>
     revenueStatuses.includes(o.orderStatus as any),
   ).length;
@@ -987,7 +995,9 @@ export default function SellerDashboard() {
                     );
                   }
                   if (orderStatusFilter === "completed") {
-                    return ["COMPLETED", "COMPLETE", "CONFIRMED"].includes(o.orderStatus as any);
+                    return ["COMPLETED", "COMPLETE", "CONFIRMED"].includes(
+                      o.orderStatus as any,
+                    );
                   }
                   return true;
                 }).length === 0 ? (
@@ -1008,7 +1018,9 @@ export default function SellerDashboard() {
                         );
                       }
                       if (orderStatusFilter === "completed") {
-                        return ["COMPLETED", "COMPLETE", "CONFIRMED"].includes(o.orderStatus as any);
+                        return ["COMPLETED", "COMPLETE", "CONFIRMED"].includes(
+                          o.orderStatus as any,
+                        );
                       }
                       return true;
                     })
@@ -1019,100 +1031,104 @@ export default function SellerDashboard() {
                           order.sellerStatus !== "ACCEPTED" &&
                           order.sellerStatus !== "REJECTED");
 
-                    return (
-                      <div
-                        key={order.id}
-                        className={`relative border rounded-3xl p-6 transition-all duration-300 ${
-                          isActionRequired
-                            ? "border-amber-200 bg-amber-50/30 shadow-lg shadow-amber-900/5 ring-1 ring-amber-100"
-                            : "border-slate-100 bg-white hover:border-green-200"
-                        }`}
-                      >
-                        {isActionRequired && (
-                          <div className="absolute -top-3 left-6 px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">
-                            Cần xử lý
-                          </div>
-                        )}
-                        <div className="flex justify-between items-start mb-4 border-b border-slate-100 pb-4">
-                        <div>
-                          <p className="text-sm text-slate-400">
-                            Mã đơn:{" "}
-                            <strong className="text-slate-700">
-                              {order.id.slice(0, 8).toUpperCase()}
-                            </strong>
-                          </p>
-                          <p className="text-lg font-bold text-slate-800 mt-1">
-                            {order.listing?.title || "Xe đạp"}
-                          </p>
-                          <p className="text-sm text-slate-500 mt-1">
-                            Ngày mua:{" "}
-                            {parseApiDate(order.createdAt)?.toLocaleDateString(
-                              "vi-VN",
-                            ) || "—"}
-                          </p>
-                          <p className="text-sm text-slate-500 mt-1">
-                            Trạng thái đơn:{" "}
-                            <span className="font-semibold text-slate-700">
-                              {getOrderStatusLabel(order.orderStatus)}
-                            </span>
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-black text-green-600">
-                            {(order.totalPrice / 1000000).toFixed(1)}M
-                          </p>
-                          <p className="text-sm font-bold mt-1 text-slate-500">
-                            Status:{" "}
-                            <span className="text-blue-600 uppercase">
-                              {order.sellerStatus || order.status}
-                            </span>
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex flex-col sm:flex-row gap-3 justify-end items-center">
-                        {(order.sellerStatus === "PENDING" ||
-                          (order.orderStatus === "PAID" &&
-                            order.sellerStatus !== "ACCEPTED" &&
-                            order.sellerStatus !== "REJECTED")) && (
-                          <>
-                            <div className="flex-1 w-full sm:w-auto h-px bg-slate-100 hidden sm:block"></div>
-                            <div className="flex items-center gap-3 w-full sm:w-auto">
-                              <button
-                                onClick={async () => {
-                                  if (await orderService.acceptOrder(order.id))
-                                    handleRefresh();
-                                }}
-                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-green-600 text-white px-6 py-2.5 rounded-xl font-bold hover:from-emerald-700 hover:to-green-700 transition-all shadow-lg shadow-emerald-900/10 active:scale-95"
-                              >
-                                <CheckCircle2 size={18} />
-                                Chấp nhận
-                              </button>
-                              <button
-                                onClick={async () => {
-                                  if (await orderService.rejectOrder(order.id))
-                                    handleRefresh();
-                                }}
-                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white text-red-600 border-2 border-red-50 px-6 py-2.5 rounded-xl font-bold hover:bg-red-50 transition-all active:scale-95"
-                              >
-                                <XCircle size={18} />
-                                Từ chối
-                              </button>
+                      return (
+                        <div
+                          key={order.id}
+                          className={`relative border rounded-3xl p-6 transition-all duration-300 ${
+                            isActionRequired
+                              ? "border-amber-200 bg-amber-50/30 shadow-lg shadow-amber-900/5 ring-1 ring-amber-100"
+                              : "border-slate-100 bg-white hover:border-green-200"
+                          }`}
+                        >
+                          {isActionRequired && (
+                            <div className="absolute -top-3 left-6 px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">
+                              Cần xử lý
                             </div>
-                          </>
-                        )}
-                        {order.orderStatus === "IN_TRANSIT" && (
-                          <button
-                            onClick={() => openDeliverModal(order.id)}
-                            className="bg-blue-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-blue-700"
-                          >
-                            Xác nhận đã giao xe
-                          </button>
-                        )}
+                          )}
+                          <div className="flex justify-between items-start mb-4 border-b border-slate-100 pb-4">
+                            <div>
+                              <p className="text-sm text-slate-400">
+                                Mã đơn:{" "}
+                                <strong className="text-slate-700">
+                                  {order.id.slice(0, 8).toUpperCase()}
+                                </strong>
+                              </p>
+                              <p className="text-lg font-bold text-slate-800 mt-1">
+                                {order.listing?.title || "Xe đạp"}
+                              </p>
+                              <p className="text-sm text-slate-500 mt-1">
+                                Ngày mua:{" "}
+                                {parseApiDate(
+                                  order.createdAt,
+                                )?.toLocaleDateString("vi-VN") || "—"}
+                              </p>
+                              <p className="text-sm text-slate-500 mt-1">
+                                Trạng thái đơn:{" "}
+                                <span className="font-semibold text-slate-700">
+                                  {getOrderStatusLabel(order.orderStatus)}
+                                </span>
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-2xl font-black text-green-600">
+                                {(order.totalPrice / 1000000).toFixed(1)}M
+                              </p>
+                              <p className="text-sm font-bold mt-1 text-slate-500">
+                                Status:{" "}
+                                <span className="text-blue-600 uppercase">
+                                  {order.sellerStatus || order.status}
+                                </span>
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex flex-col sm:flex-row gap-3 justify-end items-center">
+                            {(order.sellerStatus === "PENDING" ||
+                              (order.orderStatus === "PAID" &&
+                                order.sellerStatus !== "ACCEPTED" &&
+                                order.sellerStatus !== "REJECTED")) && (
+                              <>
+                                <div className="flex-1 w-full sm:w-auto h-px bg-slate-100 hidden sm:block"></div>
+                                <div className="flex items-center gap-3 w-full sm:w-auto">
+                                  <button
+                                    onClick={async () => {
+                                      if (
+                                        await orderService.acceptOrder(order.id)
+                                      )
+                                        handleRefresh();
+                                    }}
+                                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-green-600 text-white px-6 py-2.5 rounded-xl font-bold hover:from-emerald-700 hover:to-green-700 transition-all shadow-lg shadow-emerald-900/10 active:scale-95"
+                                  >
+                                    <CheckCircle2 size={18} />
+                                    Chấp nhận
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      if (
+                                        await orderService.rejectOrder(order.id)
+                                      )
+                                        handleRefresh();
+                                    }}
+                                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white text-red-600 border-2 border-red-50 px-6 py-2.5 rounded-xl font-bold hover:bg-red-50 transition-all active:scale-95"
+                                  >
+                                    <XCircle size={18} />
+                                    Từ chối
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                            {order.orderStatus === "IN_TRANSIT" && (
+                              <button
+                                onClick={() => openDeliverModal(order.id)}
+                                className="bg-blue-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-blue-700"
+                              >
+                                Xác nhận đã giao xe
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
+                      );
                     })
-                  )}
+                )}
               </div>
             )}
 
@@ -1367,8 +1383,8 @@ export default function SellerDashboard() {
                       </h3>
                       <div className="mt-8 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                         <p className="text-xs font-bold text-slate-500 leading-relaxed">
-                          ⚡️ Doanh thu tháng này dựa trên các giao dịch đã
-                          thanh toán và hoàn tất trong hệ thống.
+                          ⚡️ Doanh thu tháng này dựa trên các giao dịch đã thanh
+                          toán và hoàn tất trong hệ thống.
                         </p>
                       </div>
                     </div>
@@ -1453,7 +1469,9 @@ export default function SellerDashboard() {
                                     ? "bg-gradient-to-t from-green-600 to-emerald-400"
                                     : "bg-slate-100 group-hover:bg-slate-200"
                                 }`}
-                                style={{ height: `${Math.max(heightPercent, 5)}%` }}
+                                style={{
+                                  height: `${Math.max(heightPercent, 5)}%`,
+                                }}
                               >
                                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                                   {(item.value / 1000000).toFixed(1)}M

@@ -414,11 +414,13 @@ import { orderService } from "../../services/order.service";
 import { OrderTracking, type Order as UIOder } from "./Orders/OrderTracking";
 import type { Order as APIOrder } from "../../services/order.service";
 
-const formatDeliveryAddress = (orderLocation?: {
-  addressLine?: string;
-  nameContact?: string;
-  phoneContact?: string;
-} | null) => {
+const formatDeliveryAddress = (
+  orderLocation?: {
+    addressLine?: string;
+    nameContact?: string;
+    phoneContact?: string;
+  } | null,
+) => {
   if (!orderLocation) return "Chưa có địa chỉ giao hàng";
 
   const lines = [
@@ -427,9 +429,7 @@ const formatDeliveryAddress = (orderLocation?: {
     orderLocation.addressLine?.trim(),
   ].filter(Boolean);
 
-  return lines.length > 0
-    ? lines.join(" - ")
-    : "Chưa có địa chỉ giao hàng";
+  return lines.length > 0 ? lines.join(" - ") : "Chưa có địa chỉ giao hàng";
 };
 
 const OrdersTab: React.FC = () => {
