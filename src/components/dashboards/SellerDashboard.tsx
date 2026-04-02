@@ -44,6 +44,24 @@ const parseApiDate = (value?: string | null): Date | null => {
   return Number.isNaN(d.getTime()) ? null : d;
 };
 
+const toMonthKey = (date: Date): string => {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+};
+
+const isRevenueOrder = (order: Order): boolean => {
+  const normalizedStatus = String(order.orderStatus || "").toUpperCase();
+  if (
+    ["IN_TRANSIT", "DELIVERED", "COMPLETE", "COMPLETED", "CONFIRMED"].includes(
+      normalizedStatus,
+    )
+  ) {
+    return true;
+  }
+
+  // PAID orders only count as revenue after seller has accepted processing.
+  return normalizedStatus === "PAID" && order.sellerStatus === "ACCEPTED";
+};
+
 const PAID_LISTING_IDS_KEY = "paidListingIds";
 const SCHEDULED_LISTING_IDS_KEY = "scheduledInspectionListingIds";
 
@@ -395,18 +413,9 @@ export default function SellerDashboard() {
   ]);
 
   const liveCount = listings.filter((l) => l.status === "LIVE").length;
-  const revenueStatuses = [
-    "IN_TRANSIT",
-    "DELIVERED",
-    "COMPLETE",
-    "COMPLETED",
-    "CONFIRMED",
-  ];
-  const soldCount = orders.filter((o) =>
-    revenueStatuses.includes(o.orderStatus as any),
-  ).length;
+  const soldCount = orders.filter((o) => isRevenueOrder(o)).length;
   const totalRevenue = orders
-    .filter((o) => revenueStatuses.includes(o.orderStatus as any))
+    .filter((o) => isRevenueOrder(o))
     .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
   const pendingOrdersCount = orders.filter(
     (o) =>
@@ -416,6 +425,40 @@ export default function SellerDashboard() {
         o.sellerStatus !== "REJECTED" &&
         o.sellerStatus !== "CANCELLED"),
   ).length;
+
+  const selectedMonthRevenue = useMemo(() => {
+    return orders
+      .filter((o) => {
+        const orderDate = parseApiDate(o.createdAt);
+        if (!orderDate) return false;
+        return toMonthKey(orderDate) === monthFilter && isRevenueOrder(o);
+      })
+      .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+  }, [monthFilter, orders]);
+
+  const lastSixMonthsRevenue = useMemo(() => {
+    const now = new Date();
+    return Array.from({ length: 6 }).map((_, idx) => {
+      const offset = 5 - idx;
+      const monthDate = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+      const monthKey = toMonthKey(monthDate);
+      const monthLabel = `T${monthDate.getMonth() + 1}`;
+
+      const monthValue = orders
+        .filter((o) => {
+          const orderDate = parseApiDate(o.createdAt);
+          if (!orderDate) return false;
+          return toMonthKey(orderDate) === monthKey && isRevenueOrder(o);
+        })
+        .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+
+      return { label: monthLabel, value: monthValue, key: monthKey };
+    });
+  }, [orders]);
+
+  const maxSixMonthRevenue = useMemo(() => {
+    return Math.max(...lastSixMonthsRevenue.map((item) => item.value), 1);
+  }, [lastSixMonthsRevenue]);
 
   const subscriptionPayments = payments.filter(
     (payment) =>
@@ -1335,25 +1378,7 @@ export default function SellerDashboard() {
                         Doanh thu tháng {monthFilter}
                       </p>
                       <h3 className="text-5xl font-black text-slate-800 tracking-tighter">
-                        {orders
-                          .filter((o) => {
-                            const d = parseApiDate(o.createdAt);
-                            if (!d) return false;
-                            const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-                            const revenueStatuses = [
-                              "IN_TRANSIT",
-                              "DELIVERED",
-                              "COMPLETE",
-                              "COMPLETED",
-                              "CONFIRMED",
-                            ];
-                            return (
-                              m === monthFilter &&
-                              revenueStatuses.includes(o.orderStatus as any)
-                            );
-                          })
-                          .reduce((s, o) => s + (o.totalPrice || 0), 0)
-                          .toLocaleString("vi-VN")}
+                        {selectedMonthRevenue.toLocaleString("vi-VN")}
                         <span className="text-2xl ml-1 text-slate-300">₫</span>
                       </h3>
                       <div className="mt-8 p-4 bg-slate-50 rounded-2xl border border-slate-100">
@@ -1372,80 +1397,45 @@ export default function SellerDashboard() {
                     <h3 className="text-lg font-black text-slate-800 uppercase tracking-wider">
                       Xu hướng 6 tháng gần nhất
                     </h3>
-                    <div className="flex items-center gap-4 text-xs font-bold">
+                    <div className="flex items-center gap-5 text-xs font-bold">
                       <div className="flex items-center gap-1.5">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-slate-500">Doanh thu</span>
+                        <div className="w-3 h-3 bg-gradient-to-r from-green-600 to-emerald-400 rounded-full"></div>
+                        <span className="text-slate-600">Tháng đang chọn</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                        <span className="text-slate-600">Tháng có doanh thu</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-3 h-3 bg-slate-300 rounded-full"></div>
+                        <span className="text-slate-600">Không có doanh thu</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-end justify-between h-64 gap-3 md:gap-6 px-4">
-                    {Array.from({ length: 6 })
-                      .map((_, i) => {
-                        const d = new Date();
-                        d.setMonth(d.getMonth() - (5 - i));
-                        const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-                        const mLabel = `T${d.getMonth() + 1}`;
-                        const mRevenue = orders
-                          .filter((o) => {
-                            const od = parseApiDate(o.createdAt);
-                            if (!od) return false;
-                            const om = `${od.getFullYear()}-${String(od.getMonth() + 1).padStart(2, "0")}`;
-                            const revenueStatuses = [
-                              "IN_TRANSIT",
-                              "DELIVERED",
-                              "COMPLETE",
-                              "COMPLETED",
-                              "CONFIRMED",
-                            ];
-                            return (
-                              om === mKey &&
-                              revenueStatuses.includes(o.orderStatus as any)
-                            );
-                          })
-                          .reduce((s, o) => s + (o.totalPrice || 0), 0);
-                        return { label: mLabel, value: mRevenue, key: mKey };
-                      })
-                      .map((item, idx) => {
-                        const maxVal = Math.max(
-                          ...Array.from({ length: 6 }).map((_, i) => {
-                            const d = new Date();
-                            d.setMonth(d.getMonth() - (5 - i));
-                            const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-                            return orders
-                              .filter((o) => {
-                                const od = parseApiDate(o.createdAt);
-                                if (!od) return false;
-                                const om = `${od.getFullYear()}-${String(od.getMonth() + 1).padStart(2, "0")}`;
-                                return (
-                                  om === mKey &&
-                                  (o.orderStatus === "COMPLETED" ||
-                                    o.orderStatus === "CONFIRMED" ||
-                                    o.orderStatus === "PAID")
-                                );
-                              })
-                              .reduce((s, o) => s + (o.totalPrice || 0), 0);
-                          }),
-                          1,
-                        );
-                        const heightPercent = (item.value / maxVal) * 100;
+                    {lastSixMonthsRevenue.map((item, idx) => {
+                        const heightPercent =
+                          (item.value / maxSixMonthRevenue) * 100;
                         const isCurrent = item.key === monthFilter;
+                        const hasRevenue = item.value > 0;
+                        const barColorClass = isCurrent
+                          ? "bg-gradient-to-t from-green-600 to-emerald-400 shadow-lg shadow-green-500/25"
+                          : hasRevenue
+                            ? "bg-gradient-to-t from-blue-600 to-sky-400 shadow-md shadow-blue-500/20"
+                            : "bg-slate-200";
 
                         return (
                           <div
                             key={idx}
-                            className="flex-1 flex flex-col items-center gap-3 group"
+                            className="flex-1 flex h-full flex-col items-center gap-3 group"
                           >
-                            <div className="w-full relative flex items-end justify-center h-full">
+                            <div className="relative flex w-full flex-1 items-end justify-center">
                               <div
-                                className={`w-full max-w-[40px] rounded-t-xl transition-all duration-1000 ease-out relative group-hover:brightness-110 ${
-                                  isCurrent
-                                    ? "bg-gradient-to-t from-green-600 to-emerald-400"
-                                    : "bg-slate-100 group-hover:bg-slate-200"
-                                }`}
+                                className={`w-full max-w-[40px] rounded-t-xl transition-all duration-1000 ease-out relative group-hover:brightness-110 ${barColorClass}`}
                                 style={{
                                   height: `${Math.max(heightPercent, 5)}%`,
+                                  minHeight: "10px",
                                 }}
                               >
                                 <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
