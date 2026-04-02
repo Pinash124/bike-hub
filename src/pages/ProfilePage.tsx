@@ -375,53 +375,6 @@ export default function ProfilePage() {
                 </button>
               )}
             </div>
-
-            {["seller", "buyer"].includes(user.role) && (
-              <div className="space-y-6 rounded-3xl border border-slate-100 bg-white p-8 shadow-sm">
-                <h2 className="border-b border-slate-100 pb-4 text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <ShieldCheck size={20} className="text-green-600" />
-                  Trạng thái xác minh
-                </h2>
-
-                {user.isKYCVerified ? (
-                  <div className="flex items-center gap-4 rounded-2xl border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-6">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
-                      <ShieldCheck size={28} className="text-green-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-green-900 text-lg">
-                        Đã xác minh
-                      </h3>
-                      <p className="mt-1 text-sm font-medium text-green-700 leading-relaxed">
-                        Tài khoản của bạn đã được xác minh và có đầy đủ quyền
-                        giao dịch.
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-4 rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-6">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100">
-                      <AlertCircle size={28} className="text-amber-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-amber-900 text-lg">
-                        Chưa xác minh KYC
-                      </h3>
-                      <p className="mt-1 text-sm font-medium text-amber-700 leading-relaxed">
-                        Vui lòng hoàn tất xác minh danh tính để mở đầy đủ quyền
-                        mua bán và tăng độ tin cậy cho tài khoản.
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => navigate("/kyc")}
-                      className="rounded-xl bg-amber-600 px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-amber-700 hover:shadow-lg hover:shadow-amber-600/20"
-                    >
-                      Xác minh ngay
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           <div className="space-y-6 lg:col-span-2">

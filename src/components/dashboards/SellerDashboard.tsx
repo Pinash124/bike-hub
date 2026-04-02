@@ -650,31 +650,6 @@ export default function SellerDashboard() {
           })}
         </div>
 
-        {/* Enhanced KYC Notice */}
-        {!user.isKYCVerified && (
-          <div className="bg-gradient-to-r from-amber-50 via-orange-50 to-yellow-50 border-2 border-amber-200 rounded-3xl p-8 flex flex-col lg:flex-row items-start lg:items-center gap-6 shadow-lg">
-            <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center shrink-0 animate-pulse">
-              <AlertCircle size={32} className="text-amber-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-xl font-bold text-amber-900 mb-2">
-                ⚠️ Cần xác minh danh tính (KYC)
-              </h3>
-              <p className="text-amber-700 text-base leading-relaxed">
-                Để đăng bán xe trên BikeHub, bạn cần xác minh danh tính. Quá
-                trình này chỉ mất 2-3 phút và đảm bảo an toàn cho cả người mua
-                và người bán.
-              </p>
-            </div>
-            <button
-              onClick={() => navigate("/kyc")}
-              className="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-2xl font-bold text-sm uppercase tracking-wider transition-all shadow-lg shadow-amber-500/30 hover:shadow-xl hover:shadow-amber-600/40 shrink-0"
-            >
-              Xác minh ngay
-            </button>
-          </div>
-        )}
-
         {/* Enhanced Listings Section */}
         <div className="bg-white rounded-3xl border border-slate-100 shadow-xl overflow-hidden">
           <div className="px-8 py-6 border-b border-slate-100">
@@ -1494,23 +1469,6 @@ export default function SellerDashboard() {
             )}
           </div>
         </div>
-
-        {/* Enhanced Verification Success Notice */}
-        {user.isKYCVerified && (
-          <div className="bg-gradient-to-r from-green-50 via-emerald-50 to-green-50 border-2 border-green-200 rounded-3xl p-6 flex items-center gap-4 mt-8">
-            <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center">
-              <CheckCircle size={24} className="text-green-600" />
-            </div>
-            <div className="flex-1">
-              <p className="text-green-800 font-semibold text-base py-0 my-0 leading-tight">
-                ✅ Tài khoản đã được xác minh danh tính
-              </p>
-              <p className="text-green-600 text-sm mt-1 py-0 my-0">
-                Bạn có thể tự do đăng bán xe trên nền tảng BikeHub.
-              </p>
-            </div>
-          </div>
-        )}
       </div>
 
       {isDeliverModalOpen && (

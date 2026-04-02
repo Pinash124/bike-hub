@@ -1668,8 +1668,33 @@ function PaymentsTab({
     ),
   );
 
+  // Held order amount: PAYMENT(ORDER) - PAYOUT(ORDER) - REFUND(ORDER)
+  const successOrderPayments = sumAmount(
+    filtered.filter(
+      (p) =>
+        p.type === "PAYMENT" &&
+        p.referenceType === "ORDER" &&
+        p.status === "SUCCESS",
+    ),
+  );
+  const successOrderPayouts = sumAmount(
+    filtered.filter(
+      (p) =>
+        p.type === "PAYOUT" &&
+        p.referenceType === "ORDER" &&
+        p.status === "SUCCESS",
+    ),
+  );
+  const successOrderRefunds = sumAmount(
+    filtered.filter(
+      (p) =>
+        p.type === "REFUND" &&
+        p.referenceType === "ORDER" &&
+        p.status === "SUCCESS",
+    ),
+  );
   const heldOrderAmount =
-    successPaymentTotal - successPayoutTotal - successRefundTotal;
+    successOrderPayments - successOrderPayouts - successOrderRefunds;
 
   return (
     <div className="space-y-4">
@@ -1929,10 +1954,18 @@ function RevenueTab({
   };
 
   const filtered = payments.filter((p) => {
-    const isSuccessful = ["SUCCESS", "PAID", "COMPLETED", "COMPLETE", "CONFIRMED"].includes(p.status || "");
+    const isSuccessful = [
+      "SUCCESS",
+      "PAID",
+      "COMPLETED",
+      "COMPLETE",
+      "CONFIRMED",
+    ].includes(p.status || "");
     const matchStatus =
       statusFilter === "ALL" ||
-      (statusFilter === "SUCCESSFUL" ? isSuccessful : p.status === statusFilter);
+      (statusFilter === "SUCCESSFUL"
+        ? isSuccessful
+        : p.status === statusFilter);
     if (!matchStatus) return false;
 
     const pDate = parsePaymentDate(p.createAt || p.createdAt);
@@ -1958,13 +1991,19 @@ function RevenueTab({
   // Intermediary = received - paid_out - refunded (for orders)
   const intermediary =
     sum(
-      filtered.filter((p) => p.type === "PAYMENT" && p.referenceType === "ORDER"),
+      filtered.filter(
+        (p) => p.type === "PAYMENT" && p.referenceType === "ORDER",
+      ),
     ) -
     sum(
-      filtered.filter((p) => p.type === "PAYOUT" && p.referenceType === "ORDER"),
+      filtered.filter(
+        (p) => p.type === "PAYOUT" && p.referenceType === "ORDER",
+      ),
     ) -
     sum(
-      filtered.filter((p) => p.type === "REFUND" && p.referenceType === "ORDER"),
+      filtered.filter(
+        (p) => p.type === "REFUND" && p.referenceType === "ORDER",
+      ),
     );
 
   const refund = sum(filtered.filter((p) => p.type === "REFUND"));
