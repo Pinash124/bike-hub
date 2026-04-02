@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { brandService, type Brand } from "../services/brand.service";
 import { listingService, type Listing } from "../services/listing.service";
+import { formatVNDOrNull } from "../utils/format";
+
 
 const BIKE_TYPES = [
   { value: "MTB_BIKE", label: "Xe địa hình (MTB)", emoji: "🚵", description: "Tiện lợi cho đi lại hàng ngày" },
@@ -180,7 +182,7 @@ export default function EditListingPage() {
   }
 
   const priceNum = Number(formData.price);
-  const priceFormatted = priceNum > 0 ? `${priceNum.toLocaleString("vi-VN")} VND` : null;
+  const priceFormatted = formatVNDOrNull(priceNum);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-green-50/30">

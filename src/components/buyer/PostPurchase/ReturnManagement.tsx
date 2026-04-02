@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Upload, Send, X, FileText } from 'lucide-react';
+import { formatVND } from '../../../utils/format';
+
 
 export type ReturnReason = 'damaged' | 'wrong_item' | 'quality_issue' | 'not_received' | 'other';
 
@@ -184,7 +186,7 @@ export const ReturnManagement: React.FC<ReturnManagementProps> = ({
         <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-6">
           <h4 className="m-0 mb-3 text-green-600 font-bold text-base">Thông tin hoàn tiền</h4>
           <p className="m-0 text-gray-600 text-sm">Số tiền sẽ được hoàn lại:</p>
-          <p className="text-2xl font-black text-green-600 my-2">{orderAmount.toLocaleString('vi-VN')} đ</p>
+          <p className="text-2xl font-black text-green-600 my-2">{formatVND(orderAmount)}</p>
           <p className="text-gray-400 text-[11px] leading-relaxed italic">Hoàn tiền sẽ được xử lý vào tài khoản của bạn trong 5-7 ngày làm việc sau khi được phê duyệt.</p>
         </div>
 

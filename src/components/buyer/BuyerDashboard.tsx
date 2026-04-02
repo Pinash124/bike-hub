@@ -12,6 +12,8 @@ import {
 import { addressService, type Address } from "../../services/address.service";
 import { useCart } from "../../contexts/CartContext";
 import { useNavigate } from "react-router-dom";
+import { formatVND } from "../../utils/format";
+
 
 interface Tab {
   id: string;
@@ -312,7 +314,7 @@ const CartTab: React.FC = () => {
 
                   <div className="flex items-center justify-between mt-6">
                     <span className="font-black text-green-600 text-xl tracking-tight">
-                      {item.price.toLocaleString("vi-VN")} ₫
+                      {formatVND(item.price)}
                     </span>
 
                     {/* Quantity Control */}
@@ -360,7 +362,7 @@ const CartTab: React.FC = () => {
                     sản phẩm)
                   </span>
                   <span className="font-bold text-white tracking-wide">
-                    {totalPrice.toLocaleString("vi-VN")} ₫
+                    {formatVND(totalPrice)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-slate-300">
@@ -376,9 +378,8 @@ const CartTab: React.FC = () => {
                   <span className="text-slate-300 font-medium">Tổng cộng</span>
                   <div className="text-right">
                     <span className="text-3xl font-black text-green-500 tracking-tighter">
-                      {totalPrice.toLocaleString("vi-VN")}
+                      {formatVND(totalPrice)}
                     </span>
-                    <span className="text-green-500 ml-1 font-bold">₫</span>
                   </div>
                 </div>
                 <p className="text-right text-[11px] text-slate-500 mt-1 uppercase tracking-wider">

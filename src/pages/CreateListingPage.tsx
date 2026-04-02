@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { brandService, type Brand } from "../services/brand.service";
 import { listingService } from "../services/listing.service";
+import { formatVND, formatVNDOrNull } from "../utils/format";
+
 
 const BIKE_TYPES = [
   {
@@ -230,7 +232,7 @@ export default function CreateListingPage() {
     const priceVal = Number.parseInt(formData.price || "0", 10);
     const MIN_PRICE = 100000;
     if (Number.isNaN(priceVal) || priceVal < MIN_PRICE) {
-      errors.price = `Giá bán tối thiểu là ${MIN_PRICE.toLocaleString("vi-VN")} VNĐ`;
+      errors.price = `Giá bán tối thiểu là ${formatVND(MIN_PRICE)}`;
     }
     if (priceVal > 100000000) {
       errors.price = "Giá bán không quá 100 triệu VNĐ";
@@ -309,8 +311,7 @@ export default function CreateListingPage() {
   };
 
   const priceNum = Number(formData.price);
-  const priceFormatted =
-    priceNum > 0 ? `${priceNum.toLocaleString("vi-VN")} VND` : null;
+  const priceFormatted = formatVNDOrNull(priceNum);
 
   if (success) {
     return (

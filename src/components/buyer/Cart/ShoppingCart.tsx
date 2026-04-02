@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Trash2, ShoppingCart, ChevronRight, Minus, Plus, Bike, ShieldCheck, Check } from 'lucide-react';
 import { useCart } from '../../../contexts/CartContext';
 import type { CartItem } from '../../../contexts/CartContext';
+import { formatVND } from '../../../utils/format';
+
 
 interface ShoppingCartProps {
   onCheckout?: (selectedItems: CartItem[]) => void;
@@ -132,7 +134,7 @@ export const ShoppingCartView: React.FC<ShoppingCartProps> = ({
 
                           <div className="flex flex-wrap items-end justify-between gap-4 mt-4">
                             <p className="text-green-600 font-extrabold text-xl sm:text-2xl">
-                              {item.price.toLocaleString('vi-VN')} ₫
+                              {formatVND(item.price)}
                             </p>
 
                             <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl overflow-hidden p-1">
@@ -176,7 +178,7 @@ export const ShoppingCartView: React.FC<ShoppingCartProps> = ({
               <div className="space-y-4 text-sm font-medium text-slate-500">
                 <div className="flex justify-between items-center">
                   <span>Tạm tính ({selectedItems.length} sản phẩm)</span>
-                  <span className="font-bold text-slate-800">{totalSelected.toLocaleString('vi-VN')} ₫</span>
+                  <span className="font-bold text-slate-800">{formatVND(totalSelected)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span>Phí giao hàng</span>
@@ -188,7 +190,7 @@ export const ShoppingCartView: React.FC<ShoppingCartProps> = ({
 
               <div className="flex flex-col gap-1 mb-6">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tổng cộng</span>
-                <span className="text-3xl font-black text-green-600">{totalSelected > 0 ? totalSelected.toLocaleString('vi-VN') : '0'} ₫</span>
+                <span className="text-3xl font-black text-green-600">{totalSelected > 0 ? formatVND(totalSelected) : '0 VND'}</span>
               </div>
 
               <button

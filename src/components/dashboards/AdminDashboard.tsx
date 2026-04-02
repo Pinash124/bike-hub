@@ -464,8 +464,7 @@ function PlansTab({
                     Giá gói
                   </p>
                   <p className="text-xl font-black text-slate-900">
-                    {plan.price.toLocaleString("vi-VN")}
-                    <span className="text-xs ml-0.5 mt-1 font-bold">₫</span>
+                    {plan.price.toLocaleString("vi-VN")} VND
                   </p>
                 </div>
                 <div className="text-right">
@@ -1177,13 +1176,13 @@ function InspectionsTab({
         const available = await inspectionService.getAvailableInspectors(
           ins.scheduledAt,
         );
-        setAvailableInspectors(available.length > 0 ? available : inspectors);
+        setAvailableInspectors(available);
       } catch (err) {
-        setAvailableInspectors(inspectors); // fallback
+        setAvailableInspectors([]);
       }
       setFetchingAvailable(false);
     } else {
-      setAvailableInspectors(inspectors);
+      setAvailableInspectors([]);
     }
   };
 
@@ -1404,8 +1403,13 @@ function InspectionsTab({
                   value={selectedInspector}
                   onChange={(e) => setSelectedInspector(e.target.value)}
                   className={inputCls}
+                  disabled={availableInspectors.length === 0}
                 >
-                  <option value="">-- Chọn inspector --</option>
+                  <option value="">
+                    {availableInspectors.length === 0
+                      ? "-- Không có inspector nào rảnh --"
+                      : "-- Chọn inspector --"}
+                  </option>
                   {availableInspectors.map((i) => (
                     <option key={i.id} value={i.id}>
                       {i.name || i.username || i.id}
@@ -2138,6 +2142,198 @@ function RevenueTab({
           </div>
         </div>
       </div>
+
+      {/* Monthly Revenue Table */}
+      {(() => {
+        // Build monthly breakdown from ALL payments (not just tab-filtered)
+        const successPayments = payments.filter((p) =>
+          ["SUCCESS", "PAID", "COMPLETED", "COMPLETE", "CONFIRMED"].includes(
+            p.status || "",
+          ),
+        );
+
+        type MonthData = {
+          label: string;
+          year: number;
+          month: number;
+          intermediary: number;
+          subscription: number;
+          refund: number;
+          net: number;
+        };
+
+        const monthMap = new Map<string, MonthData>();
+
+        successPayments.forEach((p) => {
+          const raw = p.createAt || p.createdAt || p.paidAt;
+          if (!raw) return;
+          const d = parsePaymentDate(raw);
+          if (!d) return;
+
+          const year = d.getFullYear();
+          const month = d.getMonth(); // 0-11
+          const key = `${year}-${String(month + 1).padStart(2, "0")}`;
+          if (!monthMap.has(key)) {
+            const label = d.toLocaleDateString("vi-VN", {
+              month: "long",
+              year: "numeric",
+            });
+            monthMap.set(key, {
+              label,
+              year,
+              month,
+              intermediary: 0,
+              subscription: 0,
+              refund: 0,
+              net: 0,
+            });
+          }
+          const row = monthMap.get(key)!;
+          if (p.type === "PAYMENT" && p.referenceType === "ORDER") {
+            row.intermediary += p.amount || 0;
+          } else if (p.type === "PAYOUT" && p.referenceType === "ORDER") {
+            row.intermediary -= p.amount || 0;
+          } else if (p.type === "PAYMENT" && p.referenceType === "SUBSCRIPTION") {
+            row.subscription += p.amount || 0;
+          } else if (p.type === "REFUND") {
+            row.refund += p.amount || 0;
+          }
+        });
+
+        // Compute net per row
+        monthMap.forEach((row) => {
+          row.net = row.intermediary + row.subscription - row.refund;
+        });
+
+        // Sort by date descending
+        const rows = Array.from(monthMap.values()).sort(
+          (a, b) => b.year - a.year || b.month - a.month,
+        );
+
+        return (
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-50 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white">
+              <div>
+                <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider">
+                  📅 Doanh Thu Theo Tháng
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Tổng hợp từ {rows.length} tháng có phát sinh giao dịch thành công
+                </p>
+              </div>
+              <span className="text-[10px] font-black bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full uppercase tracking-wide">
+                {rows.length} tháng
+              </span>
+            </div>
+            {loading ? (
+              <div className="py-12 text-center text-slate-400 text-sm">
+                Đang tải dữ liệu...
+              </div>
+            ) : rows.length === 0 ? (
+              <div className="py-14 text-center">
+                <div className="text-5xl mb-3">📊</div>
+                <p className="text-slate-500 font-medium">Chưa có dữ liệu doanh thu</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Dữ liệu sẽ hiển thị khi có giao dịch thành công
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-slate-50 text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-slate-100">
+                      <th className="px-6 py-4">Tháng</th>
+                      <th className="px-6 py-4 text-right">Tiền Trung Gian</th>
+                      <th className="px-6 py-4 text-right">Doanh Thu Gói</th>
+                      <th className="px-6 py-4 text-right">Hoàn Trả</th>
+                      <th className="px-6 py-4 text-right">
+                        Doanh Thu Thuần
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {rows.map((row) => (
+                      <tr
+                        key={`${row.year}-${row.month}`}
+                        className="hover:bg-slate-50/60 transition group"
+                      >
+                        <td className="px-6 py-4">
+                          <span className="font-semibold text-slate-800 text-sm capitalize">
+                            {row.label}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <span className="text-sm font-bold text-amber-700">
+                            {row.intermediary >= 0 ? "+" : ""}
+                            {row.intermediary.toLocaleString("vi-VN")} ₫
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <span className="text-sm font-bold text-indigo-700">
+                            +{row.subscription.toLocaleString("vi-VN")} ₫
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <span className="text-sm font-bold text-rose-600">
+                            {row.refund > 0
+                              ? `-${row.refund.toLocaleString("vi-VN")} ₫`
+                              : "—"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <span
+                            className={`text-sm font-black px-3 py-1 rounded-full ${
+                              row.net >= 0
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-red-100 text-red-700"
+                            }`}
+                          >
+                            {row.net >= 0 ? "+" : ""}
+                            {row.net.toLocaleString("vi-VN")} ₫
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="border-t-2 border-slate-200 bg-slate-50">
+                    <tr>
+                      <td className="px-6 py-4 font-black text-slate-700 text-sm uppercase tracking-wide">
+                        TỔNG CỘNG
+                      </td>
+                      <td className="px-6 py-4 text-right font-black text-amber-700">
+                        {rows
+                          .reduce((s, r) => s + r.intermediary, 0)
+                          .toLocaleString("vi-VN")}{" "}
+                        ₫
+                      </td>
+                      <td className="px-6 py-4 text-right font-black text-indigo-700">
+                        {rows
+                          .reduce((s, r) => s + r.subscription, 0)
+                          .toLocaleString("vi-VN")}{" "}
+                        ₫
+                      </td>
+                      <td className="px-6 py-4 text-right font-black text-rose-600">
+                        {rows
+                          .reduce((s, r) => s + r.refund, 0)
+                          .toLocaleString("vi-VN")}{" "}
+                        ₫
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <span className="font-black text-base text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">
+                          {rows
+                            .reduce((s, r) => s + r.net, 0)
+                            .toLocaleString("vi-VN")}{" "}
+                          ₫
+                        </span>
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Transactions list preview */}
       <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">

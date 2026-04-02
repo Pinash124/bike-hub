@@ -5,6 +5,8 @@ import { planService, type Plan } from "../../services/plan.service";
 import { subscriptionService } from "../../services/subscription.service";
 import { paymentService } from "../../services/payment.service";
 import { listingService, type Listing } from "../../services/listing.service";
+import { formatVND } from "../../utils/format";
+
 import {
   Check,
   ShieldCheck,
@@ -214,7 +216,7 @@ export default function ChoosePlanPage() {
               Giá niêm yết
             </div>
             <div className="text-lg font-black tracking-tight text-slate-900">
-              {data.price?.toLocaleString("vi-VN")} ₫
+              {formatVND(data.price)}
             </div>
           </div>
         </div>
@@ -324,7 +326,7 @@ export default function ChoosePlanPage() {
                     Tổng phí thanh toán
                   </div>
                   <div className="text-2xl font-black text-indigo-600">
-                    {selectedPlanDetails.price.toLocaleString("vi-VN")} ₫
+                    {formatVND(selectedPlanDetails.price)}
                   </div>
                 </div>
 
@@ -481,10 +483,7 @@ export default function ChoosePlanPage() {
 
                         <div className="mb-6 text-center">
                           <div className="text-3xl font-black tracking-tight text-slate-900">
-                            {plan.price.toLocaleString("vi-VN")}
-                            <span className="text-sm font-semibold text-slate-500 ml-1">
-                              ₫
-                            </span>
+                            {formatVND(plan.price)}
                           </div>
                           <div className="text-xs font-semibold text-slate-500 mt-1">
                             / {plan.durationDays} ngày

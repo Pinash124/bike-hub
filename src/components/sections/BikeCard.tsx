@@ -1,6 +1,8 @@
 // src/components/sections/BikeCard.tsx
 import { Heart, MapPin, Gauge, Ruler, ArrowRight } from "lucide-react";
-import { useNavigate } from "react-router-dom"; //
+import { useNavigate } from "react-router-dom";
+import { formatVND } from "../../utils/format";
+
 
 interface BikeCardProps {
   id: number | string; // Thêm id
@@ -144,8 +146,7 @@ export default function BikeCard(props: BikeCardProps) {
         <div className="flex items-end justify-between pt-4 border-t border-gray-50">
           <div className="flex flex-col">
             <span className="text-xl font-black text-gray-900 tracking-tighter">
-              {price.toLocaleString()}
-              <span className="text-[10px] ml-1">VND</span>
+              {formatVND(price)}
             </span>
           </div>
           <div className="bg-gray-900 text-white p-2 transition-all duration-300 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0">

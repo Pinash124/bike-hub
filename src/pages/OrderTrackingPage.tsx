@@ -7,6 +7,8 @@ import {
   type PaymentResponse,
 } from "../services/payment.service";
 import { CreditCard, RefreshCw } from "lucide-react";
+import { formatVND } from "../utils/format";
+
 
 const toIsoDate = (value?: string | null): string | null => {
   if (!value) return null;
@@ -141,7 +143,6 @@ export default function OrderTrackingPage() {
     return "bg-red-50 text-red-700 border border-red-200";
   };
 
-  const formatMoney = (amount: number) => `${amount.toLocaleString("vi-VN")} ₫`;
 
   const fetchOrders = async () => {
     setIsLoading(true);
@@ -300,7 +301,7 @@ export default function OrderTrackingPage() {
                 Tiền mua hàng
               </p>
               <p className="mt-2 text-2xl font-black text-emerald-900">
-                {formatMoney(totalSpent)}
+                {formatVND(totalSpent)}
               </p>
             </div>
             <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
@@ -308,7 +309,7 @@ export default function OrderTrackingPage() {
                 Tiền đã hoàn
               </p>
               <p className="mt-2 text-2xl font-black text-sky-900">
-                {formatMoney(totalRefunded)}
+                {formatVND(totalRefunded)}
               </p>
             </div>
           </div>
@@ -359,7 +360,7 @@ export default function OrderTrackingPage() {
                         {payment.type}
                       </td>
                       <td className="px-4 py-3 font-semibold text-slate-900">
-                        {formatMoney(payment.amount || 0)}
+                        {formatVND(payment.amount || 0)}
                       </td>
                       <td className="px-4 py-3">
                         <span

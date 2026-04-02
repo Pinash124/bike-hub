@@ -14,6 +14,20 @@ export interface ListingImage {
   secureUrl: string;
 }
 
+export interface ListingSubscription {
+  plan?: {
+    name: string;
+    description?: string;
+    price?: number;
+    priority?: number;
+    durationDays?: number;
+  };
+  status?: string;
+  createdDate?: string;
+  startDate?: string;
+  expiredDate?: string;
+}
+
 export interface Listing {
   id: string;
   title: string;
@@ -30,13 +44,15 @@ export interface Listing {
     | "LIVE"
     | "SOLD"
     | "DELETED"
-    | "EXPIRED";
+    | "EXPIRED"
+    | "INSPECTED";
   brand: Brand;
   images: ListingImage[];
   createdAt: string;
   bikeType?: string;
   location?: string;
   condition?: string;
+  subscription?: ListingSubscription;
 }
 
 export const listingService = {

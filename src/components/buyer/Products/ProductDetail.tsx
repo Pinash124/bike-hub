@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../../contexts/CartContext';
 import { type Listing } from '../../../services/listing.service';
 import { favoriteService } from '../../../services/favorite.service';
+import { formatVND } from '../../../utils/format';
+
 
 interface ListingDetailProps {
   listing: Listing;
@@ -165,8 +167,7 @@ export const ProductDetail: React.FC<ListingDetailProps> = ({ listing }) => {
             {/* Price */}
             <div className="border-b-2 border-gray-100 pb-4">
               <h2 className="text-4xl font-black text-green-600">
-                {listing.price.toLocaleString('vi-VN')}
-                <span className="text-lg ml-2 font-bold text-green-500">VND</span>
+                {formatVND(listing.price)}
               </h2>
             </div>
 

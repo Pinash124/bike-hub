@@ -6,10 +6,8 @@ import {
   TrendingUp,
   Package,
   CreditCard,
-  CheckCircle,
   Bike,
   Calendar,
-  AlertCircle,
   RefreshCw,
   Search,
   Trash2,
@@ -23,6 +21,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { listingService, type Listing } from "../../services/listing.service";
 import { orderService, type Order } from "../../services/order.service";
 import { subscriptionService } from "../../services/subscription.service";
+import { planService } from "../../services/plan.service";
 import {
   paymentService,
   type PaymentResponse,
@@ -161,6 +160,13 @@ const STATUS_CONFIG: Record<
     border: "border-cyan-200",
     icon: "🛠️",
   },
+  INSPECTED: {
+    label: "Đã kiểm định",
+    color: "text-violet-700",
+    bg: "bg-violet-100",
+    border: "border-violet-200",
+    icon: "🔍",
+  },
   REJECTED: {
     label: "Bị từ chối",
     color: "text-red-700",
@@ -189,6 +195,20 @@ const STATUS_CONFIG: Record<
     border: "border-slate-200",
     icon: "🎉",
   },
+};
+
+/** Format API date strings like "02-04-2026 00:36" to display format */
+const formatApiDate = (dateStr?: string): string => {
+  if (!dateStr) return "";
+  const trimmed = dateStr.trim();
+  const m = trimmed.match(
+    /^(\d{2})-(\d{2})-(\d{4})(?:\s+(\d{2}):(\d{2}))?$/,
+  );
+  if (m) {
+    const [, dd, mm, yyyy] = m;
+    return `${dd}-${mm}-${yyyy}`;
+  }
+  return dateStr;
 };
 
 export default function SellerDashboard() {
@@ -277,6 +297,31 @@ export default function SellerDashboard() {
             JSON.stringify(Array.from(mergedPaid)),
           );
         }
+      }
+
+      // Fetch subscriptions for LIVE listings to display plan info
+      const liveListings = listingsData.filter((listing) => listing.status === "LIVE");
+      if (liveListings.length > 0) {
+        const plans = await planService.getAllPlans().catch(() => []);
+        
+        await Promise.all(
+          liveListings.map(async (listing) => {
+            const sub = await subscriptionService
+              .getSubscriptionByListingId(String(listing.id))
+              .catch(() => null);
+            
+            if (sub) {
+              const safePlanId = Number(sub.plan?.id || sub.planId);
+              const plan = sub.plan || plans.find(p => Number(p.id) === safePlanId);
+              
+              listing.subscription = {
+                ...sub,
+                expiredDate: sub.endDate || sub.expiredDate,
+                plan: plan || { name: `Gói Đăng Ký ${safePlanId ? '#' + safePlanId : ''}` }
+              } as any;
+            }
+          })
+        );
       }
 
       syncFlowMarkers(listingsData);
@@ -915,6 +960,39 @@ export default function SellerDashboard() {
                                 </span>
                               )}
                             </div>
+
+                            {/* Subscription plan info for LIVE listings */}
+                            {listing.status === "LIVE" && listing.subscription && (
+                              <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-emerald-600 text-sm">✨</span>
+                                  <span className="text-xs font-bold text-emerald-700 uppercase tracking-wide">
+                                    Gói đang hoạt động
+                                  </span>
+                                  {listing.subscription.status === "ACTIVE" && (
+                                    <span className="ml-auto text-[10px] font-black bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-full uppercase">
+                                      Active
+                                    </span>
+                                  )}
+                                </div>
+                                {listing.subscription.plan?.name && (
+                                  <p className="text-sm font-semibold text-slate-800">
+                                    {listing.subscription.plan.name}
+                                    {listing.subscription.plan.durationDays && (
+                                      <span className="text-xs font-normal text-slate-500 ml-1">
+                                        ({listing.subscription.plan.durationDays} ngày)
+                                      </span>
+                                    )}
+                                  </p>
+                                )}
+                                {listing.subscription.expiredDate && (
+                                  <p className="text-xs text-slate-500 mt-0.5">
+                                    <span className="font-medium text-red-600">Expired:</span>{" "}
+                                    {formatApiDate(listing.subscription.expiredDate)}
+                                  </p>
+                                )}
+                              </div>
+                            )}
 
                             {needsPayment && (
                               <div className="border-t border-amber-100 pt-4">

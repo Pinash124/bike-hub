@@ -12,6 +12,8 @@ import { useNavigate } from "react-router-dom";
 import { type Address } from "../../../services/address.service";
 import { paymentService } from "../../../services/payment.service";
 import { useCart } from "../../../contexts/CartContext";
+import { formatVND } from "../../../utils/format";
+
 
 interface CheckoutProps {
   addresses: Address[];
@@ -215,7 +217,7 @@ export const Checkout: React.FC<CheckoutProps> = ({
                   </p>
                   {item.price > 0 && (
                     <p className="text-green-600 font-bold text-sm mt-0.5">
-                      {item.price.toLocaleString("vi-VN")} ₫
+                      {formatVND(item.price)}
                     </p>
                   )}
                 </div>
@@ -240,7 +242,7 @@ export const Checkout: React.FC<CheckoutProps> = ({
               <div className="flex justify-between items-end">
                 <span className="text-gray-600 font-medium">Tổng cộng</span>
                 <span className="text-2xl font-black text-green-600">
-                  {totalPrice.toLocaleString("vi-VN")} ₫
+                  {formatVND(totalPrice)}
                 </span>
               </div>
             </>
