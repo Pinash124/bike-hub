@@ -237,10 +237,11 @@ export const adminService = {
     sendInspectorOTP: async (email: string): Promise<boolean> => {
         try {
             const response = await api.post(API_ENDPOINTS.SEND_OTP, { email });
-            return response.data?.code === 1000;
-        } catch (error) {
+            if (response.data?.code === 1000) return true;
+            throw new Error(response.data?.message || 'Failed to send OTP');
+        } catch (error: any) {
             console.error('Error sending OTP for inspector:', error);
-            return false;
+            throw new Error(error.response?.data?.message || error.message || 'Lỗi gửi mã OTP');
         }
     },
 
@@ -276,12 +277,13 @@ export const adminService = {
                 fullName: payload.fullName,
                 password: payload.password,
                 verificationToken: payload.verificationToken,
-                role: 'inspector',
+                role: 'INSPECTOR',
             });
-            return response.data?.code === 1000;
-        } catch (error) {
+            if (response.data?.code === 1000) return true;
+            throw new Error(response.data?.message || 'Failed to create inspector account');
+        } catch (error: any) {
             console.error('Error creating inspector account:', error);
-            return false;
+            throw new Error(error.response?.data?.message || error.message || 'Lỗi tạo tài khoản');
         }
     },
 };

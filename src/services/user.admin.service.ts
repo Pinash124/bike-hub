@@ -34,14 +34,14 @@ export const userAdminService = {
     }
   },
 
-  createInspector: async (payload: { username: string; password: string; name: string }): Promise<UserResponse | null> => {
+  createInspector: async (payload: { email: string; password: string; name: string }): Promise<UserResponse | null> => {
     try {
       const response = await api.post(API_ENDPOINTS.USER_CREATE_INSPECTOR, payload);
       if (response.data?.code === 1000) return response.data.result;
       throw new Error(response.data?.message || 'Failed to create inspector');
     } catch (error: any) {
       console.error('Error creating inspector:', error);
-      throw error;
+      throw new Error(error.response?.data?.message || error.message || 'Lỗi từ máy chủ khi tạo kiểm định viên');
     }
   },
 };

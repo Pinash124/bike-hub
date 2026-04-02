@@ -40,6 +40,7 @@ import {
   type AdminUser,
   type KYCRequest,
 } from "../../services/admin.service";
+import { userAdminService } from "../../services/user.admin.service";
 import {
   locationService,
   type InspectionLocation,
@@ -2957,34 +2958,20 @@ function ListingsTab({
 
 function CreateInspectorTab({
   form,
-  otp,
-  otpSent,
-  verificationToken,
   message,
-  verifyingOTP,
   creatingInspector,
   onFormChange,
-  onOTPChange,
-  onSendOTP,
-  onVerifyOTP,
   onCreate,
 }: {
   form: {
-    fullName: string;
     email: string;
+    name: string;
     password: string;
     confirmPassword: string;
   };
-  otp: string;
-  otpSent: boolean;
-  verificationToken: string;
   message: { type: "success" | "error"; text: string } | null;
-  verifyingOTP: boolean;
   creatingInspector: boolean;
   onFormChange: (field: string, value: string) => void;
-  onOTPChange: (value: string) => void;
-  onSendOTP: () => Promise<void>;
-  onVerifyOTP: () => Promise<void>;
   onCreate: () => Promise<void>;
 }) {
   return (
@@ -2994,8 +2981,7 @@ function CreateInspectorTab({
           Tạo Tài Khoản Kiểm Định Viên
         </h2>
         <p className="text-sm text-slate-500">
-          Tạo tài khoản mới cho kiểm định viên. Tài khoản này sẽ không yêu cầu
-          xác minh KYC.
+          Tạo tài khoản mới cho kiểm định viên trực tiếp trên hệ thống mà không cần gửi OTP xác minh.
         </p>
       </div>
 
@@ -3014,27 +3000,25 @@ function CreateInspectorTab({
           Thông Tin Kiểm Định Viên
         </h3>
 
-        {/* Full Name */}
+        {/* Name */}
         <FormField label="Họ Tên">
           <input
             type="text"
-            value={form.fullName}
-            onChange={(e) => onFormChange("fullName", e.target.value)}
+            value={form.name}
+            onChange={(e) => onFormChange("name", e.target.value)}
             placeholder="Nhập họ tên đầy đủ"
             className={inputCls}
-            disabled={otpSent && !verificationToken}
           />
         </FormField>
 
         {/* Email */}
-        <FormField label="Email">
+        <FormField label="Email Đăng Nhập">
           <input
             type="email"
             value={form.email}
             onChange={(e) => onFormChange("email", e.target.value)}
-            placeholder="Nhập email"
+            placeholder="Nhập địa chỉ email"
             className={inputCls}
-            disabled={otpSent && !verificationToken}
           />
         </FormField>
 
@@ -3046,7 +3030,6 @@ function CreateInspectorTab({
             onChange={(e) => onFormChange("password", e.target.value)}
             placeholder="Nhập mật khẩu"
             className={inputCls}
-            disabled={otpSent && !verificationToken}
           />
         </FormField>
 
@@ -3058,75 +3041,32 @@ function CreateInspectorTab({
             onChange={(e) => onFormChange("confirmPassword", e.target.value)}
             placeholder="Xác nhận mật khẩu"
             className={inputCls}
-            disabled={otpSent && !verificationToken}
           />
         </FormField>
 
-        {/* Send OTP button */}
-        {!otpSent && (
-          <button
-            onClick={onSendOTP}
-            disabled={verifyingOTP || !form.email}
-            className="w-full mt-6 px-4 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-300 text-white rounded-lg font-bold text-sm transition flex items-center justify-center gap-2"
-          >
-            {verifyingOTP && <RefreshCw size={16} className="animate-spin" />}
-            Gửi OTP tới Email
-          </button>
-        )}
-
-        {/* OTP verification section */}
-        {otpSent && !verificationToken && (
-          <div className="mt-6 pt-6 border-t border-slate-200 space-y-4">
-            <h4 className="font-bold text-slate-700 text-sm">Xác Minh OTP</h4>
-            <FormField label="Mã OTP">
-              <input
-                type="text"
-                value={otp}
-                onChange={(e) => onOTPChange(e.target.value)}
-                placeholder="Nhập mã OTP từ email"
-                className={inputCls}
-              />
-            </FormField>
-            <button
-              onClick={onVerifyOTP}
-              disabled={verifyingOTP || !otp}
-              className="w-full px-4 py-2.5 bg-purple-500 hover:bg-purple-600 disabled:bg-slate-300 text-white rounded-lg font-bold text-sm transition flex items-center justify-center gap-2"
-            >
-              {verifyingOTP && <RefreshCw size={16} className="animate-spin" />}
-              Xác Minh OTP
-            </button>
-          </div>
-        )}
-
         {/* Create account button */}
-        {verificationToken && (
-          <div className="mt-6 pt-6 border-t border-emerald-200 bg-emerald-50 rounded-lg p-4">
-            <p className="text-sm text-emerald-700 font-medium mb-4">
-              ✓ OTP đã xác minh. Bạn có thể tạo tài khoản.
-            </p>
-            <button
-              onClick={onCreate}
-              disabled={creatingInspector}
-              className="w-full px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white rounded-lg font-bold text-sm transition flex items-center justify-center gap-2"
-            >
-              {creatingInspector && (
-                <RefreshCw size={16} className="animate-spin" />
-              )}
-              Tạo Tài Khoản Kiểm Định Viên
-            </button>
-          </div>
-        )}
+        <div className="mt-6 pt-6 border-t border-slate-200">
+          <button
+            onClick={onCreate}
+            disabled={creatingInspector}
+            className="w-full px-4 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white rounded-xl font-bold transition flex items-center justify-center gap-2"
+          >
+            {creatingInspector && (
+              <RefreshCw size={16} className="animate-spin" />
+            )}
+            Tạo Tài Khoản Kiểm Định Viên
+          </button>
+        </div>
       </div>
 
       {/* Instructions */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h4 className="font-bold text-blue-900 text-sm mb-2">Hướng dẫn:</h4>
         <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-          <li>Nhập thông tin đầy đủ của kiểm định viên</li>
-          <li>Nhấn "Gửi OTP tới Email" để gửi mã xác minh</li>
-          <li>Kiểm định viên sẽ nhận được mã OTP trong email</li>
-          <li>Nhập mã OTP để xác minh</li>
+          <li>Nhập thông tin đầy đủ cho kiểm định viên</li>
+          <li>Tên đăng nhập sẽ được sử dụng trực tiếp bằng địa chỉ email</li>
           <li>Nhấn "Tạo Tài Khoản" để hoàn tất</li>
+          <li>Tài khoản sẽ sử dụng ngay được mà không cần xác minh KYC</li>
         </ul>
       </div>
     </div>
@@ -3160,16 +3100,12 @@ export default function AdminDashboard() {
 
   // Inspector account creation form state
   const [inspectorForm, setInspectorForm] = useState({
-    fullName: "",
+    name: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
-  const [inspectorOTP, setInspectorOTP] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [verificationToken, setVerificationToken] = useState("");
   const [creatingInspector, setCreatingInspector] = useState(false);
-  const [verifyingOTP, setVerifyingOTP] = useState(false);
   const [inspectorMessage, setInspectorMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -3307,70 +3243,14 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  const handleSendInspectorOTP = useCallback(async () => {
-    if (!inspectorForm.email) {
-      setInspectorMessage({ type: "error", text: "Vui lòng nhập email" });
-      return;
-    }
-    setVerifyingOTP(true);
-    try {
-      const success = await adminService.sendInspectorOTP(inspectorForm.email);
-      if (success) {
-        setOtpSent(true);
-        setInspectorMessage({
-          type: "success",
-          text: "OTP đã được gửi tới email. Vui lòng kiểm tra email để lấy mã OTP.",
-        });
-      } else {
-        setInspectorMessage({
-          type: "error",
-          text: "Không thể gửi OTP. Vui lòng thử lại.",
-        });
-      }
-    } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Lỗi khi gửi OTP";
-      console.error("Error sending OTP:", err);
-      setInspectorMessage({ type: "error", text: errorMessage });
-    } finally {
-      setVerifyingOTP(false);
-    }
-  }, [inspectorForm.email]);
-
-  const handleVerifyInspectorOTP = useCallback(async () => {
-    if (!inspectorOTP) {
-      setInspectorMessage({ type: "error", text: "Vui lòng nhập OTP" });
-      return;
-    }
-    setVerifyingOTP(true);
-    try {
-      const token = await adminService.verifyInspectorOTP(
-        inspectorForm.email,
-        inspectorOTP,
-      );
-      setVerificationToken(token);
-      setInspectorMessage({
-        type: "success",
-        text: "OTP đã xác minh thành công. Bạn có thể tạo tài khoản inspector.",
-      });
-    } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : "OTP không hợp lệ";
-      console.error("Error verifying OTP:", err);
-      setInspectorMessage({ type: "error", text: errorMessage });
-    } finally {
-      setVerifyingOTP(false);
-    }
-  }, [inspectorForm.email, inspectorOTP]);
-
   const handleCreateInspector = useCallback(async () => {
     // Validation
-    if (!inspectorForm.fullName) {
-      setInspectorMessage({ type: "error", text: "Vui lòng nhập họ tên" });
+    if (!inspectorForm.email) {
+      setInspectorMessage({ type: "error", text: "Vui lòng nhập thư điện tử (email)" });
       return;
     }
-    if (!inspectorForm.email) {
-      setInspectorMessage({ type: "error", text: "Vui lòng nhập email" });
+    if (!inspectorForm.name) {
+      setInspectorMessage({ type: "error", text: "Vui lòng nhập họ tên đầy đủ" });
       return;
     }
     if (!inspectorForm.password || !inspectorForm.confirmPassword) {
@@ -3381,37 +3261,27 @@ export default function AdminDashboard() {
       setInspectorMessage({ type: "error", text: "Mật khẩu không khớp" });
       return;
     }
-    if (!verificationToken) {
-      setInspectorMessage({
-        type: "error",
-        text: "Vui lòng xác minh OTP trước khi tạo tài khoản",
-      });
-      return;
-    }
 
     setCreatingInspector(true);
     try {
-      const success = await adminService.createInspectorAccount({
-        fullName: inspectorForm.fullName,
+      const user = await userAdminService.createInspector({
         email: inspectorForm.email,
+        name: inspectorForm.name,
         password: inspectorForm.password,
-        verificationToken: verificationToken,
       });
-      if (success) {
+
+      if (user) {
         setInspectorMessage({
           type: "success",
           text: "Tài khoản inspector đã được tạo thành công!",
         });
         // Reset form
         setInspectorForm({
-          fullName: "",
           email: "",
+          name: "",
           password: "",
           confirmPassword: "",
         });
-        setInspectorOTP("");
-        setOtpSent(false);
-        setVerificationToken("");
         // Refresh users list
         fetchUsers();
       } else {
@@ -3428,7 +3298,7 @@ export default function AdminDashboard() {
     } finally {
       setCreatingInspector(false);
     }
-  }, [inspectorForm, verificationToken, fetchUsers]);
+  }, [inspectorForm, fetchUsers]);
 
   useEffect(() => {
     fetchUsers();
@@ -3613,18 +3483,11 @@ export default function AdminDashboard() {
               {activeTab === "create-inspector" && (
                 <CreateInspectorTab
                   form={inspectorForm}
-                  otp={inspectorOTP}
-                  otpSent={otpSent}
-                  verificationToken={verificationToken}
                   message={inspectorMessage}
-                  verifyingOTP={verifyingOTP}
                   creatingInspector={creatingInspector}
                   onFormChange={(field, value) =>
                     setInspectorForm((prev) => ({ ...prev, [field]: value }))
                   }
-                  onOTPChange={setInspectorOTP}
-                  onSendOTP={handleSendInspectorOTP}
-                  onVerifyOTP={handleVerifyInspectorOTP}
                   onCreate={handleCreateInspector}
                 />
               )}
