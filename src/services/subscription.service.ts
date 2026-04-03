@@ -11,8 +11,17 @@ export interface Subscription {
     id: string;
     listingId: string;
     planId: number;
+    plan?: {
+        id?: number | string;
+        name?: string;
+        description?: string;
+        price?: number;
+        priority?: number;
+        durationDays?: number;
+    };
     startDate: string;
     endDate: string;
+    expiredDate?: string;
     userId: string;
     status: 'ACTIVE' | 'EXPIRED' | 'PENDING_PAYMENT' | 'PENDING';
 }

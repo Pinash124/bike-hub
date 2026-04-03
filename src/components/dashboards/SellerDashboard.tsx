@@ -15,6 +15,9 @@ import {
   DollarSign,
   CheckCircle2,
   XCircle,
+  MapPin,
+  User,
+  Phone,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -201,9 +204,7 @@ const STATUS_CONFIG: Record<
 const formatApiDate = (dateStr?: string): string => {
   if (!dateStr) return "";
   const trimmed = dateStr.trim();
-  const m = trimmed.match(
-    /^(\d{2})-(\d{2})-(\d{4})(?:\s+(\d{2}):(\d{2}))?$/,
-  );
+  const m = trimmed.match(/^(\d{2})-(\d{2})-(\d{4})(?:\s+(\d{2}):(\d{2}))?$/);
   if (m) {
     const [, dd, mm, yyyy] = m;
     return `${dd}-${mm}-${yyyy}`;
@@ -300,27 +301,39 @@ export default function SellerDashboard() {
       }
 
       // Fetch subscriptions for LIVE listings to display plan info
-      const liveListings = listingsData.filter((listing) => listing.status === "LIVE");
+      const liveListings = listingsData.filter(
+        (listing) => listing.status === "LIVE",
+      );
       if (liveListings.length > 0) {
         const plans = await planService.getAllPlans().catch(() => []);
-        
+
         await Promise.all(
           liveListings.map(async (listing) => {
             const sub = await subscriptionService
               .getSubscriptionByListingId(String(listing.id))
               .catch(() => null);
-            
+
             if (sub) {
-              const safePlanId = Number(sub.plan?.id || sub.planId);
-              const plan = sub.plan || plans.find(p => Number(p.id) === safePlanId);
-              
+              const enrichedSub = sub as typeof sub & {
+                plan?: { id?: number | string; name?: string };
+                expiredDate?: string;
+              };
+              const safePlanId = Number(
+                enrichedSub.plan?.id || enrichedSub.planId,
+              );
+              const plan =
+                enrichedSub.plan ||
+                plans.find((p) => Number(p.id) === safePlanId);
+
               listing.subscription = {
-                ...sub,
-                expiredDate: sub.endDate || sub.expiredDate,
-                plan: plan || { name: `Gói Đăng Ký ${safePlanId ? '#' + safePlanId : ''}` }
+                ...enrichedSub,
+                expiredDate: enrichedSub.endDate || enrichedSub.expiredDate,
+                plan: plan || {
+                  name: `Gói Đăng Ký ${safePlanId ? "#" + safePlanId : ""}`,
+                },
               } as any;
             }
-          })
+          }),
         );
       }
 
@@ -962,37 +975,51 @@ export default function SellerDashboard() {
                             </div>
 
                             {/* Subscription plan info for LIVE listings */}
-                            {listing.status === "LIVE" && listing.subscription && (
-                              <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-emerald-600 text-sm">✨</span>
-                                  <span className="text-xs font-bold text-emerald-700 uppercase tracking-wide">
-                                    Gói đang hoạt động
-                                  </span>
-                                  {listing.subscription.status === "ACTIVE" && (
-                                    <span className="ml-auto text-[10px] font-black bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-full uppercase">
-                                      Active
+                            {listing.status === "LIVE" &&
+                              listing.subscription && (
+                                <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-emerald-600 text-sm">
+                                      ✨
                                     </span>
-                                  )}
-                                </div>
-                                {listing.subscription.plan?.name && (
-                                  <p className="text-sm font-semibold text-slate-800">
-                                    {listing.subscription.plan.name}
-                                    {listing.subscription.plan.durationDays && (
-                                      <span className="text-xs font-normal text-slate-500 ml-1">
-                                        ({listing.subscription.plan.durationDays} ngày)
+                                    <span className="text-xs font-bold text-emerald-700 uppercase tracking-wide">
+                                      Gói đang hoạt động
+                                    </span>
+                                    {listing.subscription.status ===
+                                      "ACTIVE" && (
+                                      <span className="ml-auto text-[10px] font-black bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-full uppercase">
+                                        Active
                                       </span>
                                     )}
-                                  </p>
-                                )}
-                                {listing.subscription.expiredDate && (
-                                  <p className="text-xs text-slate-500 mt-0.5">
-                                    <span className="font-medium text-red-600">Expired:</span>{" "}
-                                    {formatApiDate(listing.subscription.expiredDate)}
-                                  </p>
-                                )}
-                              </div>
-                            )}
+                                  </div>
+                                  {listing.subscription.plan?.name && (
+                                    <p className="text-sm font-semibold text-slate-800">
+                                      {listing.subscription.plan.name}
+                                      {listing.subscription.plan
+                                        .durationDays && (
+                                        <span className="text-xs font-normal text-slate-500 ml-1">
+                                          (
+                                          {
+                                            listing.subscription.plan
+                                              .durationDays
+                                          }{" "}
+                                          ngày)
+                                        </span>
+                                      )}
+                                    </p>
+                                  )}
+                                  {listing.subscription.expiredDate && (
+                                    <p className="text-xs text-slate-500 mt-0.5">
+                                      <span className="font-medium text-red-600">
+                                        Expired:
+                                      </span>{" "}
+                                      {formatApiDate(
+                                        listing.subscription.expiredDate,
+                                      )}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
 
                             {needsPayment && (
                               <div className="border-t border-amber-100 pt-4">
@@ -1164,6 +1191,49 @@ export default function SellerDashboard() {
                                   {getOrderStatusLabel(order.orderStatus)}
                                 </span>
                               </p>
+                              <div className="mt-3 space-y-1.5">
+                                <p className="text-sm text-slate-500 flex items-start gap-2">
+                                  <MapPin
+                                    size={14}
+                                    className="text-slate-400 mt-0.5 shrink-0"
+                                  />
+                                  <span>
+                                    Địa chỉ giao xe:{" "}
+                                    <span className="font-semibold text-slate-700">
+                                      {order.orderLocation?.addressLine ||
+                                        "Chưa có địa chỉ"}
+                                    </span>
+                                  </span>
+                                </p>
+                                {order.orderLocation?.nameContact && (
+                                  <p className="text-sm text-slate-500 flex items-center gap-2">
+                                    <User
+                                      size={14}
+                                      className="text-slate-400"
+                                    />
+                                    <span>
+                                      Người nhận:{" "}
+                                      <span className="font-semibold text-slate-700">
+                                        {order.orderLocation.nameContact}
+                                      </span>
+                                    </span>
+                                  </p>
+                                )}
+                                {order.orderLocation?.phoneContact && (
+                                  <p className="text-sm text-slate-500 flex items-center gap-2">
+                                    <Phone
+                                      size={14}
+                                      className="text-slate-400"
+                                    />
+                                    <span>
+                                      SĐT nhận:{" "}
+                                      <span className="font-semibold text-slate-700">
+                                        {order.orderLocation.phoneContact}
+                                      </span>
+                                    </span>
+                                  </p>
+                                )}
+                              </div>
                             </div>
                             <div className="text-right">
                               <p className="text-2xl font-black text-green-600">
@@ -1482,55 +1552,59 @@ export default function SellerDashboard() {
                       </div>
                       <div className="flex items-center gap-1.5">
                         <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                        <span className="text-slate-600">Tháng có doanh thu</span>
+                        <span className="text-slate-600">
+                          Tháng có doanh thu
+                        </span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <div className="w-3 h-3 bg-slate-300 rounded-full"></div>
-                        <span className="text-slate-600">Không có doanh thu</span>
+                        <span className="text-slate-600">
+                          Không có doanh thu
+                        </span>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-end justify-between h-64 gap-3 md:gap-6 px-4">
                     {lastSixMonthsRevenue.map((item, idx) => {
-                        const heightPercent =
-                          (item.value / maxSixMonthRevenue) * 100;
-                        const isCurrent = item.key === monthFilter;
-                        const hasRevenue = item.value > 0;
-                        const barColorClass = isCurrent
-                          ? "bg-gradient-to-t from-green-600 to-emerald-400 shadow-lg shadow-green-500/25"
-                          : hasRevenue
-                            ? "bg-gradient-to-t from-blue-600 to-sky-400 shadow-md shadow-blue-500/20"
-                            : "bg-slate-200";
+                      const heightPercent =
+                        (item.value / maxSixMonthRevenue) * 100;
+                      const isCurrent = item.key === monthFilter;
+                      const hasRevenue = item.value > 0;
+                      const barColorClass = isCurrent
+                        ? "bg-gradient-to-t from-green-600 to-emerald-400 shadow-lg shadow-green-500/25"
+                        : hasRevenue
+                          ? "bg-gradient-to-t from-blue-600 to-sky-400 shadow-md shadow-blue-500/20"
+                          : "bg-slate-200";
 
-                        return (
-                          <div
-                            key={idx}
-                            className="flex-1 flex h-full flex-col items-center gap-3 group"
-                          >
-                            <div className="relative flex w-full flex-1 items-end justify-center">
-                              <div
-                                className={`w-full max-w-[40px] rounded-t-xl transition-all duration-1000 ease-out relative group-hover:brightness-110 ${barColorClass}`}
-                                style={{
-                                  height: `${Math.max(heightPercent, 5)}%`,
-                                  minHeight: "10px",
-                                }}
-                              >
-                                <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                  {(item.value / 1000000).toFixed(1)}M
-                                </div>
+                      return (
+                        <div
+                          key={idx}
+                          className="flex-1 flex h-full flex-col items-center gap-3 group"
+                        >
+                          <div className="relative flex w-full flex-1 items-end justify-center">
+                            <div
+                              className={`w-full max-w-[40px] rounded-t-xl transition-all duration-1000 ease-out relative group-hover:brightness-110 ${barColorClass}`}
+                              style={{
+                                height: `${Math.max(heightPercent, 5)}%`,
+                                minHeight: "10px",
+                              }}
+                            >
+                              <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                {(item.value / 1000000).toFixed(1)}M
                               </div>
                             </div>
-                            <span
-                              className={`text-[10px] font-black uppercase tracking-widest ${
-                                isCurrent ? "text-green-600" : "text-slate-400"
-                              }`}
-                            >
-                              {item.label}
-                            </span>
                           </div>
-                        );
-                      })}
+                          <span
+                            className={`text-[10px] font-black uppercase tracking-widest ${
+                              isCurrent ? "text-green-600" : "text-slate-400"
+                            }`}
+                          >
+                            {item.label}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
