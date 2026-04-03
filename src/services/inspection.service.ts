@@ -171,10 +171,26 @@ export const inspectionService = {
      * [ADMIN] Lấy inspector rảnh vào thời gian schedule
      * GET /inspection/available-inspector?startTime=...
      */
-    getAvailableInspectors: async (scheduleAt: string): Promise<any[]> => {
+    getAvailableInspectors: async (scheduleAt: any): Promise<any[]> => {
         try {
+            // Ensure timeParam matches Swagger example: 2026-02-27T08:03:08.206Z
+            // Use LOCAL time values to construct the string, so the server searches 
+            // for the literal time block displayed in the UI (Vietnam ICT).
+            let d: Date;
+            if (Array.isArray(scheduleAt)) {
+                const [y, m, d_num, h = 0, i = 0, s = 0] = scheduleAt;
+                d = new Date(y, m - 1, d_num, h, i, s);
+            } else {
+                d = new Date(scheduleAt);
+            }
+
+            if (isNaN(d.getTime())) return [];
+
+            const pad = (n: number) => String(n).padStart(2, '0');
+            const timeParam = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.000Z`;
+
             const response = await api.get(API_ENDPOINTS.INSPECTION_AVAILABLE_INSPECTOR, {
-                params: { scheduleAt }
+                params: { scheduleAt: timeParam }
             });
             if (response.data?.code === 1000) {
                 return response.data.result ?? [];

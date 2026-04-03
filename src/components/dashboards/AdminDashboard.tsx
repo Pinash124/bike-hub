@@ -1162,7 +1162,6 @@ function InspectionsTab({
   );
   const [fetchingAvailable, setFetchingAvailable] = useState(false);
 
-  const inspectors = users.filter((u) => getPrimaryRole(u) === "INSPECTOR");
   const all =
     filter === "ALL"
       ? inspections
@@ -1400,23 +1399,33 @@ function InspectionsTab({
                   Đang tìm inspector rảnh...
                 </div>
               ) : (
-                <select
-                  value={selectedInspector}
-                  onChange={(e) => setSelectedInspector(e.target.value)}
-                  className={inputCls}
-                  disabled={availableInspectors.length === 0}
-                >
-                  <option value="">
-                    {availableInspectors.length === 0
-                      ? "-- Không có inspector nào rảnh --"
-                      : "-- Chọn inspector --"}
-                  </option>
-                  {availableInspectors.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.name || i.username || i.id}
-                    </option>
-                  ))}
-                </select>
+                  <div className="relative">
+                    <select
+                      value={selectedInspector}
+                      onChange={(e) => setSelectedInspector(e.target.value)}
+                      className={`${inputCls} pr-10`}
+                      disabled={availableInspectors.length === 0}
+                    >
+                      <option value="">
+                        {availableInspectors.length === 0
+                          ? "-- Không có inspector nào rảnh --"
+                          : "-- Chọn inspector --"}
+                      </option>
+                      {availableInspectors.map((i: any) => (
+                        <option key={i.id} value={i.id}>
+                          {i.name || i.username} ({i.username || i.id})
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => assignModal && handleOpenAssignModal(assignModal)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-amber-600 transition-colors"
+                      title="Tải lại danh sách"
+                    >
+                      <RefreshCw size={14} className={fetchingAvailable ? "animate-spin" : ""} />
+                    </button>
+                  </div>
               )}
             </FormField>
             <div className="flex gap-3 pt-2">
