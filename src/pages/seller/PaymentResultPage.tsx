@@ -89,6 +89,7 @@ export default function PaymentResultPage() {
   const [displayStatus, setDisplayStatus] = useState<
     "success" | "failed" | "pending"
   >(baseSuccess ? "success" : isCancel ? "failed" : "pending");
+  const canProceedAfterPayment = displayStatus === "success";
 
   useEffect(() => {
     // Chỉ đọc params ở lần đầu, sau đó làm sạch URL cho gọn
@@ -251,12 +252,21 @@ export default function PaymentResultPage() {
             <button
               onClick={() => {
                 if (isSubscriptionFlow) {
-                  const schedulePath = pendingListingId
-                    ? `/seller/schedule?listingId=${encodeURIComponent(pendingListingId)}`
-                    : "/seller/dashboard";
                   localStorage.removeItem("pendingSubscriptionId");
                   localStorage.removeItem("pendingListingId");
-                  navigate(schedulePath);
+
+                  if (canProceedAfterPayment) {
+                    const schedulePath = pendingListingId
+                      ? `/seller/schedule?listingId=${encodeURIComponent(pendingListingId)}`
+                      : "/seller/dashboard";
+                    navigate(schedulePath);
+                    return;
+                  }
+
+                  const choosePlanPath = pendingListingId
+                    ? `/seller/choose-plan/${encodeURIComponent(pendingListingId)}`
+                    : "/seller/dashboard";
+                  navigate(choosePlanPath);
                   return;
                 }
 
@@ -267,7 +277,9 @@ export default function PaymentResultPage() {
             >
               <FileText size={18} />{" "}
               {isSubscriptionFlow
-                ? "Đặt lịch kiểm định"
+                ? canProceedAfterPayment
+                  ? "Đặt lịch kiểm định"
+                  : "Quay lại thanh toán"
                 : "Xem đơn hàng của tôi"}
             </button>
             <button

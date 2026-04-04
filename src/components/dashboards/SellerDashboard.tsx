@@ -67,6 +67,13 @@ const isRevenueOrder = (order: Order): boolean => {
 const PAID_LISTING_IDS_KEY = "paidListingIds";
 const SCHEDULED_LISTING_IDS_KEY = "scheduledInspectionListingIds";
 
+type SubscriptionFlowStatus =
+  | "ACTIVE"
+  | "EXPIRED"
+  | "PENDING_PAYMENT"
+  | "PENDING"
+  | null;
+
 const readListingIdsByKey = (key: string): Set<string> => {
   try {
     const raw = localStorage.getItem(key);
@@ -109,9 +116,25 @@ const getEffectiveListingStatus = (
   listing: Listing,
   paidListingIds: Set<string>,
   scheduledListingIds: Set<string>,
-): Listing["status"] | "PLAN_PURCHASED" | "INSPECTION_PENDING" => {
+  subscriptionStatus?: SubscriptionFlowStatus,
+):
+  | Listing["status"]
+  | "PAYMENT_PENDING"
+  | "PLAN_PURCHASED"
+  | "INSPECTION_PENDING" => {
   if (scheduledListingIds.has(String(listing.id))) {
     return "INSPECTION_PENDING";
+  }
+
+  if (
+    subscriptionStatus === "PENDING_PAYMENT" ||
+    subscriptionStatus === "PENDING"
+  ) {
+    return "PAYMENT_PENDING";
+  }
+
+  if (subscriptionStatus === "ACTIVE") {
+    return "PLAN_PURCHASED";
   }
 
   if (listing.status === "PAID") {
@@ -148,6 +171,13 @@ const STATUS_CONFIG: Record<
     bg: "bg-blue-100",
     border: "border-blue-200",
     icon: "💰",
+  },
+  PAYMENT_PENDING: {
+    label: "Chờ thanh toán",
+    color: "text-amber-700",
+    bg: "bg-amber-100",
+    border: "border-amber-200",
+    icon: "💸",
   },
   PLAN_PURCHASED: {
     label: "Đã mua gói",
@@ -240,6 +270,8 @@ export default function SellerDashboard() {
   const [scheduledListingIds, setScheduledListingIds] = useState<Set<string>>(
     () => readListingIdsByKey(SCHEDULED_LISTING_IDS_KEY),
   );
+  const [subscriptionStatusByListing, setSubscriptionStatusByListing] =
+    useState<Record<string, SubscriptionFlowStatus>>({});
   const [isDeliverModalOpen, setIsDeliverModalOpen] = useState(false);
   const [deliverOrderId, setDeliverOrderId] = useState<string | null>(null);
   const [deliverFile, setDeliverFile] = useState<File | null>(null);
@@ -264,26 +296,39 @@ export default function SellerDashboard() {
 
       const myPayments = await paymentService.getMyPayments().catch(() => []);
 
-      const draftListingIds = listingsData
-        .filter((listing) => listing.status === "DRAFT")
+      const paymentFlowListingIds = listingsData
+        .filter(
+          (listing) => listing.status === "DRAFT" || listing.status === "PAID",
+        )
         .map((listing) => String(listing.id));
 
-      if (draftListingIds.length > 0) {
+      if (paymentFlowListingIds.length > 0) {
         const subscriptionChecks = await Promise.all(
-          draftListingIds.map(async (listingId) => {
+          paymentFlowListingIds.map(async (listingId) => {
             const sub = await subscriptionService
               .getSubscriptionByListingId(listingId)
               .catch(() => null);
-            return { listingId, subStatus: sub?.status };
+            return {
+              listingId,
+              subStatus: (sub?.status as SubscriptionFlowStatus) ?? null,
+            };
           }),
+        );
+
+        setSubscriptionStatusByListing(
+          subscriptionChecks.reduce<Record<string, SubscriptionFlowStatus>>(
+            (acc, row) => {
+              acc[row.listingId] = row.subStatus;
+              return acc;
+            },
+            {},
+          ),
         );
 
         const purchasedBySubscription = new Set(
           subscriptionChecks
-            .filter((row) =>
-              ["PENDING_PAYMENT", "PENDING", "ACTIVE"].includes(
-                String(row.subStatus || "").toUpperCase(),
-              ),
+            .filter(
+              (row) => String(row.subStatus || "").toUpperCase() === "ACTIVE",
             )
             .map((row) => row.listingId),
         );
@@ -298,6 +343,8 @@ export default function SellerDashboard() {
             JSON.stringify(Array.from(mergedPaid)),
           );
         }
+      } else {
+        setSubscriptionStatusByListing({});
       }
 
       // Fetch subscriptions for LIVE listings to display plan info
@@ -430,9 +477,15 @@ export default function SellerDashboard() {
     if (statusFilter !== "all") {
       filtered = filtered.filter(
         (l) =>
-          getEffectiveListingStatus(l, paidListingIds, scheduledListingIds) ===
+          getEffectiveListingStatus(
+            l,
+            paidListingIds,
+            scheduledListingIds,
+            subscriptionStatusByListing[String(l.id)],
+          ) ===
           (statusFilter as
             | Listing["status"]
+            | "PAYMENT_PENDING"
             | "PLAN_PURCHASED"
             | "INSPECTION_PENDING"),
       );
@@ -465,6 +518,7 @@ export default function SellerDashboard() {
     listings,
     paidListingIds,
     scheduledListingIds,
+    subscriptionStatusByListing,
     statusFilter,
     searchQuery,
     sortBy,
@@ -822,6 +876,7 @@ export default function SellerDashboard() {
                       <option value="LIVE">Đang bán</option>
                       <option value="SOLD">Đã bán</option>
                       <option value="PENDING">Chờ duyệt</option>
+                      <option value="PAYMENT_PENDING">Chờ thanh toán</option>
                       <option value="PLAN_PURCHASED">Đã mua gói</option>
                       <option value="INSPECTION_PENDING">Chờ kiểm định</option>
                       <option value="APPROVED">Đã duyệt</option>
@@ -884,10 +939,13 @@ export default function SellerDashboard() {
                         listing,
                         paidListingIds,
                         scheduledListingIds,
+                        subscriptionStatusByListing[String(listing.id)],
                       );
                       const config =
                         STATUS_CONFIG[effectiveStatus] || STATUS_CONFIG.DRAFT;
                       const needsPayment = effectiveStatus === "DRAFT";
+                      const pendingPayment =
+                        effectiveStatus === "PAYMENT_PENDING";
                       const needsInspectionSchedule =
                         effectiveStatus === "PLAN_PURCHASED";
                       const waitingInspection =
@@ -951,10 +1009,6 @@ export default function SellerDashboard() {
                                 <p className="text-2xl font-black text-green-600">
                                   {listing.price.toLocaleString("vi-VN")} ₫
                                 </p>
-                                <div className="flex items-center gap-1 text-xs text-slate-500">
-                                  <Eye size={14} />
-                                  <span>1.2k</span>
-                                </div>
                               </div>
                             </div>
 
@@ -1024,8 +1078,7 @@ export default function SellerDashboard() {
                             {needsPayment && (
                               <div className="border-t border-amber-100 pt-4">
                                 <div className="mb-3 p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-700 font-medium">
-                                  💳 Bài đăng chưa kích hoạt. Vui lòng chọn gói
-                                  để tiếp tục quy trình đăng bán.
+                                  Vui lòng mua gói để kích hoạt bài đăng.
                                 </div>
                                 <button
                                   onClick={() =>
@@ -1036,7 +1089,26 @@ export default function SellerDashboard() {
                                   }
                                   className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                                 >
-                                  Tiếp tục đăng bài
+                                  Đăng bài
+                                </button>
+                              </div>
+                            )}
+
+                            {pendingPayment && (
+                              <div className="border-t border-amber-100 pt-4">
+                                <div className="mb-3 p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-700 font-medium">
+                                  Vui lòng mua gói để kích hoạt bài đăng.
+                                </div>
+                                <button
+                                  onClick={() =>
+                                    navigate(
+                                      `/seller/choose-plan/${listing.id}`,
+                                      { state: { listing } },
+                                    )
+                                  }
+                                  className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                                >
+                                  Đăng bài
                                 </button>
                               </div>
                             )}

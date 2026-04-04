@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { addressService, type Address } from "../services/address.service";
 import { inspectionService } from "../services/inspection.service";
 import { listingService } from "../services/listing.service";
+import { subscriptionService } from "../services/subscription.service";
 import {
   locationService,
   type InspectionLocation,
@@ -167,11 +168,21 @@ export default function ScheduleInspectionPage() {
     }
 
     try {
-      const listing = await listingService.getSellerListingById(listingId);
+      await listingService.getSellerListingById(listingId);
       const isPaidLocally = hasLocalPaidMark(listingId);
-      if (listing?.status === "DRAFT" && !isPaidLocally) {
+      const subscription = await subscriptionService.getSubscriptionByListingId(
+        listingId,
+      );
+      const subscriptionStatus = String(subscription?.status || "").toUpperCase();
+      const hasVerifiedPlan =
+        isPaidLocally || subscriptionStatus === "ACTIVE";
+
+      if (!hasVerifiedPlan) {
         setError(
-          "Listing dang o trang thai DRAFT. Vui long chon goi va thanh toan truoc khi dat lich kiem dinh.",
+          subscriptionStatus === "PENDING_PAYMENT" ||
+            subscriptionStatus === "PENDING"
+            ? "Thanh toan goi dang cho xac nhan. Vui long hoan tat thanh toan truoc khi dat lich kiem dinh."
+            : "Vui long chon goi va thanh toan thanh cong truoc khi dat lich kiem dinh.",
         );
         return;
       }
