@@ -194,25 +194,44 @@ export const inspectionService = {
 
   /**
    * [ADMIN] Lấy inspector rảnh vào thời gian schedule
-   * GET /inspection/available-inspector?startTime=...
+   * GET /inspection/available-inspector?scheduleAt=...
+   *
+   * Forward the scheduledAt string from the backend directly.
+   * Previously, re-parsing the ISO string via new Date() then rebuilding it
+   * with local date methods (getMonth, getDate) while appending "Z" caused
+   * a timezone mismatch — local values were sent as if they were UTC.
+   *
+   * The backend returns scheduledAt in the correct ISO format (YYYY-MM-DDThh:mm:ss.sssZ),
+   * so we just send it as-is. If an array is passed, we build the ISO string
+   * using the UTC-safe Date.UTC() to avoid any local-offset issues.
    */
   getAvailableInspectors: async (scheduleAt: any): Promise<any[]> => {
     try {
-      // Ensure timeParam matches Swagger example: 2026-02-27T08:03:08.206Z
-      // Use LOCAL time values to construct the string, so the server searches
-      // for the literal time block displayed in the UI (Vietnam ICT).
-      let d: Date;
+      let timeParam: string;
+
       if (Array.isArray(scheduleAt)) {
         const [y, m, d_num, h = 0, i = 0, s = 0] = scheduleAt;
-        d = new Date(y, m - 1, d_num, h, i, s);
+        const pad = (n: number) => String(n).padStart(2, "0");
+        timeParam = `${y}-${pad(m)}-${pad(d_num)}T${pad(h)}:${pad(i)}:${pad(s)}.000Z`;
+      } else if (typeof scheduleAt === "string" && scheduleAt.length > 0) {
+        // Backend may return scheduledAt in Vietnamese locale format: "DD-MM-YYYY HH:mm"
+        // The API endpoint requires ISO 8601: "YYYY-MM-DDTHH:mm:ss.000Z"
+        const ddMmYyyy = scheduleAt.match(
+          /^(\d{2})-(\d{2})-(\d{4})[\sT](\d{2}):(\d{2})(?::(\d{2}))?/
+        );
+        if (ddMmYyyy) {
+          const [, dd, mm, yyyy, hh, mi, ss = "00"] = ddMmYyyy;
+          timeParam = `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}.000Z`;
+        } else {
+          // Already ISO 8601 (e.g. "2026-04-13T10:57:00.000Z") — pass as-is
+          timeParam = scheduleAt;
+        }
       } else {
-        d = new Date(scheduleAt);
+        console.warn("[available-inspector] Invalid scheduleAt input:", scheduleAt);
+        return [];
       }
 
-      if (isNaN(d.getTime())) return [];
-
-      const pad = (n: number) => String(n).padStart(2, "0");
-      const timeParam = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.000Z`;
+      console.log("[available-inspector] raw input:", scheduleAt, "→ sending:", timeParam);
 
       const response = await api.get(
         API_ENDPOINTS.INSPECTION_AVAILABLE_INSPECTOR,
@@ -220,12 +239,19 @@ export const inspectionService = {
           params: { scheduleAt: timeParam },
         },
       );
+
+      console.log("[available-inspector] Full response:", response.data);
+
       if (response.data?.code === 1000) {
-        return response.data.result ?? [];
+        const result = response.data.result ?? [];
+        console.log("[available-inspector] Inspectors found:", result.length, result);
+        return result;
       }
+
+      console.warn("[available-inspector] Unexpected code:", response.data?.code, response.data?.message);
       return [];
-    } catch (error) {
-      console.error("Error fetching available inspectors:", error);
+    } catch (error: any) {
+      console.error("[available-inspector] Error:", error?.response?.data ?? error);
       return [];
     }
   },

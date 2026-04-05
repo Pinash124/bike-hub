@@ -5,7 +5,7 @@
 const isProd = import.meta.env.PROD;
 const envBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
 
-const defaultProdBaseUrl = "https://bikehub-production-731a.up.railway.app";
+const defaultProdBaseUrl = "https://bikehub-production-1d40.up.railway.app";
 
 export const API_BASE_URL =
   envBaseUrl && envBaseUrl.length > 0

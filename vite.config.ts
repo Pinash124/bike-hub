@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
   const RAILWAY_API =
     env.VITE_API_PROXY_TARGET?.trim() ||
     env.VITE_API_BASE_URL?.trim() ||
-    "https://bikehub-production-731a.up.railway.app";
+    "https://bikehub-production-1d40.up.railway.app";
 
   return {
     plugins: [react()],
