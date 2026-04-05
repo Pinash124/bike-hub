@@ -1,204 +1,232 @@
 // src/services/inspection.service.ts
 // Role: SELLER (create), INSPECTOR (work on tasks), BUYER (view results), ADMIN (overview)
-import api from '../api/axiosConfig';
-import { API_ENDPOINTS } from '../config/api';
+import api from "../api/axiosConfig";
+import { API_ENDPOINTS } from "../config/api";
+import type { Listing } from "./listing.service";
 
 export interface InspectionLocation {
-    id: string;
-    type: 'SELLER' | 'COMPANY';
-    contactName?: string;
-    contactPhone?: string;
-    addressLine?: string;
+  id: string;
+  type: "SELLER" | "COMPANY";
+  contactName?: string;
+  contactPhone?: string;
+  addressLine?: string;
 }
 
 export interface InspectionInspector {
-    id: string;
-    username?: string;
-    name?: string;
-    roles?: { name: string; description?: string }[];
-    hasAddress?: boolean;
-    kyc?: boolean;
+  id: string;
+  username?: string;
+  name?: string;
+  roles?: { name: string; description?: string }[];
+  hasAddress?: boolean;
+  kyc?: boolean;
 }
 
 export interface InspectionTask {
-    inspectionId: string;
-    listingId?: string; // Link to the bike listing
-    inspectionType: 'ONSITE' | 'COMPANY';
-    status: 'PENDING' | 'PENDING_ASSIGNED' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED' | 'EXPIRED';
-    scheduledAt?: string;
-    expiredAt?: string;
-    createdAt?: string;
-    inspector?: InspectionInspector;
-    location?: InspectionLocation;
-    inspectionResult?: 'FAILED' | 'PASSED';
-    score?: number;
-    comment?: string;
-    images?: { url: string; type: 'LEFT_VIEW' | 'RIGHT_VIEW' | 'FRONT_VIEW' | 'REAR_VIEW' | string }[];
+  inspectionId: string;
+  listingId?: string; // Link to the bike listing
+  listing?: Listing;
+  inspectionType: "ONSITE" | "COMPANY";
+  status:
+    | "PENDING"
+    | "PENDING_ASSIGNED"
+    | "ASSIGNED"
+    | "IN_PROGRESS"
+    | "COMPLETED"
+    | "REJECTED"
+    | "EXPIRED";
+  scheduledAt?: string;
+  expiredAt?: string;
+  createdAt?: string;
+  inspector?: InspectionInspector;
+  location?: InspectionLocation;
+  inspectionResult?: "FAILED" | "PASSED" | "SUCCESS";
+  score?: number;
+  comment?: string;
+  images?: {
+    url: string;
+    type: "LEFT_VIEW" | "RIGHT_VIEW" | "FRONT_VIEW" | "REAR_VIEW" | string;
+  }[];
 }
 
 export interface InspectionScorePayload {
-    comment?: string;
-    score: number;
-    files: File[];
+  comment?: string;
+  score: number;
+  files: File[];
 }
 
 export const inspectionService = {
-    /**
-     * [ADMIN] Lấy tất cả đơn kiểm tra
-     * GET /inspection
-     */
-    getAllInspections: async (): Promise<InspectionTask[]> => {
-        try {
-            const response = await api.get(API_ENDPOINTS.INSPECTION);
-            if (response.data?.code === 1000) {
-                return response.data.result ?? [];
-            }
-            return [];
-        } catch (error) {
-            console.error('Error fetching all inspections:', error);
-            return [];
-        }
-    },
+  /**
+   * [ADMIN] Lấy tất cả đơn kiểm tra
+   * GET /inspection
+   */
+  getAllInspections: async (): Promise<InspectionTask[]> => {
+    try {
+      const response = await api.get(API_ENDPOINTS.INSPECTION);
+      if (response.data?.code === 1000) {
+        return response.data.result ?? [];
+      }
+      return [];
+    } catch (error) {
+      console.error("Error fetching all inspections:", error);
+      return [];
+    }
+  },
 
-    /**
-     * [INSPECTOR] Lấy danh sách kiểm tra đang chờ (chưa gán inspector)
-     * GET /inspection/pending
-     */
-    getPendingInspections: async (): Promise<InspectionTask[]> => {
-        try {
-            const response = await api.get(API_ENDPOINTS.INSPECTION_PENDING);
-            if (response.data?.code === 1000) {
-                return response.data.result ?? [];
-            }
-            return [];
-        } catch (error) {
-            console.error('Error fetching pending inspections:', error);
-            return [];
-        }
-    },
+  /**
+   * [INSPECTOR] Lấy danh sách kiểm tra đang chờ (chưa gán inspector)
+   * GET /inspection/pending
+   */
+  getPendingInspections: async (): Promise<InspectionTask[]> => {
+    try {
+      const response = await api.get(API_ENDPOINTS.INSPECTION_PENDING);
+      if (response.data?.code === 1000) {
+        return response.data.result ?? [];
+      }
+      return [];
+    } catch (error) {
+      console.error("Error fetching pending inspections:", error);
+      return [];
+    }
+  },
 
-    /**
-     * [INSPECTOR] Lấy các đơn kiểm tra được phân công cho mình
-     * GET /inspection/my-assign
-     */
-    getMyAssignedInspections: async (): Promise<InspectionTask[]> => {
-        try {
-            const response = await api.get(API_ENDPOINTS.INSPECTION_MY_ASSIGN);
-            if (response.data?.code === 1000) {
-                return response.data.result ?? [];
-            }
-            return [];
-        } catch (error) {
-            console.error('Error fetching assigned inspections:', error);
-            return [];
-        }
-    },
+  /**
+   * [INSPECTOR] Lấy các đơn kiểm tra được phân công cho mình
+   * GET /inspection/my-assign
+   */
+  getMyAssignedInspections: async (): Promise<InspectionTask[]> => {
+    try {
+      const response = await api.get(API_ENDPOINTS.INSPECTION_MY_ASSIGN);
+      if (response.data?.code === 1000) {
+        return response.data.result ?? [];
+      }
+      return [];
+    } catch (error) {
+      console.error("Error fetching assigned inspections:", error);
+      return [];
+    }
+  },
 
-    /**
-     * [BUYER/SELLER] Xem kết quả kiểm tra theo listingId
-     * GET /inspection/{listingId}
-     */
-    getInspectionByListing: async (listingId: string): Promise<InspectionTask | null> => {
-        try {
-            const response = await api.get(API_ENDPOINTS.INSPECTION_BY_LISTING(listingId));
-            if (response.data?.code === 1000) {
-                return response.data.result;
-            }
-            return null;
-        } catch (error) {
-            console.error('Error fetching inspection by listing:', error);
-            return null;
-        }
-    },
+  /**
+   * [BUYER/SELLER] Xem kết quả kiểm tra theo listingId
+   * GET /inspection/{listingId}
+   */
+  getInspectionByListing: async (
+    listingId: string,
+  ): Promise<InspectionTask | null> => {
+    try {
+      const response = await api.get(
+        API_ENDPOINTS.INSPECTION_BY_LISTING(listingId),
+      );
+      if (response.data?.code === 1000) {
+        return response.data.result;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error fetching inspection by listing:", error);
+      return null;
+    }
+  },
 
-    /**
-     * [SELLER] Yêu cầu kiểm tra xe của mình
-     * POST /inspection
-     */
-    requestInspection: async (payload: {
-        inspectionType: 'ONSITE' | 'COMPANY';
-        inspectionLocationId?: string;
-        listingId: string;
-        scheduledAt: string;
-    }): Promise<boolean> => {
-        try {
-            const response = await api.post(API_ENDPOINTS.INSPECTION, payload);
-            return response.data?.code === 1000;
-        } catch (error) {
-            console.error('Error requesting inspection:', error);
-            return false;
-        }
-    },
+  /**
+   * [SELLER] Yêu cầu kiểm tra xe của mình
+   * POST /inspection
+   */
+  requestInspection: async (payload: {
+    inspectionType: "ONSITE" | "COMPANY";
+    inspectionLocationId?: string;
+    listingId: string;
+    scheduledAt: string;
+  }): Promise<boolean> => {
+    try {
+      const response = await api.post(API_ENDPOINTS.INSPECTION, payload);
+      return response.data?.code === 1000;
+    } catch (error) {
+      console.error("Error requesting inspection:", error);
+      return false;
+    }
+  },
 
-    /**
-     * [INSPECTOR] Nộp kết quả kiểm tra (điểm + nhận xét + 4 ảnh)
-     * POST /inspection/{inspectionId}/scores
-     */
-    submitScores: async (inspectionId: string, payload: InspectionScorePayload): Promise<boolean> => {
-        try {
-            const formData = new FormData();
-            formData.append('comment', payload.comment ?? '');
-            formData.append('score', String(payload.score));
-            payload.files.forEach((file) => formData.append('files', file));
+  /**
+   * [INSPECTOR] Nộp kết quả kiểm tra (điểm + nhận xét + 4 ảnh)
+   * POST /inspection/{inspectionId}/scores
+   */
+  submitScores: async (
+    inspectionId: string,
+    payload: InspectionScorePayload,
+  ): Promise<boolean> => {
+    try {
+      const formData = new FormData();
+      formData.append("comment", payload.comment ?? "");
+      formData.append("score", String(payload.score));
+      payload.files.forEach((file) => formData.append("files", file));
 
-            const response = await api.post(
-                API_ENDPOINTS.INSPECTION_SCORES(inspectionId),
-                formData,
-                { headers: { 'Content-Type': 'multipart/form-data' } }
-            );
-            return response.data?.code === 1000;
-        } catch (error) {
-            console.error('Error submitting inspection scores:', error);
-            throw error;
-        }
-    },
+      const response = await api.post(
+        API_ENDPOINTS.INSPECTION_SCORES(inspectionId),
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } },
+      );
+      return response.data?.code === 1000;
+    } catch (error) {
+      console.error("Error submitting inspection scores:", error);
+      throw error;
+    }
+  },
 
-    /**
-     * [ADMIN] Gán inspector cho đơn kiểm tra
-     * PUT /inspection/assign-inspector
-     */
-    assignInspector: async (payload: { inspectionId: string; inspectorId: string }): Promise<boolean> => {
-        try {
-            const response = await api.put(API_ENDPOINTS.INSPECTION_ASSIGN_INSPECTOR, payload);
-            return response.data?.code === 1000;
-        } catch (error) {
-            console.error('Error assigning inspector:', error);
-            return false;
-        }
-    },
+  /**
+   * [ADMIN] Gán inspector cho đơn kiểm tra
+   * PUT /inspection/assign-inspector
+   */
+  assignInspector: async (payload: {
+    inspectionId: string;
+    inspectorId: string;
+  }): Promise<boolean> => {
+    try {
+      const response = await api.put(
+        API_ENDPOINTS.INSPECTION_ASSIGN_INSPECTOR,
+        payload,
+      );
+      return response.data?.code === 1000;
+    } catch (error) {
+      console.error("Error assigning inspector:", error);
+      return false;
+    }
+  },
 
-    /**
-     * [ADMIN] Lấy inspector rảnh vào thời gian schedule
-     * GET /inspection/available-inspector?startTime=...
-     */
-    getAvailableInspectors: async (scheduleAt: any): Promise<any[]> => {
-        try {
-            // Ensure timeParam matches Swagger example: 2026-02-27T08:03:08.206Z
-            // Use LOCAL time values to construct the string, so the server searches 
-            // for the literal time block displayed in the UI (Vietnam ICT).
-            let d: Date;
-            if (Array.isArray(scheduleAt)) {
-                const [y, m, d_num, h = 0, i = 0, s = 0] = scheduleAt;
-                d = new Date(y, m - 1, d_num, h, i, s);
-            } else {
-                d = new Date(scheduleAt);
-            }
+  /**
+   * [ADMIN] Lấy inspector rảnh vào thời gian schedule
+   * GET /inspection/available-inspector?startTime=...
+   */
+  getAvailableInspectors: async (scheduleAt: any): Promise<any[]> => {
+    try {
+      // Ensure timeParam matches Swagger example: 2026-02-27T08:03:08.206Z
+      // Use LOCAL time values to construct the string, so the server searches
+      // for the literal time block displayed in the UI (Vietnam ICT).
+      let d: Date;
+      if (Array.isArray(scheduleAt)) {
+        const [y, m, d_num, h = 0, i = 0, s = 0] = scheduleAt;
+        d = new Date(y, m - 1, d_num, h, i, s);
+      } else {
+        d = new Date(scheduleAt);
+      }
 
-            if (isNaN(d.getTime())) return [];
+      if (isNaN(d.getTime())) return [];
 
-            const pad = (n: number) => String(n).padStart(2, '0');
-            const timeParam = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.000Z`;
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const timeParam = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.000Z`;
 
-            const response = await api.get(API_ENDPOINTS.INSPECTION_AVAILABLE_INSPECTOR, {
-                params: { scheduleAt: timeParam }
-            });
-            if (response.data?.code === 1000) {
-                return response.data.result ?? [];
-            }
-            return [];
-        } catch (error) {
-            console.error('Error fetching available inspectors:', error);
-            return [];
-        }
-    },
+      const response = await api.get(
+        API_ENDPOINTS.INSPECTION_AVAILABLE_INSPECTOR,
+        {
+          params: { scheduleAt: timeParam },
+        },
+      );
+      if (response.data?.code === 1000) {
+        return response.data.result ?? [];
+      }
+      return [];
+    } catch (error) {
+      console.error("Error fetching available inspectors:", error);
+      return [];
+    }
+  },
 };

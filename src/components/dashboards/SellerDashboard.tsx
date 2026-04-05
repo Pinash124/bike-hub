@@ -2,7 +2,6 @@
 // Role: SELLER — shows real listings from API + inspection status
 import {
   Plus,
-  Eye,
   TrendingUp,
   Package,
   CreditCard,
