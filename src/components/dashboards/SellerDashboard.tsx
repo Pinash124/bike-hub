@@ -661,7 +661,6 @@ export default function SellerDashboard() {
       icon: Package,
       color: "text-emerald-600",
       bg: "bg-emerald-100",
-      trend: "+12%",
       targetTab: "listings" as const,
       targetFilter: "LIVE",
     },
@@ -671,7 +670,6 @@ export default function SellerDashboard() {
       icon: Package,
       color: "text-blue-600",
       bg: "bg-blue-100",
-      trend: pendingOrdersCount > 0 ? "Mới" : "",
       targetTab: "orders" as const,
       targetFilter: "pending",
     },
@@ -681,7 +679,6 @@ export default function SellerDashboard() {
       icon: TrendingUp,
       color: "text-indigo-600",
       bg: "bg-indigo-100",
-      trend: "+8%",
       targetTab: "listings" as const, // We use listings tab for "Xe đã bán" based on soldCount logic
       targetFilter: "SOLD",
     },
@@ -691,7 +688,6 @@ export default function SellerDashboard() {
       icon: DollarSign,
       color: "text-purple-600",
       bg: "bg-purple-100",
-      trend: "+25%",
       targetTab: "revenue" as const,
       targetFilter: "all",
     },
@@ -753,7 +749,7 @@ export default function SellerDashboard() {
                 onClick={() => navigate("/seller/new-bike")}
               >
                 <Plus size={18} strokeWidth={2.5} />
-                Đăng Xe Mới
+                Đăng Tin Mới
               </button>
             </div>
           </div>
@@ -782,15 +778,6 @@ export default function SellerDashboard() {
                   >
                     <Icon size={28} className={stat.color} />
                   </div>
-                  <span
-                    className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                      stat.trend.startsWith("+") || stat.trend === "Mới"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    {stat.trend}
-                  </span>
                 </div>
                 <div>
                   <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">
