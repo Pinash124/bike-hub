@@ -18,6 +18,7 @@ const STATUS_LABEL: Record<string, string> = {
   IN_PROGRESS: "Đang kiểm tra",
   COMPLETED: "Hoàn thành",
   REJECTED: "Từ chối",
+  EXPIRED: "Hết hạn",
 };
 
 const STATUS_COLOR: Record<string, string> = {
@@ -27,6 +28,7 @@ const STATUS_COLOR: Record<string, string> = {
   IN_PROGRESS: "bg-purple-100 text-purple-800",
   COMPLETED: "bg-green-100 text-green-800",
   REJECTED: "bg-red-100 text-red-800",
+  EXPIRED: "bg-orange-100 text-orange-800",
 };
 
 type ScoreImageType = "LEFT_VIEW" | "RIGHT_VIEW" | "FRONT_VIEW" | "REAR_VIEW";
@@ -307,18 +309,28 @@ export default function InspectorDashboard() {
     if (normalized === "FAILED") return "FAILED";
     if (normalized === "PASSED" || normalized === "SUCCESS") return "SUCCESS";
 
-    if (task.status === "COMPLETED" && typeof task.score === "number") {
+    if (typeof task.score === "number") {
       return task.score >= 5 ? "SUCCESS" : "FAILED";
     }
     return null;
   }
 
-  const completedCount = myTasks.filter((t) => t.status === "COMPLETED").length;
+  function getDisplayStatus(task: InspectionTask): InspectionTask["status"] {
+    const hasResult = resolveInspectionResult(task) !== null;
+    if (hasResult && task.status === "IN_PROGRESS") {
+      return "COMPLETED";
+    }
+    return task.status;
+  }
+
+  const completedCount = myTasks.filter(
+    (t) => getDisplayStatus(t) === "COMPLETED",
+  ).length;
   const inProgressCount = myTasks.filter(
     (t) =>
-      t.status === "IN_PROGRESS" ||
-      t.status === "PENDING_ASSIGNED" ||
-      t.status === "ASSIGNED",
+      ["IN_PROGRESS", "PENDING_ASSIGNED", "ASSIGNED"].includes(
+        getDisplayStatus(t),
+      ),
   ).length;
   const successCount = myTasks.filter(
     (t) => resolveInspectionResult(t) === "SUCCESS",
@@ -372,7 +384,8 @@ export default function InspectorDashboard() {
   // Filter and sort tasks
   const filteredAndSortedTasks = myTasks
     .filter((task) => {
-      if (filterStatus !== "ALL" && task.status !== filterStatus) return false;
+      const displayStatus = getDisplayStatus(task);
+      if (filterStatus !== "ALL" && displayStatus !== filterStatus) return false;
       if (filterType !== "ALL" && task.inspectionType !== filterType)
         return false;
       return true;
@@ -394,8 +407,11 @@ export default function InspectorDashboard() {
           COMPLETED: 3,
           REJECTED: 4,
           PENDING: 5,
+          EXPIRED: 6,
         };
-        return (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99);
+        const statusA = getDisplayStatus(a);
+        const statusB = getDisplayStatus(b);
+        return (statusOrder[statusA] ?? 99) - (statusOrder[statusB] ?? 99);
       }
       return 0;
     });
@@ -448,6 +464,7 @@ export default function InspectorDashboard() {
     return (
       <div className="divide-y divide-slate-100">
         {tasks.map((task) => {
+          const displayStatus = getDisplayStatus(task);
           const inspectionResult = resolveInspectionResult(task);
           return (
             <div
@@ -467,11 +484,11 @@ export default function InspectorDashboard() {
                       </h3>
                       <span
                         className={`text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-full ${
-                          STATUS_COLOR[task.status] ??
+                          STATUS_COLOR[displayStatus] ??
                           "bg-slate-100 text-slate-700"
                         }`}
                       >
-                        {STATUS_LABEL[task.status] ?? task.status}
+                        {STATUS_LABEL[displayStatus] ?? displayStatus}
                       </span>
                     </div>
                     <div className="text-sm text-slate-600 space-y-1.5 mt-2">
@@ -527,7 +544,7 @@ export default function InspectorDashboard() {
                   </button>
                   {!isPendingQueue &&
                     ["PENDING_ASSIGNED", "ASSIGNED", "IN_PROGRESS"].includes(
-                      task.status,
+                      displayStatus,
                     ) && (
                       <button
                         onClick={() => openScoreModal(task)}
@@ -1154,7 +1171,7 @@ export default function InspectorDashboard() {
                     </div>
                   </div>
 
-                  {currentTask?.status === "COMPLETED" && (
+                  {currentTask && getDisplayStatus(currentTask) === "COMPLETED" && (
                     <div>
                       <div className="bg-green-50 text-green-800 text-xs font-medium p-4 rounded-xl mb-4">
                         Kết quả kiểm tra
