@@ -800,7 +800,7 @@ export default function SellerDashboard() {
                   onClick={() => setActiveTab("listings")}
                   className={`pb-3 text-lg font-bold flex items-center gap-2 border-b-2 transition-colors ${activeTab === "listings" ? "border-green-600 text-green-600" : "border-transparent text-slate-500 hover:text-slate-800"}`}
                 >
-                  <Bike size={24} /> Xe Của Tôi
+                  <Bike size={24} /> Bài đăng của tôi
                 </button>
                 <button
                   onClick={() => setActiveTab("revenue")}

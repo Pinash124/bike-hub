@@ -34,6 +34,7 @@ export interface Listing {
   description: string;
   price: number;
   usageDuration: number;
+  manufactureYear?: number;
   frameNumber: string;
   status:
     | "DRAFT"
@@ -53,13 +54,16 @@ export interface Listing {
   location?: string;
   condition?: string;
   subscription?: ListingSubscription;
+  subscriptions?: ListingSubscription[];
 }
 
 export const listingService = {
   createListing: async (formData: FormData): Promise<Listing | null> => {
     try {
-      const response = await api.post(API_ENDPOINTS.LISTING, formData);
-      if (response.data?.code === 1000) {
+      const response = await api.post(API_ENDPOINTS.LISTING, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      if (response.data?.code === 1000 || response.data?.code === 0) {
         invalidateRequestCache("listings:");
         return response.data.result;
       }
@@ -75,7 +79,7 @@ export const listingService = {
         "| Full response:",
         serverData,
       );
-      throw error;
+      throw new Error(msg);
     }
   },
 
