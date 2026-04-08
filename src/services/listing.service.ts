@@ -40,6 +40,7 @@ export interface Listing {
     | "DRAFT"
     | "PAID"
     | "PENDING"
+    | "SCHEDULED"
     | "RESERVED"
     | "REJECT"
     | "LIVE"

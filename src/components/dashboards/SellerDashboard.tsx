@@ -22,6 +22,10 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { listingService, type Listing } from "../../services/listing.service";
 import { orderService, type Order } from "../../services/order.service";
+import {
+  inspectionService,
+  type InspectionTask,
+} from "../../services/inspection.service";
 import { subscriptionService } from "../../services/subscription.service";
 import { planService } from "../../services/plan.service";
 import {
@@ -121,6 +125,10 @@ const getEffectiveListingStatus = (
   | "PAYMENT_PENDING"
   | "PLAN_PURCHASED"
   | "INSPECTION_PENDING" => {
+  if (listing.status === "SCHEDULED") {
+    return "INSPECTION_PENDING";
+  }
+
   if (scheduledListingIds.has(String(listing.id))) {
     return "INSPECTION_PENDING";
   }
@@ -241,6 +249,20 @@ const formatApiDate = (dateStr?: string): string => {
   return dateStr;
 };
 
+const formatApiDateTime = (dateStr?: string): string => {
+  if (!dateStr) return "Chưa có lịch";
+  const parsed = parseApiDate(dateStr);
+  if (!parsed) return dateStr;
+  return parsed.toLocaleString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+};
+
 export default function SellerDashboard() {
   const navigate = useNavigate();
   const user = useMemo(
@@ -271,6 +293,9 @@ export default function SellerDashboard() {
   );
   const [subscriptionStatusByListing, setSubscriptionStatusByListing] =
     useState<Record<string, SubscriptionFlowStatus>>({});
+  const [inspectionByListing, setInspectionByListing] = useState<
+    Record<string, InspectionTask | null>
+  >({});
   const [isDeliverModalOpen, setIsDeliverModalOpen] = useState(false);
   const [deliverOrderId, setDeliverOrderId] = useState<string | null>(null);
   const [deliverFile, setDeliverFile] = useState<File | null>(null);
@@ -381,6 +406,33 @@ export default function SellerDashboard() {
             }
           }),
         );
+      }
+
+      const scheduledListings = listingsData.filter(
+        (listing) => listing.status === "SCHEDULED",
+      );
+      if (scheduledListings.length > 0) {
+        const inspectionRows = await Promise.all(
+          scheduledListings.map(async (listing) => {
+            const listingId = String(listing.id);
+            const inspection = await inspectionService
+              .getInspectionByListing(listingId)
+              .catch(() => null);
+            return { listingId, inspection };
+          }),
+        );
+
+        setInspectionByListing(
+          inspectionRows.reduce<Record<string, InspectionTask | null>>(
+            (acc, row) => {
+              acc[row.listingId] = row.inspection;
+              return acc;
+            },
+            {},
+          ),
+        );
+      } else {
+        setInspectionByListing({});
       }
 
       syncFlowMarkers(listingsData);
@@ -936,6 +988,8 @@ export default function SellerDashboard() {
                         effectiveStatus === "PLAN_PURCHASED";
                       const waitingInspection =
                         effectiveStatus === "INSPECTION_PENDING";
+                      const inspectionDetail =
+                        inspectionByListing[String(listing.id)] || null;
 
                       return (
                         <div
@@ -1125,11 +1179,46 @@ export default function SellerDashboard() {
 
                             {waitingInspection && (
                               <div className="border-t border-indigo-100 pt-4">
-                                <div className="mb-3 p-3 bg-indigo-50 rounded-xl border border-indigo-200 text-xs text-indigo-700 font-medium">
-                                  ⏳ Đã đặt lịch kiểm định. Vui lòng chờ admin
-                                  phân công kiểm định viên. Sau khi kiểm định
-                                  hoàn tất, tin sẽ chuyển sang trạng thái LIVE.
-                                </div>
+                                {(inspectionDetail?.scheduledAt ||
+                                  inspectionDetail?.location?.addressLine) && (
+                                  <div className="space-y-2 rounded-xl border border-indigo-200 bg-white p-3 text-xs text-slate-700">
+                                    {inspectionDetail?.scheduledAt && (
+                                      <div className="flex items-start gap-2">
+                                        <Calendar
+                                          size={14}
+                                          className="mt-0.5 text-indigo-500"
+                                        />
+                                        <span>
+                                          <span className="font-semibold text-slate-800">
+                                            Thời gian kiểm định:
+                                          </span>{" "}
+                                          {formatApiDateTime(
+                                            inspectionDetail.scheduledAt,
+                                          )}
+                                        </span>
+                                      </div>
+                                    )}
+
+                                    {inspectionDetail?.location
+                                      ?.addressLine && (
+                                      <div className="flex items-start gap-2">
+                                        <MapPin
+                                          size={14}
+                                          className="mt-0.5 text-indigo-500"
+                                        />
+                                        <span>
+                                          <span className="font-semibold text-slate-800">
+                                            Địa chỉ kiểm định:
+                                          </span>{" "}
+                                          {
+                                            inspectionDetail.location
+                                              .addressLine
+                                          }
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>

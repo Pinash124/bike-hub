@@ -108,7 +108,7 @@ export const inspectionService = {
 
   /**
    * [BUYER/SELLER] Xem kết quả kiểm tra theo listingId
-   * GET /inspection/{listingId}
+   * GET /inspection/listing/{listingId}
    */
   getInspectionByListing: async (
     listingId: string,
@@ -217,7 +217,7 @@ export const inspectionService = {
         // Backend may return scheduledAt in Vietnamese locale format: "DD-MM-YYYY HH:mm"
         // The API endpoint requires ISO 8601: "YYYY-MM-DDTHH:mm:ss.000Z"
         const ddMmYyyy = scheduleAt.match(
-          /^(\d{2})-(\d{2})-(\d{4})[\sT](\d{2}):(\d{2})(?::(\d{2}))?/
+          /^(\d{2})-(\d{2})-(\d{4})[\sT](\d{2}):(\d{2})(?::(\d{2}))?/,
         );
         if (ddMmYyyy) {
           const [, dd, mm, yyyy, hh, mi, ss = "00"] = ddMmYyyy;
@@ -227,11 +227,19 @@ export const inspectionService = {
           timeParam = scheduleAt;
         }
       } else {
-        console.warn("[available-inspector] Invalid scheduleAt input:", scheduleAt);
+        console.warn(
+          "[available-inspector] Invalid scheduleAt input:",
+          scheduleAt,
+        );
         return [];
       }
 
-      console.log("[available-inspector] raw input:", scheduleAt, "→ sending:", timeParam);
+      console.log(
+        "[available-inspector] raw input:",
+        scheduleAt,
+        "→ sending:",
+        timeParam,
+      );
 
       const response = await api.get(
         API_ENDPOINTS.INSPECTION_AVAILABLE_INSPECTOR,
@@ -244,14 +252,25 @@ export const inspectionService = {
 
       if (response.data?.code === 1000) {
         const result = response.data.result ?? [];
-        console.log("[available-inspector] Inspectors found:", result.length, result);
+        console.log(
+          "[available-inspector] Inspectors found:",
+          result.length,
+          result,
+        );
         return result;
       }
 
-      console.warn("[available-inspector] Unexpected code:", response.data?.code, response.data?.message);
+      console.warn(
+        "[available-inspector] Unexpected code:",
+        response.data?.code,
+        response.data?.message,
+      );
       return [];
     } catch (error: any) {
-      console.error("[available-inspector] Error:", error?.response?.data ?? error);
+      console.error(
+        "[available-inspector] Error:",
+        error?.response?.data ?? error,
+      );
       return [];
     }
   },

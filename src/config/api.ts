@@ -67,7 +67,7 @@ export const API_ENDPOINTS = {
   INSPECTION_MY_ASSIGN: API_BASE_URL + "/inspection/my-assign", // GET (inspector)
   INSPECTION_ASSIGN_INSPECTOR: API_BASE_URL + "/inspection/assign-inspector", // PUT
   INSPECTION_BY_LISTING: (listingId: string) =>
-    `${API_BASE_URL}/inspection/${listingId}`, // GET by listing
+    `${API_BASE_URL}/inspection/listing/${listingId}`, // GET by listing
   INSPECTION_BY_ID: (id: string) => `${API_BASE_URL}/inspection/${id}`, // GET by id
   INSPECTION_SCORES: (id: string) => `${API_BASE_URL}/inspection/${id}/scores`, // POST multipart
   INSPECTION_AVAILABLE_INSPECTOR:
