@@ -117,36 +117,15 @@ const syncFlowMarkers = (listings: Listing[]) => {
 
 const getEffectiveListingStatus = (
   listing: Listing,
-  paidListingIds: Set<string>,
-  scheduledListingIds: Set<string>,
-  subscriptionStatus?: SubscriptionFlowStatus,
 ): Listing["status"] | "PLAN_PURCHASED" | "INSPECTION_PENDING" => {
   if (listing.status === "SCHEDULED") {
     return "INSPECTION_PENDING";
-  }
-
-  if (scheduledListingIds.has(String(listing.id))) {
-    return "INSPECTION_PENDING";
-  }
-
-  if (
-    subscriptionStatus === "PENDING_PAYMENT" ||
-    subscriptionStatus === "PENDING"
-  ) {
-    return "DRAFT";
-  }
-
-  if (subscriptionStatus === "ACTIVE") {
-    return "PLAN_PURCHASED";
   }
 
   if (listing.status === "PAID") {
     return "PLAN_PURCHASED";
   }
 
-  if (listing.status === "DRAFT" && paidListingIds.has(String(listing.id))) {
-    return "PLAN_PURCHASED";
-  }
   return listing.status;
 };
 
@@ -517,12 +496,7 @@ export default function SellerDashboard() {
     if (statusFilter !== "all") {
       filtered = filtered.filter(
         (l) =>
-          getEffectiveListingStatus(
-            l,
-            paidListingIds,
-            scheduledListingIds,
-            subscriptionStatusByListing[String(l.id)],
-          ) ===
+          getEffectiveListingStatus(l) ===
           (statusFilter as
             | Listing["status"]
             | "PLAN_PURCHASED"
@@ -960,12 +934,8 @@ export default function SellerDashboard() {
                   <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                     {filteredAndSortedListings.map((listing) => {
                       const thumbnail = listing.images?.[0]?.secureUrl;
-                      const effectiveStatus = getEffectiveListingStatus(
-                        listing,
-                        paidListingIds,
-                        scheduledListingIds,
-                        subscriptionStatusByListing[String(listing.id)],
-                      );
+                      const effectiveStatus =
+                        getEffectiveListingStatus(listing);
                       const config =
                         STATUS_CONFIG[effectiveStatus] || STATUS_CONFIG.DRAFT;
                       const needsPayment = effectiveStatus === "DRAFT";
@@ -1138,7 +1108,7 @@ export default function SellerDashboard() {
                                   }
                                   className="w-full py-3 bg-gradient-to-r from-cyan-600 to-sky-600 hover:from-cyan-700 hover:to-sky-700 text-white font-bold rounded-xl text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                                 >
-                                  Tiếp tục đặt lịch kiểm định
+                                  Chọn Lịch Kiểm Định
                                 </button>
                               </div>
                             )}
