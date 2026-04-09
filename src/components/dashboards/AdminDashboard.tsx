@@ -1724,74 +1724,6 @@ function PaymentsTab({
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-2xl border border-slate-100 p-4 text-sm text-slate-600">
-        <p className="font-bold text-slate-800 mb-1">
-          Luồng nguồn tiền (Admin)
-        </p>
-        <ul className="list-disc ml-5 space-y-1">
-          <li>PaymentStatus: PENDING, SUCCESS</li>
-          <li>ReferenceType: ORDER, SUBSCRIPTION</li>
-          <li>PaymentType: PAYOUT, PAYMENT, REFUND</li>
-          <li>PAYOUT: tiền hệ thống đã trả cho Người bán</li>
-          <li>
-            PAYMENT: tiền Người mua/Người bán chuyển vào hệ thống (cọc ORDER
-            hoặc gói SUBSCRIPTION)
-          </li>
-          <li>
-            Doanh thu tiền gói (SUBSCRIPTION) = tổng PAYMENT SUCCESS có
-            referenceType = SUBSCRIPTION
-          </li>
-          <li>
-            Tiền giữ giùm đơn hàng (ORDER) = PAYMENT SUCCESS(ORDER) - PAYOUT
-            SUCCESS(ORDER) - REFUND SUCCESS(ORDER)
-          </li>
-        </ul>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-        <div className="bg-white rounded-xl border border-slate-100 p-4">
-          <p className="text-xs text-slate-500 font-bold uppercase mb-1">
-            PAYMENT thành công
-          </p>
-          <p className="text-2xl font-black text-green-600">
-            {successPaymentTotal.toLocaleString("vi-VN")} ₫
-          </p>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-100 p-4">
-          <p className="text-xs text-slate-500 font-bold uppercase mb-1">
-            PAYOUT thành công
-          </p>
-          <p className="text-2xl font-black text-slate-800">
-            {successPayoutTotal.toLocaleString("vi-VN")} ₫
-          </p>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-100 p-4">
-          <p className="text-xs text-slate-500 font-bold uppercase mb-1">
-            REFUND thành công
-          </p>
-          <p className="text-2xl font-black text-emerald-600">
-            {successRefundTotal.toLocaleString("vi-VN")} ₫
-          </p>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-100 p-4">
-          <p className="text-xs text-slate-500 font-bold uppercase mb-1">
-            Doanh thu gói (SUBSCRIPTION)
-          </p>
-          <p className="text-2xl font-black text-indigo-600">
-            {successSubscriptionRevenue.toLocaleString("vi-VN")} ₫
-          </p>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl border border-slate-100 p-4 -mt-1">
-        <p className="text-xs text-slate-500 font-bold uppercase mb-1">
-          Tiền giữ giùm (ORDER)
-        </p>
-        <p className="text-2xl font-black text-red-600">
-          {heldOrderAmount.toLocaleString("vi-VN")} ₫
-        </p>
-      </div>
-
       <div className="flex items-center gap-2 flex-wrap">
         <select
           value={typeFilter}
@@ -2417,7 +2349,7 @@ function RevenueTab({
           {filtered.length > 10 && (
             <div className="p-4 text-center border-t border-slate-50">
               <p className="text-xs text-slate-400 font-medium italic">
-                Xem thêm trong tab Lịch sử giao dịch...
+                
               </p>
             </div>
           )}
