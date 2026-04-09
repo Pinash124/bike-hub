@@ -212,27 +212,29 @@ function formatDateTime(
       // Handle [y, m, d, h, i, s, n]
       const [y, m, d, h = 0, i = 0, s = 0] = targetVal;
       date = new Date(y, m - 1, d, h, i, s);
-    } else {
-      // Try standard parsing
-      date = new Date(targetVal);
-
-      // If invalid, try parsing DD-MM-YYYY HH:mm or DD/MM/YYYY HH:mm
-      if (isNaN(date.getTime()) && typeof targetVal === "string") {
-        const dmyMatch = targetVal.match(
-          /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/,
+    } else if (typeof targetVal === "string") {
+      // ── Priority 1: DD-MM-YYYY HH:mm (backend Vietnamese locale format) ──────
+      // Must be checked FIRST because JavaScript's new Date() silently parses
+      // "10-04-2026 23:14" as month=10, day=4 (MM-DD) instead of day=10, month=4.
+      const dmyMatch = targetVal.match(
+        /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:[T\s]+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/,
+      );
+      if (dmyMatch) {
+        const [, dd, mm, yyyy, hh = "0", mi = "0", ss = "0"] = dmyMatch;
+        date = new Date(
+          Number(yyyy),
+          Number(mm) - 1,
+          Number(dd),
+          Number(hh),
+          Number(mi),
+          Number(ss),
         );
-        if (dmyMatch) {
-          const [_, d, m, y, h = 0, i = 0, s = 0] = dmyMatch;
-          date = new Date(
-            Number(y),
-            Number(m) - 1,
-            Number(d),
-            Number(h),
-            Number(i),
-            Number(s),
-          );
-        }
+      } else {
+        // ── Priority 2: ISO 8601 or any other standard format ────────────────
+        date = new Date(targetVal);
       }
+    } else {
+      date = new Date(targetVal);
     }
 
     if (isNaN(date.getTime())) return "—";
