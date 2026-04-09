@@ -120,11 +120,7 @@ const getEffectiveListingStatus = (
   paidListingIds: Set<string>,
   scheduledListingIds: Set<string>,
   subscriptionStatus?: SubscriptionFlowStatus,
-):
-  | Listing["status"]
-  | "PAYMENT_PENDING"
-  | "PLAN_PURCHASED"
-  | "INSPECTION_PENDING" => {
+): Listing["status"] | "PLAN_PURCHASED" | "INSPECTION_PENDING" => {
   if (listing.status === "SCHEDULED") {
     return "INSPECTION_PENDING";
   }
@@ -137,7 +133,7 @@ const getEffectiveListingStatus = (
     subscriptionStatus === "PENDING_PAYMENT" ||
     subscriptionStatus === "PENDING"
   ) {
-    return "PAYMENT_PENDING";
+    return "DRAFT";
   }
 
   if (subscriptionStatus === "ACTIVE") {
@@ -178,13 +174,6 @@ const STATUS_CONFIG: Record<
     bg: "bg-blue-100",
     border: "border-blue-200",
     icon: "💰",
-  },
-  PAYMENT_PENDING: {
-    label: "Chờ thanh toán",
-    color: "text-amber-700",
-    bg: "bg-amber-100",
-    border: "border-amber-200",
-    icon: "💸",
   },
   PLAN_PURCHASED: {
     label: "Đã mua gói",
@@ -536,7 +525,6 @@ export default function SellerDashboard() {
           ) ===
           (statusFilter as
             | Listing["status"]
-            | "PAYMENT_PENDING"
             | "PLAN_PURCHASED"
             | "INSPECTION_PENDING"),
       );
@@ -914,7 +902,6 @@ export default function SellerDashboard() {
                       <option value="LIVE">Đang bán</option>
                       <option value="SOLD">Đã bán</option>
                       <option value="PENDING">Chờ duyệt</option>
-                      <option value="PAYMENT_PENDING">Chờ thanh toán</option>
                       <option value="PLAN_PURCHASED">Đã mua gói</option>
                       <option value="INSPECTION_PENDING">Chờ kiểm định</option>
                       <option value="APPROVED">Đã duyệt</option>
@@ -982,8 +969,6 @@ export default function SellerDashboard() {
                       const config =
                         STATUS_CONFIG[effectiveStatus] || STATUS_CONFIG.DRAFT;
                       const needsPayment = effectiveStatus === "DRAFT";
-                      const pendingPayment =
-                        effectiveStatus === "PAYMENT_PENDING";
                       const needsInspectionSchedule =
                         effectiveStatus === "PLAN_PURCHASED";
                       const waitingInspection =
@@ -1116,25 +1101,6 @@ export default function SellerDashboard() {
                               )}
 
                             {needsPayment && (
-                              <div className="border-t border-amber-100 pt-4">
-                                <div className="mb-3 p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-700 font-medium">
-                                  Vui lòng mua gói để kích hoạt bài đăng.
-                                </div>
-                                <button
-                                  onClick={() =>
-                                    navigate(
-                                      `/seller/choose-plan/${listing.id}`,
-                                      { state: { listing } },
-                                    )
-                                  }
-                                  className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-                                >
-                                  Đăng bài
-                                </button>
-                              </div>
-                            )}
-
-                            {pendingPayment && (
                               <div className="border-t border-amber-100 pt-4">
                                 <div className="mb-3 p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-700 font-medium">
                                   Vui lòng mua gói để kích hoạt bài đăng.
