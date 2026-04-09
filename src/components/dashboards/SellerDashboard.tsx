@@ -2,7 +2,6 @@
 // Role: SELLER — shows real listings from API + inspection status
 import {
   Plus,
-  Eye,
   TrendingUp,
   Package,
   CreditCard,
@@ -23,6 +22,10 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { listingService, type Listing } from "../../services/listing.service";
 import { orderService, type Order } from "../../services/order.service";
+import {
+  inspectionService,
+  type InspectionTask,
+} from "../../services/inspection.service";
 import { subscriptionService } from "../../services/subscription.service";
 import { planService } from "../../services/plan.service";
 import {
@@ -67,6 +70,13 @@ const isRevenueOrder = (order: Order): boolean => {
 const PAID_LISTING_IDS_KEY = "paidListingIds";
 const SCHEDULED_LISTING_IDS_KEY = "scheduledInspectionListingIds";
 
+type SubscriptionFlowStatus =
+  | "ACTIVE"
+  | "EXPIRED"
+  | "PENDING_PAYMENT"
+  | "PENDING"
+  | null;
+
 const readListingIdsByKey = (key: string): Set<string> => {
   try {
     const raw = localStorage.getItem(key);
@@ -109,9 +119,25 @@ const getEffectiveListingStatus = (
   listing: Listing,
   paidListingIds: Set<string>,
   scheduledListingIds: Set<string>,
+  subscriptionStatus?: SubscriptionFlowStatus,
 ): Listing["status"] | "PLAN_PURCHASED" | "INSPECTION_PENDING" => {
+  if (listing.status === "SCHEDULED") {
+    return "INSPECTION_PENDING";
+  }
+
   if (scheduledListingIds.has(String(listing.id))) {
     return "INSPECTION_PENDING";
+  }
+
+  if (
+    subscriptionStatus === "PENDING_PAYMENT" ||
+    subscriptionStatus === "PENDING"
+  ) {
+    return "DRAFT";
+  }
+
+  if (subscriptionStatus === "ACTIVE") {
+    return "PLAN_PURCHASED";
   }
 
   if (listing.status === "PAID") {
@@ -212,6 +238,20 @@ const formatApiDate = (dateStr?: string): string => {
   return dateStr;
 };
 
+const formatApiDateTime = (dateStr?: string): string => {
+  if (!dateStr) return "Chưa có lịch";
+  const parsed = parseApiDate(dateStr);
+  if (!parsed) return dateStr;
+  return parsed.toLocaleString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+};
+
 export default function SellerDashboard() {
   const navigate = useNavigate();
   const user = useMemo(
@@ -240,6 +280,11 @@ export default function SellerDashboard() {
   const [scheduledListingIds, setScheduledListingIds] = useState<Set<string>>(
     () => readListingIdsByKey(SCHEDULED_LISTING_IDS_KEY),
   );
+  const [subscriptionStatusByListing, setSubscriptionStatusByListing] =
+    useState<Record<string, SubscriptionFlowStatus>>({});
+  const [inspectionByListing, setInspectionByListing] = useState<
+    Record<string, InspectionTask | null>
+  >({});
   const [isDeliverModalOpen, setIsDeliverModalOpen] = useState(false);
   const [deliverOrderId, setDeliverOrderId] = useState<string | null>(null);
   const [deliverFile, setDeliverFile] = useState<File | null>(null);
@@ -264,26 +309,39 @@ export default function SellerDashboard() {
 
       const myPayments = await paymentService.getMyPayments().catch(() => []);
 
-      const draftListingIds = listingsData
-        .filter((listing) => listing.status === "DRAFT")
+      const paymentFlowListingIds = listingsData
+        .filter(
+          (listing) => listing.status === "DRAFT" || listing.status === "PAID",
+        )
         .map((listing) => String(listing.id));
 
-      if (draftListingIds.length > 0) {
+      if (paymentFlowListingIds.length > 0) {
         const subscriptionChecks = await Promise.all(
-          draftListingIds.map(async (listingId) => {
+          paymentFlowListingIds.map(async (listingId) => {
             const sub = await subscriptionService
               .getSubscriptionByListingId(listingId)
               .catch(() => null);
-            return { listingId, subStatus: sub?.status };
+            return {
+              listingId,
+              subStatus: (sub?.status as SubscriptionFlowStatus) ?? null,
+            };
           }),
+        );
+
+        setSubscriptionStatusByListing(
+          subscriptionChecks.reduce<Record<string, SubscriptionFlowStatus>>(
+            (acc, row) => {
+              acc[row.listingId] = row.subStatus;
+              return acc;
+            },
+            {},
+          ),
         );
 
         const purchasedBySubscription = new Set(
           subscriptionChecks
-            .filter((row) =>
-              ["PENDING_PAYMENT", "PENDING", "ACTIVE"].includes(
-                String(row.subStatus || "").toUpperCase(),
-              ),
+            .filter(
+              (row) => String(row.subStatus || "").toUpperCase() === "ACTIVE",
             )
             .map((row) => row.listingId),
         );
@@ -298,6 +356,8 @@ export default function SellerDashboard() {
             JSON.stringify(Array.from(mergedPaid)),
           );
         }
+      } else {
+        setSubscriptionStatusByListing({});
       }
 
       // Fetch subscriptions for LIVE listings to display plan info
@@ -335,6 +395,33 @@ export default function SellerDashboard() {
             }
           }),
         );
+      }
+
+      const scheduledListings = listingsData.filter(
+        (listing) => listing.status === "SCHEDULED",
+      );
+      if (scheduledListings.length > 0) {
+        const inspectionRows = await Promise.all(
+          scheduledListings.map(async (listing) => {
+            const listingId = String(listing.id);
+            const inspection = await inspectionService
+              .getInspectionByListing(listingId)
+              .catch(() => null);
+            return { listingId, inspection };
+          }),
+        );
+
+        setInspectionByListing(
+          inspectionRows.reduce<Record<string, InspectionTask | null>>(
+            (acc, row) => {
+              acc[row.listingId] = row.inspection;
+              return acc;
+            },
+            {},
+          ),
+        );
+      } else {
+        setInspectionByListing({});
       }
 
       syncFlowMarkers(listingsData);
@@ -430,7 +517,12 @@ export default function SellerDashboard() {
     if (statusFilter !== "all") {
       filtered = filtered.filter(
         (l) =>
-          getEffectiveListingStatus(l, paidListingIds, scheduledListingIds) ===
+          getEffectiveListingStatus(
+            l,
+            paidListingIds,
+            scheduledListingIds,
+            subscriptionStatusByListing[String(l.id)],
+          ) ===
           (statusFilter as
             | Listing["status"]
             | "PLAN_PURCHASED"
@@ -465,6 +557,7 @@ export default function SellerDashboard() {
     listings,
     paidListingIds,
     scheduledListingIds,
+    subscriptionStatusByListing,
     statusFilter,
     searchQuery,
     sortBy,
@@ -607,7 +700,6 @@ export default function SellerDashboard() {
       icon: Package,
       color: "text-emerald-600",
       bg: "bg-emerald-100",
-      trend: "+12%",
       targetTab: "listings" as const,
       targetFilter: "LIVE",
     },
@@ -617,7 +709,6 @@ export default function SellerDashboard() {
       icon: Package,
       color: "text-blue-600",
       bg: "bg-blue-100",
-      trend: pendingOrdersCount > 0 ? "Mới" : "",
       targetTab: "orders" as const,
       targetFilter: "pending",
     },
@@ -627,7 +718,6 @@ export default function SellerDashboard() {
       icon: TrendingUp,
       color: "text-indigo-600",
       bg: "bg-indigo-100",
-      trend: "+8%",
       targetTab: "listings" as const, // We use listings tab for "Xe đã bán" based on soldCount logic
       targetFilter: "SOLD",
     },
@@ -637,7 +727,6 @@ export default function SellerDashboard() {
       icon: DollarSign,
       color: "text-purple-600",
       bg: "bg-purple-100",
-      trend: "+25%",
       targetTab: "revenue" as const,
       targetFilter: "all",
     },
@@ -699,7 +788,7 @@ export default function SellerDashboard() {
                 onClick={() => navigate("/seller/new-bike")}
               >
                 <Plus size={18} strokeWidth={2.5} />
-                Đăng Xe Mới
+                Đăng Tin Mới
               </button>
             </div>
           </div>
@@ -728,15 +817,6 @@ export default function SellerDashboard() {
                   >
                     <Icon size={28} className={stat.color} />
                   </div>
-                  <span
-                    className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                      stat.trend.startsWith("+") || stat.trend === "Mới"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    {stat.trend}
-                  </span>
                 </div>
                 <div>
                   <p className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">
@@ -760,7 +840,7 @@ export default function SellerDashboard() {
                   onClick={() => setActiveTab("listings")}
                   className={`pb-3 text-lg font-bold flex items-center gap-2 border-b-2 transition-colors ${activeTab === "listings" ? "border-green-600 text-green-600" : "border-transparent text-slate-500 hover:text-slate-800"}`}
                 >
-                  <Bike size={24} /> Xe Của Tôi
+                  <Bike size={24} /> Bài đăng của tôi
                 </button>
                 <button
                   onClick={() => setActiveTab("revenue")}
@@ -884,6 +964,7 @@ export default function SellerDashboard() {
                         listing,
                         paidListingIds,
                         scheduledListingIds,
+                        subscriptionStatusByListing[String(listing.id)],
                       );
                       const config =
                         STATUS_CONFIG[effectiveStatus] || STATUS_CONFIG.DRAFT;
@@ -892,6 +973,8 @@ export default function SellerDashboard() {
                         effectiveStatus === "PLAN_PURCHASED";
                       const waitingInspection =
                         effectiveStatus === "INSPECTION_PENDING";
+                      const inspectionDetail =
+                        inspectionByListing[String(listing.id)] || null;
 
                       return (
                         <div
@@ -951,10 +1034,6 @@ export default function SellerDashboard() {
                                 <p className="text-2xl font-black text-green-600">
                                   {listing.price.toLocaleString("vi-VN")} ₫
                                 </p>
-                                <div className="flex items-center gap-1 text-xs text-slate-500">
-                                  <Eye size={14} />
-                                  <span>1.2k</span>
-                                </div>
                               </div>
                             </div>
 
@@ -1024,8 +1103,7 @@ export default function SellerDashboard() {
                             {needsPayment && (
                               <div className="border-t border-amber-100 pt-4">
                                 <div className="mb-3 p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-700 font-medium">
-                                  💳 Bài đăng chưa kích hoạt. Vui lòng chọn gói
-                                  để tiếp tục quy trình đăng bán.
+                                  Vui lòng mua gói để kích hoạt bài đăng.
                                 </div>
                                 <button
                                   onClick={() =>
@@ -1036,7 +1114,7 @@ export default function SellerDashboard() {
                                   }
                                   className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
                                 >
-                                  Tiếp tục đăng bài
+                                  Đăng bài
                                 </button>
                               </div>
                             )}
@@ -1067,11 +1145,46 @@ export default function SellerDashboard() {
 
                             {waitingInspection && (
                               <div className="border-t border-indigo-100 pt-4">
-                                <div className="mb-3 p-3 bg-indigo-50 rounded-xl border border-indigo-200 text-xs text-indigo-700 font-medium">
-                                  ⏳ Đã đặt lịch kiểm định. Vui lòng chờ admin
-                                  phân công kiểm định viên. Sau khi kiểm định
-                                  hoàn tất, tin sẽ chuyển sang trạng thái LIVE.
-                                </div>
+                                {(inspectionDetail?.scheduledAt ||
+                                  inspectionDetail?.location?.addressLine) && (
+                                  <div className="space-y-2 rounded-xl border border-indigo-200 bg-white p-3 text-xs text-slate-700">
+                                    {inspectionDetail?.scheduledAt && (
+                                      <div className="flex items-start gap-2">
+                                        <Calendar
+                                          size={14}
+                                          className="mt-0.5 text-indigo-500"
+                                        />
+                                        <span>
+                                          <span className="font-semibold text-slate-800">
+                                            Thời gian kiểm định:
+                                          </span>{" "}
+                                          {formatApiDateTime(
+                                            inspectionDetail.scheduledAt,
+                                          )}
+                                        </span>
+                                      </div>
+                                    )}
+
+                                    {inspectionDetail?.location
+                                      ?.addressLine && (
+                                      <div className="flex items-start gap-2">
+                                        <MapPin
+                                          size={14}
+                                          className="mt-0.5 text-indigo-500"
+                                        />
+                                        <span>
+                                          <span className="font-semibold text-slate-800">
+                                            Địa chỉ kiểm định:
+                                          </span>{" "}
+                                          {
+                                            inspectionDetail.location
+                                              .addressLine
+                                          }
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>

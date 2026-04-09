@@ -9,6 +9,7 @@ import {
   locationService,
   type InspectionLocation,
 } from "../../services/location.service";
+import { listingService, type Listing } from "../../services/listing.service";
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING: "Hàng chờ",
@@ -17,6 +18,7 @@ const STATUS_LABEL: Record<string, string> = {
   IN_PROGRESS: "Đang kiểm tra",
   COMPLETED: "Hoàn thành",
   REJECTED: "Từ chối",
+  EXPIRED: "Hết hạn",
 };
 
 const STATUS_COLOR: Record<string, string> = {
@@ -26,6 +28,7 @@ const STATUS_COLOR: Record<string, string> = {
   IN_PROGRESS: "bg-purple-100 text-purple-800",
   COMPLETED: "bg-green-100 text-green-800",
   REJECTED: "bg-red-100 text-red-800",
+  EXPIRED: "bg-orange-100 text-orange-800",
 };
 
 type ScoreImageType = "LEFT_VIEW" | "RIGHT_VIEW" | "FRONT_VIEW" | "REAR_VIEW";
@@ -36,6 +39,23 @@ const SCORE_IMAGE_ORDER: { key: ScoreImageType; label: string }[] = [
   { key: "FRONT_VIEW", label: "Góc trước (FRONT_VIEW)" },
   { key: "REAR_VIEW", label: "Góc sau (REAR_VIEW)" },
 ];
+
+const LISTING_IMAGE_PLACEHOLDER =
+  "https://images.unsplash.com/photo-1532298229144-0ee050c99d2b?q=80&w=800";
+
+const EMPTY_SCORE_IMAGES: Record<ScoreImageType, File | null> = {
+  LEFT_VIEW: null,
+  RIGHT_VIEW: null,
+  FRONT_VIEW: null,
+  REAR_VIEW: null,
+};
+
+const EMPTY_SCORE_PREVIEWS: Record<ScoreImageType, string | null> = {
+  LEFT_VIEW: null,
+  RIGHT_VIEW: null,
+  FRONT_VIEW: null,
+  REAR_VIEW: null,
+};
 
 /**
  * Handle both ISO strings and Java LocalDateTime arrays [y, m, d, h, i, s, n]
@@ -104,14 +124,10 @@ export default function InspectorDashboard() {
   const [currentTask, setCurrentTask] = useState<InspectionTask | null>(null);
   const [scoreValue, setScoreValue] = useState("");
   const [comment, setComment] = useState("");
-  const [scoreImages, setScoreImages] = useState<
-    Record<ScoreImageType, File | null>
-  >({
-    LEFT_VIEW: null,
-    RIGHT_VIEW: null,
-    FRONT_VIEW: null,
-    REAR_VIEW: null,
-  });
+  const [scoreImages, setScoreImages] =
+    useState<Record<ScoreImageType, File | null>>(EMPTY_SCORE_IMAGES);
+  const [scoreImagePreviews, setScoreImagePreviews] =
+    useState<Record<ScoreImageType, string | null>>(EMPTY_SCORE_PREVIEWS);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Location Modal
@@ -119,10 +135,28 @@ export default function InspectorDashboard() {
   const [currentLocation, setCurrentLocation] =
     useState<InspectionLocation | null>(null);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [currentListing, setCurrentListing] = useState<Listing | null>(null);
+  const [isLoadingListing, setIsLoadingListing] = useState(false);
 
   useEffect(() => {
     fetchMyAssigned();
   }, []);
+
+  useEffect(() => {
+    return () => {
+      Object.values(scoreImagePreviews).forEach((previewUrl) => {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+      });
+    };
+  }, [scoreImagePreviews]);
+
+  const resetScoreInputData = () => {
+    Object.values(scoreImagePreviews).forEach((previewUrl) => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    });
+    setScoreImages(EMPTY_SCORE_IMAGES);
+    setScoreImagePreviews(EMPTY_SCORE_PREVIEWS);
+  };
 
   const fetchMyAssigned = async () => {
     try {
@@ -139,12 +173,7 @@ export default function InspectorDashboard() {
     setCurrentTask(task);
     setScoreValue("");
     setComment("");
-    setScoreImages({
-      LEFT_VIEW: null,
-      RIGHT_VIEW: null,
-      FRONT_VIEW: null,
-      REAR_VIEW: null,
-    });
+    resetScoreInputData();
     setIsScoring(true);
   };
 
@@ -153,40 +182,73 @@ export default function InspectorDashboard() {
     setCurrentTask(null);
     setScoreValue("");
     setComment("");
-    setScoreImages({
-      LEFT_VIEW: null,
-      RIGHT_VIEW: null,
-      FRONT_VIEW: null,
-      REAR_VIEW: null,
-    });
+    resetScoreInputData();
   };
 
   const openLocationModal = async (task: InspectionTask) => {
-    if (!task.location?.id) {
-      alert("Không tìm thấy thông tin địa điểm cho đơn này.");
-      return;
-    }
     setCurrentTask(task);
     setIsViewingLocation(true);
+    setCurrentLocation(null);
+    setCurrentListing(null);
     setIsLoadingLocation(true);
+    setIsLoadingListing(true);
+
+    const locationPromise = task.location?.id
+      ? locationService
+          .getLocationById(task.location.id)
+          .then((location) => location)
+          .catch((error) => {
+            console.error("Failed to fetch location:", error);
+            return null;
+          })
+      : Promise.resolve(null);
+
+    const inlineListing = task.listing ?? null;
+    const listingId = task.listing?.id || task.listingId;
+    const listingPromise = inlineListing
+      ? Promise.resolve(inlineListing)
+      : listingId
+        ? listingService
+            .getListingById(listingId)
+            .then((listing) => listing)
+            .catch((error) => {
+              console.error("Failed to fetch listing:", error);
+              return null;
+            })
+        : Promise.resolve(null);
+
     try {
-      const location = await locationService.getLocationById(task.location.id);
+      const [location, listing] = await Promise.all([
+        locationPromise,
+        listingPromise,
+      ]);
       setCurrentLocation(location);
-    } catch (error) {
-      console.error("Failed to fetch location:", error);
-      alert("Không thể tải thông tin địa điểm.");
+      setCurrentListing(listing);
     } finally {
       setIsLoadingLocation(false);
+      setIsLoadingListing(false);
     }
   };
 
   const closeLocationModal = () => {
     setIsViewingLocation(false);
     setCurrentLocation(null);
+    setCurrentListing(null);
+    setIsLoadingLocation(false);
+    setIsLoadingListing(false);
   };
 
   const handleScoreImageChange = (type: ScoreImageType, file: File | null) => {
     setScoreImages((prev) => ({ ...prev, [type]: file }));
+    setScoreImagePreviews((prev) => {
+      if (prev[type]) {
+        URL.revokeObjectURL(prev[type] as string);
+      }
+      return {
+        ...prev,
+        [type]: file ? URL.createObjectURL(file) : null,
+      };
+    });
   };
 
   const handleSubmitScores = async () => {
@@ -240,14 +302,42 @@ export default function InspectorDashboard() {
     }
   };
 
-  const completedCount = myTasks.filter((t) => t.status === "COMPLETED").length;
+  function resolveInspectionResult(
+    task: InspectionTask,
+  ): "FAILED" | "SUCCESS" | null {
+    const normalized = String(task.inspectionResult || "").toUpperCase();
+    if (normalized === "FAILED") return "FAILED";
+    if (normalized === "PASSED" || normalized === "SUCCESS") return "SUCCESS";
+
+    if (typeof task.score === "number") {
+      return task.score >= 5 ? "SUCCESS" : "FAILED";
+    }
+    return null;
+  }
+
+  function getDisplayStatus(task: InspectionTask): InspectionTask["status"] {
+    const hasResult = resolveInspectionResult(task) !== null;
+    if (hasResult && task.status === "IN_PROGRESS") {
+      return "COMPLETED";
+    }
+    return task.status;
+  }
+
+  const completedCount = myTasks.filter(
+    (t) => getDisplayStatus(t) === "COMPLETED",
+  ).length;
   const inProgressCount = myTasks.filter(
     (t) =>
-      t.status === "IN_PROGRESS" ||
-      t.status === "PENDING_ASSIGNED" ||
-      t.status === "ASSIGNED",
+      ["IN_PROGRESS", "PENDING_ASSIGNED", "ASSIGNED"].includes(
+        getDisplayStatus(t),
+      ),
   ).length;
-  const rejectedCount = myTasks.filter((t) => t.status === "REJECTED").length;
+  const successCount = myTasks.filter(
+    (t) => resolveInspectionResult(t) === "SUCCESS",
+  ).length;
+  const rejectedCount = myTasks.filter(
+    (t) => t.status === "REJECTED" || resolveInspectionResult(t) === "FAILED",
+  ).length;
   const canSubmitScores =
     scoreValue.trim() !== "" &&
     SCORE_IMAGE_ORDER.every((item) => scoreImages[item.key]);
@@ -294,7 +384,8 @@ export default function InspectorDashboard() {
   // Filter and sort tasks
   const filteredAndSortedTasks = myTasks
     .filter((task) => {
-      if (filterStatus !== "ALL" && task.status !== filterStatus) return false;
+      const displayStatus = getDisplayStatus(task);
+      if (filterStatus !== "ALL" && displayStatus !== filterStatus) return false;
       if (filterType !== "ALL" && task.inspectionType !== filterType)
         return false;
       return true;
@@ -316,8 +407,11 @@ export default function InspectorDashboard() {
           COMPLETED: 3,
           REJECTED: 4,
           PENDING: 5,
+          EXPIRED: 6,
         };
-        return (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99);
+        const statusA = getDisplayStatus(a);
+        const statusB = getDisplayStatus(b);
+        return (statusOrder[statusA] ?? 99) - (statusOrder[statusB] ?? 99);
       }
       return 0;
     });
@@ -329,8 +423,13 @@ export default function InspectorDashboard() {
       icon: AlertCircle,
     },
     {
-      label: "Kiểm duyệt xong",
+      label: "Đã Hoàn thành",
       value: isLoadingMy ? "..." : completedCount.toString(),
+      icon: CheckCircle,
+    },
+    {
+      label: "Thành công",
+      value: isLoadingMy ? "..." : successCount.toString(),
       icon: CheckCircle,
     },
     {
@@ -364,83 +463,101 @@ export default function InspectorDashboard() {
       );
     return (
       <div className="divide-y divide-slate-100">
-        {tasks.map((task) => (
-          <div
-            key={task.inspectionId}
-            className="p-6 hover:bg-slate-50 transition-colors"
-          >
-            <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
-              {/* Task Info */}
-              <div className="flex items-start gap-4 flex-1">
-                <div className="w-14 h-14 bg-gradient-to-br from-green-50 to-emerald-50 text-green-600 rounded-xl flex items-center justify-center text-xl border border-green-200 flex-shrink-0">
-                  🚲
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline gap-2 mb-1 flex-wrap">
-                    <h3 className="font-bold text-slate-900 text-base">
-                      Đơn #{task.inspectionId.split("-")[0]}
-                    </h3>
-                    <span
-                      className={`text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-full ${
-                        STATUS_COLOR[task.status] ??
-                        "bg-slate-100 text-slate-700"
-                      }`}
-                    >
-                      {STATUS_LABEL[task.status] ?? task.status}
-                    </span>
+        {tasks.map((task) => {
+          const displayStatus = getDisplayStatus(task);
+          const inspectionResult = resolveInspectionResult(task);
+          return (
+            <div
+              key={task.inspectionId}
+              className="p-6 hover:bg-slate-50 transition-colors"
+            >
+              <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
+                {/* Task Info */}
+                <div className="flex items-start gap-4 flex-1">
+                  <div className="w-14 h-14 bg-gradient-to-br from-green-50 to-emerald-50 text-green-600 rounded-xl flex items-center justify-center text-xl border border-green-200 flex-shrink-0">
+                    🚲
                   </div>
-                  <div className="text-sm text-slate-600 space-y-1.5 mt-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-400">📍</span>
-                      <span className="font-medium">
-                        {task.inspectionType === "COMPANY"
-                          ? "Kiểm tra tại trung tâm"
-                          : "Kiểm tra tại nhà"}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-2 mb-1 flex-wrap">
+                      <h3 className="font-bold text-slate-900 text-base">
+                        Đơn #{task.inspectionId.split("-")[0]}
+                      </h3>
+                      <span
+                        className={`text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-full ${
+                          STATUS_COLOR[displayStatus] ??
+                          "bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        {STATUS_LABEL[displayStatus] ?? displayStatus}
                       </span>
                     </div>
-                    {task.scheduledAt && (
+                    <div className="text-sm text-slate-600 space-y-1.5 mt-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-slate-400">📅</span>
+                        <span className="text-slate-400">📍</span>
                         <span className="font-medium">
-                          {formatDateTime(task.scheduledAt)}
+                          {task.inspectionType === "COMPANY"
+                            ? "Kiểm tra tại trung tâm"
+                            : "Kiểm tra tại nhà"}
                         </span>
                       </div>
-                    )}
-                    {!isPendingQueue && task.inspector && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-slate-400">👤</span>
-                        <span className="font-medium">
-                          {task.inspector.name || task.inspector.username}
-                        </span>
-                      </div>
-                    )}
+                      {task.scheduledAt && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-400">📅</span>
+                          <span className="font-medium">
+                            {formatDateTime(task.scheduledAt)}
+                          </span>
+                        </div>
+                      )}
+                      {!isPendingQueue && task.inspector && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-400">👤</span>
+                          <span className="font-medium">
+                            {task.inspector.name || task.inspector.username}
+                          </span>
+                        </div>
+                      )}
+                      {inspectionResult && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-400">🧾</span>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wider ${
+                              inspectionResult === "SUCCESS"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : "bg-red-100 text-red-700"
+                            }`}
+                          >
+                            {inspectionResult}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                <button
-                  onClick={() => openLocationModal(task)}
-                  className="flex-1 sm:flex-none px-4 py-2.5 bg-slate-100 text-slate-900 text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-slate-200 transition flex items-center justify-center gap-2"
-                >
-                  <Eye size={16} /> Chi tiết
-                </button>
-                {!isPendingQueue &&
-                  ["PENDING_ASSIGNED", "ASSIGNED", "IN_PROGRESS"].includes(
-                    task.status,
-                  ) && (
-                    <button
-                      onClick={() => openScoreModal(task)}
-                      className="flex-1 sm:flex-none px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white text-xs font-bold uppercase tracking-widest rounded-lg hover:from-green-700 hover:to-emerald-700 transition shadow-md shadow-green-600/20 flex items-center justify-center gap-2"
-                    >
-                      <Edit size={16} /> Chấm điểm
-                    </button>
-                  )}
+                {/* Action Buttons */}
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                  <button
+                    onClick={() => openLocationModal(task)}
+                    className="flex-1 sm:flex-none px-4 py-2.5 bg-slate-100 text-slate-900 text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-slate-200 transition flex items-center justify-center gap-2"
+                  >
+                    <Eye size={16} /> Xem chi tiết
+                  </button>
+                  {!isPendingQueue &&
+                    ["PENDING_ASSIGNED", "ASSIGNED", "IN_PROGRESS"].includes(
+                      displayStatus,
+                    ) && (
+                      <button
+                        onClick={() => openScoreModal(task)}
+                        className="flex-1 sm:flex-none px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white text-xs font-bold uppercase tracking-widest rounded-lg hover:from-green-700 hover:to-emerald-700 transition shadow-md shadow-green-600/20 flex items-center justify-center gap-2"
+                      >
+                        <Edit size={16} /> Chấm điểm
+                      </button>
+                    )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
@@ -592,9 +709,9 @@ export default function InspectorDashboard() {
 
       {/* Scoring Modal */}
       {isScoring && currentTask && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div className="fixed inset-0 z-[1300] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50 sticky top-0 z-10">
               <div>
                 <h3 className="text-lg font-black text-slate-800">
                   Nộp kết quả kiểm tra
@@ -611,7 +728,7 @@ export default function InspectorDashboard() {
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto flex-1 space-y-6">
+            <div className="p-6 overflow-y-auto flex-1 space-y-6 pb-24">
               <div className="rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-sky-50 p-4 text-sm text-indigo-900">
                 <p className="font-bold">Hướng dẫn chính</p>
                 <p className="mt-1">
@@ -712,30 +829,40 @@ export default function InspectorDashboard() {
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <input
-                    type="number"
-                    min="0"
-                    max="10"
-                    step="1"
-                    inputMode="numeric"
-                    value={scoreValue}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === "") {
-                        setScoreValue("");
-                        return;
-                      }
+                  <div className="w-full sm:w-auto">
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Nhập điểm
+                    </p>
+                    <input
+                      type="number"
+                      min="0"
+                      max="10"
+                      step="1"
+                      inputMode="numeric"
+                      value={scoreValue}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "") {
+                          setScoreValue("");
+                          return;
+                        }
 
-                      if (/^\d{1,2}$/.test(value) && Number(value) <= 10) {
-                        setScoreValue(value);
-                      }
-                    }}
-                    placeholder="Nhập điểm"
-                    className="w-full sm:w-40 rounded-xl border-2 border-slate-200 px-4 py-3 text-center text-2xl font-black text-indigo-700 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                  />
-                  <p className="text-xs text-slate-500">
-                    Gợi ý: nhập số nguyên từ 0 đến 10 để tránh sai định dạng.
-                  </p>
+                        if (/^\d{1,2}$/.test(value) && Number(value) <= 10) {
+                          setScoreValue(value);
+                        }
+                      }}
+                      placeholder="0-10"
+                      className="w-full sm:w-40 rounded-xl border-2 border-slate-200 px-4 py-3 text-center text-xl font-bold text-indigo-700 placeholder:text-base placeholder:font-semibold placeholder:text-slate-400 transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    {scoreValue !== "" && /^\d+$/.test(scoreValue) && (
+                      <p className="text-xs font-semibold text-slate-700">
+                        Kết quả dự kiến:{" "}
+                        {Number(scoreValue) >= 5 ? "SUCCESS" : "FAILED"}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <div>
@@ -765,6 +892,7 @@ export default function InspectorDashboard() {
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {SCORE_IMAGE_ORDER.map((item, index) => {
                     const selectedFile = scoreImages[item.key];
+                    const selectedPreview = scoreImagePreviews[item.key];
                     return (
                       <div
                         key={item.key}
@@ -811,6 +939,31 @@ export default function InspectorDashboard() {
                             ? `Tệp: ${selectedFile.name}`
                             : "Chưa chọn tệp"}
                         </p>
+
+                        {selectedPreview && (
+                          <div className="mt-3 space-y-2">
+                            <a
+                              href={selectedPreview}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="block overflow-hidden rounded-lg border border-slate-200"
+                            >
+                              <img
+                                src={selectedPreview}
+                                alt={`Preview ${item.label}`}
+                                className="h-28 w-full object-cover"
+                              />
+                            </a>
+                            <a
+                              href={selectedPreview}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+                            >
+                              Xem lại ảnh đã chọn
+                            </a>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -818,7 +971,7 @@ export default function InspectorDashboard() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50 p-6">
+            <div className="flex justify-end gap-3 border-t border-slate-100 bg-slate-50 p-6 sticky bottom-0">
               <button
                 onClick={closeScoreModal}
                 disabled={isSubmitting}
@@ -840,15 +993,15 @@ export default function InspectorDashboard() {
 
       {/* Location Modal */}
       {isViewingLocation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[92vh] overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50 sticky top-0 z-10">
               <div>
                 <h3 className="text-lg font-black text-slate-800">
-                  Thông Tin Địa Điểm
+                  Chi Tiết Kiểm Tra Xe
                 </h3>
                 <p className="text-xs font-medium text-slate-500 mt-1">
-                  Chi tiết đơn kiểm tra
+                  Bao gồm thông tin xe, hình ảnh và kết quả kiểm tra
                 </p>
               </div>
               <button
@@ -860,17 +1013,109 @@ export default function InspectorDashboard() {
             </div>
 
             <div className="p-6 overflow-y-auto flex-1">
-              {isLoadingLocation ? (
+              {isLoadingLocation || isLoadingListing ? (
                 <div className="text-center py-8 text-slate-500">
                   Đang tải thông tin...
                 </div>
-              ) : currentLocation ? (
-                <div className="space-y-6">
+              ) : (
+                <div className="space-y-8">
+                  {currentListing && (
+                    <div>
+                      <div className="bg-emerald-50 text-emerald-800 text-xs font-medium p-4 rounded-xl mb-4">
+                        Thông tin chi tiết xe đạp
+                      </div>
+                      <div className="grid gap-4 lg:grid-cols-2">
+                        <div className="space-y-2 rounded-xl border border-slate-200 p-4">
+                          <h4 className="text-sm font-bold text-slate-800">
+                            Thông số xe
+                          </h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between gap-3 border-b border-slate-100 py-2">
+                              <span className="text-slate-600">Tiêu đề</span>
+                              <span className="text-right font-semibold text-slate-800">
+                                {currentListing.title || "—"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between gap-3 border-b border-slate-100 py-2">
+                              <span className="text-slate-600">
+                                Thương hiệu
+                              </span>
+                              <span className="text-right font-semibold text-slate-800">
+                                {currentListing.brand?.name || "—"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between gap-3 border-b border-slate-100 py-2">
+                              <span className="text-slate-600">Số khung</span>
+                              <span className="text-right font-semibold text-slate-800">
+                                {currentListing.frameNumber || "—"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between gap-3 py-2">
+                              <span className="text-slate-600">
+                                Giá niêm yết
+                              </span>
+                              <span className="text-right font-semibold text-slate-800">
+                                {currentListing.price
+                                  ? `${currentListing.price.toLocaleString("vi-VN")} đ`
+                                  : "—"}
+                              </span>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+                              Tình trạng chi của xe
+                            </p>
+                            <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-700">
+                              {currentListing.description ||
+                                "Chưa có mô tả chi tiết từ người bán."}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="rounded-xl border border-slate-200 p-4">
+                          <h4 className="mb-3 text-sm font-bold text-slate-800">
+                            Hình ảnh xe
+                          </h4>
+                          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                            {(currentListing.images?.length
+                              ? currentListing.images
+                                  .slice()
+                                  .sort((a, b) => a.imageOrder - b.imageOrder)
+                                  .map((img) => img.secureUrl)
+                              : [LISTING_IMAGE_PLACEHOLDER]
+                            ).map((imgUrl, idx) => (
+                              <a
+                                key={`${imgUrl}-${idx}`}
+                                href={imgUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="group relative block aspect-[4/3] overflow-hidden rounded-lg border border-slate-200 bg-slate-100"
+                              >
+                                <img
+                                  src={imgUrl}
+                                  alt={`Ảnh xe ${idx + 1}`}
+                                  className="h-full w-full object-cover transition duration-200 group-hover:scale-105"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src =
+                                      LISTING_IMAGE_PLACEHOLDER;
+                                  }}
+                                />
+                                <span className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-1 text-[10px] font-bold text-white">
+                                  Ảnh {idx + 1}
+                                </span>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <div className="bg-blue-50 text-blue-800 text-xs font-medium p-4 rounded-xl mb-4">
                       Thông tin liên hệ và địa chỉ kiểm tra
                     </div>
-                    <div className="space-y-3">
+                    <div className="space-y-3 rounded-xl border border-slate-200 p-4">
                       {currentTask?.scheduledAt && (
                         <div className="flex justify-between items-center py-2 border-b border-slate-100">
                           <span className="font-medium text-slate-600">
@@ -881,49 +1126,84 @@ export default function InspectorDashboard() {
                           </span>
                         </div>
                       )}
-                      <div className="flex justify-between items-center py-2 border-b border-slate-100">
-                        <span className="font-medium text-slate-600">
-                          Loại:
-                        </span>
-                        <span className="font-bold text-slate-800">
-                          {currentLocation.type === "SELLER"
-                            ? "Người bán"
-                            : "Công ty"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b border-slate-100">
-                        <span className="font-medium text-slate-600">
-                          Tên liên hệ:
-                        </span>
-                        <span className="font-bold text-slate-800">
-                          {currentLocation.contactName}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b border-slate-100">
-                        <span className="font-medium text-slate-600">
-                          Số điện thoại:
-                        </span>
-                        <span className="font-bold text-slate-800">
-                          {currentLocation.contactPhone}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-start py-2 border-b border-slate-100">
-                        <span className="font-medium text-slate-600">
-                          Địa chỉ:
-                        </span>
-                        <span className="font-bold text-slate-800 text-right">
-                          {currentLocation.addressLine}
-                        </span>
-                      </div>
+                      {currentLocation ? (
+                        <>
+                          <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                            <span className="font-medium text-slate-600">
+                              Loại:
+                            </span>
+                            <span className="font-bold text-slate-800">
+                              {currentLocation.type === "SELLER"
+                                ? "Người bán"
+                                : "Công ty"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                            <span className="font-medium text-slate-600">
+                              Tên liên hệ:
+                            </span>
+                            <span className="font-bold text-slate-800">
+                              {currentLocation.contactName || "—"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                            <span className="font-medium text-slate-600">
+                              Số điện thoại:
+                            </span>
+                            <span className="font-bold text-slate-800">
+                              {currentLocation.contactPhone || "—"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-start py-2 border-b border-slate-100">
+                            <span className="font-medium text-slate-600">
+                              Địa chỉ:
+                            </span>
+                            <span className="font-bold text-slate-800 text-right">
+                              {currentLocation.addressLine || "—"}
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 border border-amber-200">
+                          Không tìm thấy dữ liệu địa điểm cho đơn kiểm tra này.
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {currentTask?.status === "COMPLETED" && (
+                  {currentTask && getDisplayStatus(currentTask) === "COMPLETED" && (
                     <div>
                       <div className="bg-green-50 text-green-800 text-xs font-medium p-4 rounded-xl mb-4">
                         Kết quả kiểm tra
                       </div>
-                      <div className="space-y-3">
+                      <div className="space-y-3 rounded-xl border border-slate-200 p-4">
+                        <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                          <span className="font-medium text-slate-600">
+                            Result
+                          </span>
+                          {(() => {
+                            const result = resolveInspectionResult(currentTask);
+                            if (!result) {
+                              return (
+                                <span className="font-bold text-slate-800">
+                                  —
+                                </span>
+                              );
+                            }
+
+                            return (
+                              <span
+                                className={`inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${
+                                  result === "SUCCESS"
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : "bg-red-100 text-red-700"
+                                }`}
+                              >
+                                {result}
+                              </span>
+                            );
+                          })()}
+                        </div>
                         <div className="flex justify-between items-center py-2 border-b border-slate-100">
                           <span className="font-medium text-slate-600">
                             Điểm
@@ -944,7 +1224,7 @@ export default function InspectorDashboard() {
                           currentTask.images.length > 0 && (
                             <div className="space-y-2">
                               <p className="font-medium text-slate-600">
-                                Ảnh hiện trạng
+                                Ảnh hiện trạng sau kiểm tra
                               </p>
                               <div className="space-y-2">
                                 {currentTask.images.map(
@@ -974,14 +1254,10 @@ export default function InspectorDashboard() {
                     </div>
                   )}
                 </div>
-              ) : (
-                <div className="text-center py-8 text-slate-500">
-                  Không tìm thấy thông tin địa điểm.
-                </div>
               )}
             </div>
 
-            <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end">
+            <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end sticky bottom-0">
               <button
                 onClick={closeLocationModal}
                 className="px-6 py-2.5 rounded-xl font-bold text-sm text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 transition shadow-sm"

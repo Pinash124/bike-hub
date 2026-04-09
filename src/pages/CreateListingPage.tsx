@@ -19,7 +19,6 @@ import { brandService, type Brand } from "../services/brand.service";
 import { listingService } from "../services/listing.service";
 import { formatVND, formatVNDOrNull } from "../utils/format";
 
-
 const BIKE_TYPES = [
   {
     value: "MTB_BIKE",
@@ -71,6 +70,7 @@ const textareaCls =
 
 export default function CreateListingPage() {
   const navigate = useNavigate();
+  const CURRENT_MAX_YEAR = new Date().getFullYear();
   const fileRef = useRef<HTMLInputElement>(null);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -84,7 +84,7 @@ export default function CreateListingPage() {
     price: "",
     brandName: "",
     bikeType: "MTB_BIKE",
-    usageDuration: "",
+    manufactureYear: "",
     frameNumber: "",
   });
 
@@ -103,6 +103,9 @@ export default function CreateListingPage() {
     const { name, value } = e.target;
     if (name === "frameNumber") {
       const filteredValue = value.replace(/[^A-Z0-9]/gi, "").toUpperCase();
+      setFormData((prev) => ({ ...prev, [name]: filteredValue }));
+    } else if (name === "manufactureYear") {
+      const filteredValue = value.replace(/\D/g, "").slice(0, 4);
       setFormData((prev) => ({ ...prev, [name]: filteredValue }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
@@ -209,17 +212,23 @@ export default function CreateListingPage() {
       errors.brandName = "Vui lòng chọn thương hiệu";
     }
 
-    if (!formData.frameNumber.trim()) {
-      errors.frameNumber = "Vui lòng nhập số khung";
-    } else if (formData.frameNumber.length < 5) {
-      errors.frameNumber = "Số khung phải có ít nhất 5 ký tự";
-    } else if (!/^[A-Z0-9]+$/i.test(formData.frameNumber.trim())) {
-      errors.frameNumber = "Số khung chỉ được chứa chữ cái và số";
+    if (formData.frameNumber.trim()) {
+      if (formData.frameNumber.length < 5) {
+        errors.frameNumber = "Số khung phải có ít nhất 5 ký tự";
+      } else if (!/^[A-Z0-9]+$/i.test(formData.frameNumber.trim())) {
+        errors.frameNumber = "Số khung chỉ được chứa chữ cái và số";
+      }
     }
 
-    const usage = Number.parseInt(formData.usageDuration || "0", 10);
-    if (Number.isNaN(usage) || usage < 0 || usage > 10) {
-      errors.usageDuration = "Thời gian sử dụng phải từ 0-10 năm";
+    if (formData.manufactureYear) {
+      const manufactureYear = Number.parseInt(formData.manufactureYear, 10);
+      if (
+        Number.isNaN(manufactureYear) ||
+        manufactureYear < 2000 ||
+        manufactureYear > CURRENT_MAX_YEAR
+      ) {
+        errors.manufactureYear = `Năm sản xuất phải từ 2000 đến ${CURRENT_MAX_YEAR}`;
+      }
     }
 
     if (formData.description.length < 10) {
@@ -259,7 +268,6 @@ export default function CreateListingPage() {
       return;
     }
 
-    const usage = Number.parseInt(formData.usageDuration || "0", 10);
     const priceVal = Number.parseInt(formData.price || "0", 10);
 
     setIsLoading(true);
@@ -271,7 +279,7 @@ export default function CreateListingPage() {
       if (formData.title) fd.append("title", formData.title.trim());
       if (formData.brandName) fd.append("brandName", formData.brandName);
       if (formData.bikeType) fd.append("bikeType", formData.bikeType);
-      if (formData.frameNumber) {
+      if (formData.frameNumber.trim()) {
         fd.append("frameNumber", formData.frameNumber.trim());
       }
       if (formData.description) {
@@ -279,7 +287,9 @@ export default function CreateListingPage() {
       }
 
       fd.append("price", String(priceVal));
-      fd.append("usageDuration", String(usage));
+      if (formData.manufactureYear) {
+        fd.append("manufactureYear", formData.manufactureYear);
+      }
 
       images.forEach((img) => fd.append("images", img));
 
@@ -351,7 +361,7 @@ export default function CreateListingPage() {
             <div className="flex items-center gap-2 rounded-full bg-green-100 px-4 py-2">
               <Package size={16} className="text-green-600" />
               <span className="text-sm font-bold text-green-700">
-                Đăng xe bán
+                Đăng tin mới
               </span>
             </div>
             <div
@@ -482,7 +492,6 @@ export default function CreateListingPage() {
                           {brand.name}
                         </option>
                       ))}
-                      <option value="Other">Khác</option>
                     </select>
                     {formValidation.brandName && (
                       <p className="flex items-center gap-1 text-xs text-red-600 mt-1">
@@ -547,12 +556,10 @@ export default function CreateListingPage() {
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <Field
                     label="Số khung"
-                    required
                     hint="Thường khắc ở phần gầm khung - rất quan trọng để kiểm định"
                   >
                     <div className="relative">
                       <input
-                        required
                         name="frameNumber"
                         value={formData.frameNumber}
                         onChange={handleInputChange}
@@ -572,32 +579,39 @@ export default function CreateListingPage() {
                     )}
                   </Field>
 
-                  <Field
-                    label="Thời gian sử dụng (năm)"
-                    required
-                    hint="Số năm xe đã được sử dụng"
-                  >
+                  <Field label="Năm sản xuất">
                     <div className="relative">
                       <input
-                        required
                         type="number"
-                        min="0"
-                        max="10"
+                        min="2000"
+                        max={CURRENT_MAX_YEAR}
                         step="1"
-                        name="usageDuration"
-                        value={formData.usageDuration}
+                        name="manufactureYear"
+                        value={formData.manufactureYear}
                         onChange={handleInputChange}
-                        className={`${inputCls} ${formValidation.usageDuration ? "border-red-300 focus:border-red-500" : ""}`}
-                        placeholder="0 - 10"
+                        onKeyDown={(e) => {
+                          const allowedControlKeys = [
+                            "Backspace",
+                            "Delete",
+                            "ArrowLeft",
+                            "ArrowRight",
+                            "Tab",
+                            "Home",
+                            "End",
+                          ];
+                          if (allowedControlKeys.includes(e.key)) return;
+                          if (!/^[0-9]$/.test(e.key)) {
+                            e.preventDefault();
+                          }
+                        }}
+                        className={`${inputCls} ${formValidation.manufactureYear ? "border-red-300 focus:border-red-500" : ""}`}
+                        placeholder={`2000 - ${CURRENT_MAX_YEAR}`}
                       />
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">
-                        năm
-                      </div>
                     </div>
-                    {formValidation.usageDuration && (
+                    {formValidation.manufactureYear && (
                       <p className="flex items-center gap-1 text-xs text-red-600 mt-1">
                         <AlertTriangle size={12} />
-                        {formValidation.usageDuration}
+                        {formValidation.manufactureYear}
                       </p>
                     )}
                   </Field>
@@ -825,15 +839,13 @@ export default function CreateListingPage() {
                       icon: "🏷️",
                     },
                     {
-                      ok: !!formData.frameNumber && !formValidation.frameNumber,
-                      label: "Số khung",
+                      ok: !formValidation.frameNumber,
+                      label: "Số khung (tùy chọn)",
                       icon: "🔢",
                     },
                     {
-                      ok:
-                        !!formData.usageDuration &&
-                        !formValidation.usageDuration,
-                      label: "Thời gian sử dụng",
+                      ok: !formValidation.manufactureYear,
+                      label: "Năm sản xuất (tùy chọn)",
                       icon: "📅",
                     },
                     {

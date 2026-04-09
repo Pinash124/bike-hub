@@ -7,7 +7,7 @@ import {
   Package,
   Heart,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useCart } from "../../contexts/CartContext";
 import { useAuth } from "../../contexts/AuthContext";
@@ -16,6 +16,7 @@ import { Container } from "./Container"; // Đảm bảo bạn đã tạo file C
 
 export default function Header() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { items } = useCart();
   const { user, isAuthenticated } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -27,6 +28,10 @@ export default function Header() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const shouldShowCreateListingButton =
+    (!user || user.role === "seller") &&
+    !location.pathname.startsWith("/seller");
 
   // do not render header when logged in as admin
   if (user?.role === "admin") return null;
@@ -102,7 +107,7 @@ export default function Header() {
 
           {/* 3. ACTIONS AREA */}
           <div className="flex items-center gap-6">
-            {(!user || user.role === "seller") && (
+            {shouldShowCreateListingButton && (
               <button
                 onClick={() => navigate("/seller/dashboard")}
                 className={`hidden lg:flex items-center gap-2 px-7 py-3 text-[11px] font-bold uppercase tracking-widest transition-all active:scale-95 rounded-full ${
@@ -111,7 +116,7 @@ export default function Header() {
                     : "bg-white text-green-700 hover:bg-green-50 shadow-xl shadow-black/5"
                 }`}
               >
-                <PlusCircle size={18} /> Đăng bán
+                <PlusCircle size={18} /> Đăng tin bán xe
               </button>
             )}
 
