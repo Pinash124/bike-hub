@@ -257,7 +257,7 @@ function App() {
                 }
               />
               <Route
-                path="/seller/new-bike"
+                path="/seller/new-bike" //crea
                 element={
                   <ProtectedRoute requiredRole="seller">
                     <AppLayout>

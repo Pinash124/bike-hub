@@ -271,12 +271,6 @@ export default function ChoosePlanPage() {
               Đăng bán xe
             </div>
           </div>
-          {currentSubscription?.status && (
-            <div className="hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold ring-1 ring-slate-200 bg-slate-50 text-slate-700">
-              <ShieldCheck size={14} className="text-emerald-600" />
-              <span>Trạng thái: {currentSubscription.status}</span>
-            </div>
-          )}
         </div>
       </div>
 
@@ -381,51 +375,6 @@ export default function ChoosePlanPage() {
           </div>
         ) : (
           <Fragment>
-            <div className="text-center max-w-2xl mx-auto mb-10">
-              <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-3">
-                Nâng tầm tin đăng của bạn
-              </h2>
-              <p className="text-slate-600">
-                Xe đã được kiểm định. Hãy chọn gói hiển thị và thanh toán để xe
-                được chính thức có mặt trên trang chủ BikeHub.
-              </p>
-            </div>
-
-            {currentSubscription && (
-              <div className="max-w-3xl mx-auto mb-10 p-5 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
-                    <ShieldCheck size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-slate-900">
-                      Xe đã có gói đăng ký
-                    </h3>
-                    <p className="text-sm text-slate-600">
-                      Trạng thái:{" "}
-                      <span className="font-semibold text-emerald-700">
-                        {currentSubscription.status}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-                {(currentSubscription.status === "PENDING_PAYMENT" ||
-                  currentSubscription.status === "PENDING") && (
-                  <button
-                    onClick={() => setShowConfirmation(true)}
-                    className="px-5 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition shadow-sm"
-                  >
-                    Tiếp tục thanh toán
-                  </button>
-                )}
-                {currentSubscription.status === "ACTIVE" && (
-                  <div className="text-sm font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
-                    Đã kích hoạt gói
-                  </div>
-                )}
-              </div>
-            )}
-
             {plans.length === 0 ? (
               <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center max-w-md mx-auto">
                 <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3 text-slate-400">
