@@ -9,6 +9,7 @@ export interface Plan {
     price: number;
     durationDays: number;
     isActive: boolean;
+    priority?: number; // Mức độ ưu tiên hiển thị (số càng nhỏ → ưu tiên càng cao)
 }
 
 export const planService = {

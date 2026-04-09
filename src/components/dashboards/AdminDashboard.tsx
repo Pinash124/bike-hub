@@ -343,6 +343,7 @@ function PlansTab({
     price: 0,
     durationDays: 30,
     isActive: true,
+    priority: 1,
   });
   const [saving, setSaving] = useState(false);
 
@@ -359,6 +360,7 @@ function PlansTab({
       price: p?.price ?? 0,
       durationDays: p?.durationDays ?? 30,
       isActive: p?.isActive ?? true,
+      priority: p?.priority ?? 1,
     });
     setModal(true);
   };
@@ -530,6 +532,17 @@ function PlansTab({
                   value={form.durationDays}
                   onChange={(e) =>
                     setForm({ ...form, durationDays: Number(e.target.value) })
+                  }
+                  className={inputCls}
+                />
+              </FormField>
+              <FormField label="Mức độ ưu tiên">
+                <input
+                  required
+                  type="number"
+                  value={form.priority}
+                  onChange={(e) =>
+                    setForm({ ...form, priority: Number(e.target.value) })
                   }
                   className={inputCls}
                 />
@@ -1686,27 +1699,24 @@ function PaymentsTab({
 
   // Held order amount: PAYMENT(ORDER) - PAYOUT(ORDER) - REFUND(ORDER)
   const successOrderPayments = sumAmount(
-    filtered.filter(
+    successPayments.filter(
       (p) =>
         p.type === "PAYMENT" &&
-        p.referenceType === "ORDER" &&
-        p.status === "SUCCESS",
+        p.referenceType === "ORDER"
     ),
   );
   const successOrderPayouts = sumAmount(
-    filtered.filter(
+    successPayments.filter(
       (p) =>
         p.type === "PAYOUT" &&
-        p.referenceType === "ORDER" &&
-        p.status === "SUCCESS",
+        p.referenceType === "ORDER"
     ),
   );
   const successOrderRefunds = sumAmount(
-    filtered.filter(
+    successPayments.filter(
       (p) =>
         p.type === "REFUND" &&
-        p.referenceType === "ORDER" &&
-        p.status === "SUCCESS",
+        p.referenceType === "ORDER"
     ),
   );
   const heldOrderAmount =
