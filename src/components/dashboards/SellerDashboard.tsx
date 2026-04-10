@@ -140,6 +140,13 @@ const STATUS_CONFIG: Record<
     border: "border-slate-200",
     icon: "📝",
   },
+  REJECT: {
+    label: "Từ chối",
+    color: "text-red-700",
+    bg: "bg-red-100",
+    border: "border-red-200",
+    icon: "❌",
+  },
   PENDING: {
     label: "Chờ duyệt",
     color: "text-amber-700",
@@ -876,6 +883,7 @@ export default function SellerDashboard() {
                       <option value="LIVE">Đang bán</option>
                       <option value="SOLD">Đã bán</option>
                       <option value="PENDING">Chờ duyệt</option>
+                      <option value="REJECT">Từ chối</option>
                       <option value="PLAN_PURCHASED">Đã mua gói</option>
                       <option value="INSPECTION_PENDING">Chờ kiểm định</option>
                       <option value="APPROVED">Đã duyệt</option>
